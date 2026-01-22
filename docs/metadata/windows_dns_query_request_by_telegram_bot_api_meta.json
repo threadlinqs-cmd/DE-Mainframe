@@ -1,0 +1,89 @@
+{
+  "detectionName": "Windows DNS Query Request by Telegram Bot API",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [
+      "22"
+    ],
+    "actionTypes": [],
+    "macros": [
+      "sysmon",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "windows_dns_query_request_by_telegram_bot_api_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "answer",
+      "answer_count",
+      "dvc",
+      "process_exec",
+      "process_guid",
+      "process_name",
+      "query",
+      "query_count",
+      "reply_code_id",
+      "signature",
+      "signature_id",
+      "src",
+      "user_id",
+      "vendor_product",
+      "QueryName",
+      "QueryResults",
+      "QueryStatus"
+    ],
+    "customTags": [
+      {
+        "category": "technology",
+        "tag": "Sysmon Events"
+      }
+    ],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [
+      "process_name"
+    ],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "answer",
+      "answer_count",
+      "dvc",
+      "process_exec",
+      "process_guid",
+      "process_name",
+      "query",
+      "query_count",
+      "reply_code_id",
+      "signature",
+      "signature_id",
+      "src",
+      "user_id",
+      "vendor_product",
+      "QueryName",
+      "QueryResults",
+      "QueryStatus"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [
+      "process_name"
+    ],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:53.947Z"
+}
