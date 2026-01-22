@@ -1,0 +1,53 @@
+{
+  "detectionName": "Windows Remote Desktop Network Bruteforce Attempt",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(\"All_Traffic\")",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "windows_remote_desktop_network_bruteforce_attempt_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "All_Traffic"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "duration"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "All_Traffic"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:57.441Z"
+}
