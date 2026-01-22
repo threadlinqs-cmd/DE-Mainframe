@@ -1,0 +1,41 @@
+{
+  "detectionName": "Windows AD Rogue Domain Controller Network Activity",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "zeek_rpc",
+      "windows_ad_rogue_domain_controller_network_activity_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "endpoint",
+      "operation",
+      "src",
+      "src_category",
+      "dest",
+      "dest_category"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [
+      "Domain Controller"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:52.771Z"
+}
