@@ -1,0 +1,53 @@
+{
+  "detectionName": "ProxyShell ProxyNotShell Behavior Detected",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(All_Risk)",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "proxyshell_proxynotshell_behavior_detected_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "span"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "_time",
+      "span"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "drilldown_1": [
+        "risk_object"
+      ],
+      "drilldown_2": [
+        "risk_object"
+      ]
+    },
+    "allDrilldownVars": [
+      "risk_object"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:09.721Z"
+}
