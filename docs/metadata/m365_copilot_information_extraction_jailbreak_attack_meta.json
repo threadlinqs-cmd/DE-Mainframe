@@ -1,0 +1,63 @@
+{
+  "detectionName": "M365 Copilot Information Extraction Jailbreak Attack",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "m365_exported_ediscovery_prompt_logs",
+      "m365_copilot_information_extraction_jailbreak_attack_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "user",
+      "Subject_Title",
+      "extraction_type",
+      "severity",
+      "data_risk_flags",
+      "Size",
+      "step"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "user",
+      "extraction_type",
+      "severity",
+      "data_risk_flags"
+    ],
+    "categories": [],
+    "mainSearchFields": [
+      "severity"
+    ],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "step"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [
+      "severity"
+    ],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:14.879Z"
+}
