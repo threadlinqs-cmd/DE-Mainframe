@@ -64,7 +64,9 @@
       "user"
     ]
   },
-  "lastParsed": "2026-01-22T19:01:27.579Z",
+  "lastParsed": "2026-01-22T19:46:22.324Z",
   "needsTune": false,
-  "needsRetrofit": false
+  "needsRetrofit": false,
+  "_sha": "6af4103bf5c60657a78b5818ee29e808e0d99c12",
+  "_path": "docs/metadata/azure_active_directory_high_risk_sign_in_meta.json"
 }
