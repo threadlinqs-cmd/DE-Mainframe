@@ -20,22 +20,21 @@
 const GITHUB_CONFIG = {
     // Your GitHub URL (no trailing slash, no /api/v3)
     // For github.com use: 'https://github.com'
-    // For GitHub Enterprise use: 'https://github.yourcompany.com'
+    // For Enterprise use: 'https://github.yourcompany.com'
     baseUrl: 'https://github.com',
 
     // Repository in format 'owner/repo' or 'org/repo'
-    // Example: 'Security/Splunk'
-    repo: 'threadlinqs-cmd/DE-Mainframe',
+    // Example: 'Security/Splunk' or 'myusername/my-detections'
+    repo: 'YOUR_USERNAME/YOUR_REPO',
 
     // Branch name
     // Example: 'main' or 'DE-MainFrame-Branch'
     branch: 'main',
 
     // Personal Access Token with repo read/write permissions
-    // Generate at: https://github.com/settings/tokens (for github.com)
+    // Generate at: https://github.com/settings/tokens
     // Required scopes: repo (full control of private repositories)
-    // IMPORTANT: Enter your PAT via Settings modal in the app, or replace this placeholder
-    token: 'YOUR_GITHUB_PAT_HERE',
+    token: 'YOUR_GITHUB_PAT',
     
     // Base path where all DE-MainFrame files live (leave empty if at repo root)
     // Example: 'docs' if your files are in /docs/ folder
@@ -425,15 +424,22 @@ class GitHubAPI {
         options = options || {};
         const apiUrl = this.getApiUrl();
         const url = apiUrl + '/repos/' + this.config.repo + endpoint;
-        
+
         console.log('GitHub API Request:', options.method || 'GET', url);
-        
+
+        // Build headers - only include Authorization if we have a valid token
         const headers = {
-            'Authorization': 'token ' + this.config.token,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
         };
-        
+
+        const token = this.config.token;
+        if (token && token !== 'YOUR_GITHUB_PAT' && token.length > 10) {
+            headers['Authorization'] = 'token ' + token;
+        } else {
+            console.warn('GitHubAPI: No valid token configured for request to', endpoint);
+        }
+
         const response = await fetch(url, Object.assign({}, options, { headers: headers }));
         
         if (!response.ok) {
@@ -627,6 +633,7 @@ function initializeApp() {
     initBootScreen();
     loadTheme();
     loadParsingRules();
+    loadGitHubConfig();  // Load saved GitHub config from localStorage before API calls
     autoLoadFromStaticFiles();
 }
 
@@ -670,26 +677,28 @@ function toggleTheme() {
 }
 
 // =============================================================================
-// V11.15 GITHUB API HELPERS (supports both github.com and GitHub Enterprise)
+// V11.15 GITHUB ENTERPRISE API HELPERS
 // =============================================================================
 
 /**
  * Build the GitHub API URL for fetching file contents
- * For github.com: https://api.github.com/repos/<owner>/<repo>/contents/<path>?ref=<branch>
- * For GitHub Enterprise: https://<enterprise>/api/v3/repos/<owner>/<repo>/contents/<path>?ref=<branch>
+ * Handles both github.com and GitHub Enterprise
+ * Format: https://api.github.com/repos/<owner>/<repo>/contents/<path>?ref=<branch>
+ * Or: https://<enterprise>/api/v3/repos/<owner>/<repo>/contents/<path>?ref=<branch>
  */
 function buildApiUrl(filePath) {
-    var baseUrl = GITHUB_CONFIG.baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
-    var apiUrl;
+    // Use dynamic config (from Settings/localStorage) with fallback to hardcoded
+    var baseUrl = (githubConfig.baseUrl || GITHUB_CONFIG.baseUrl).replace(/\/+$/, '');
+    var repo = githubConfig.repo || GITHUB_CONFIG.repo;
+    var branch = githubConfig.branch || GITHUB_CONFIG.branch;
 
-    // Detect if this is github.com (public GitHub) or GitHub Enterprise
+    var apiUrl;
     if (!baseUrl || baseUrl === 'https://github.com' || baseUrl === 'http://github.com') {
         apiUrl = 'https://api.github.com';
     } else {
         apiUrl = baseUrl + '/api/v3';
     }
-
-    return apiUrl + '/repos/' + GITHUB_CONFIG.repo + '/contents/' + filePath + '?ref=' + GITHUB_CONFIG.branch;
+    return apiUrl + '/repos/' + repo + '/contents/' + filePath + '?ref=' + branch;
 }
 
 /**
@@ -699,13 +708,26 @@ function buildApiUrl(filePath) {
 function fetchGitHubFile(filePath) {
     var url = buildApiUrl(filePath);
     console.log('Fetching:', url);
-    
+
+    // Use dynamic config (from Settings/localStorage) with fallback to hardcoded
+    var token = githubConfig.token || GITHUB_CONFIG.token;
+
+    // Build headers - only include Authorization if we have a valid token
+    // Sending invalid/placeholder tokens causes 401 errors even for public repos
+    var headers = {
+        'Accept': 'application/vnd.github.v3.raw'  // Get raw content, not base64
+    };
+
+    if (token && token !== 'YOUR_GITHUB_PAT' && token.length > 10) {
+        headers['Authorization'] = 'token ' + token;
+        console.log('  Using token authentication');
+    } else {
+        console.warn('%c⚠️ No valid token - attempting unauthenticated access (public repos only)', 'color: #f1fa8c');
+    }
+
     return fetch(url, {
         method: 'GET',
-        headers: {
-            'Authorization': 'token ' + githubConfig.token,
-            'Accept': 'application/vnd.github.v3.raw'  // Get raw content, not base64
-        },
+        headers: headers,
         cache: 'no-store'
     })
     .then(function(response) {
@@ -728,7 +750,7 @@ function autoLoadFromStaticFiles() {
     isLoading = true;
     if (bootStatus) bootStatus.textContent = 'Loading detections...';
     
-    // Initialize GitHub API for writes
+    // Initialize GitHub API for writes - use dynamic githubConfig (from localStorage) with fallbacks
     github = new GitHubAPI({
         baseUrl: githubConfig.baseUrl || GITHUB_CONFIG.baseUrl,
         repo: githubConfig.repo || GITHUB_CONFIG.repo,
@@ -866,14 +888,31 @@ function loadFromLocalStorage() {
     if (storedDetections) {
         try { detections = JSON.parse(storedDetections); } catch (e) { detections = []; }
     }
-    
+
     const storedMetadata = localStorage.getItem('dmf_metadata');
     if (storedMetadata) {
         try { detectionMetadata = JSON.parse(storedMetadata); } catch (e) { detectionMetadata = {}; }
     }
-    
+
     filteredDetections = detections.slice();
     console.log('%c⚡ Loaded ' + detections.length + ' detections from cache', 'color: #50fa7b');
+}
+
+function loadGitHubConfig() {
+    const savedConfig = localStorage.getItem('dmf_github_config');
+    if (savedConfig) {
+        try {
+            const parsed = JSON.parse(savedConfig);
+            // Merge saved config into githubConfig (preserving any new fields from GITHUB_CONFIG)
+            githubConfig = Object.assign({}, githubConfig, parsed);
+            console.log('%c⚡ Loaded GitHub config from localStorage', 'color: #50fa7b');
+            console.log('  Config loaded - repo:', githubConfig.repo, 'branch:', githubConfig.branch, 'token present:', !!githubConfig.token && githubConfig.token !== 'YOUR_GITHUB_PAT');
+        } catch (e) {
+            console.warn('Could not parse saved GitHub config:', e);
+        }
+    } else {
+        console.log('%c⚠️ No saved GitHub config found in localStorage', 'color: #f1fa8c');
+    }
 }
 
 function saveToLocalStorage() {
@@ -894,7 +933,6 @@ function initUI() {
     initReportsTabs();
     initModals();
     initSettings();
-    initConfigViewSettings();
     initKeyboardShortcuts();
     
     renderDashboard();
@@ -1000,7 +1038,14 @@ async function syncWithGitHub() {
         buildDynamicFilters();
         renderDashboard();
         renderLibrary();
-        
+
+        // Update compiled files so other users see the synced data
+        try {
+            await updateCompiledFiles();
+        } catch (compileError) {
+            console.warn('Could not update compiled files:', compileError.message);
+        }
+
         updateSyncStatus('connected', 'Synced');
         showToast('Synced ' + detections.length + ' detections' + (metadataCreated ? ', created ' + metadataCreated + ' metadata files' : ''), 'success');
         
@@ -1419,7 +1464,7 @@ function initNavigation() {
     document.querySelectorAll('.nav-btn').forEach(function(btn) {
         btn.addEventListener('click', function() { switchView(btn.dataset.view); });
     });
-    document.getElementById('btn-refresh').addEventListener('click', refreshFromRepository);
+    document.getElementById('btn-refresh').addEventListener('click', syncWithGitHub);
     document.getElementById('btn-import').addEventListener('click', openImportModal);
     document.getElementById('btn-export').addEventListener('click', exportAllDetections);
     document.getElementById('btn-new').addEventListener('click', createNewDetection);
@@ -1448,50 +1493,7 @@ function refreshFromRepository() {
         showToast('Already loading...', 'info');
         return;
     }
-async function validateAndRepairMetadata() {
-     let repaired = 0;
-
-     for (const detection of detections) {
-         const name = detection['Detection Name'];
-         if (name && !detectionMetadata[name]) {
-             console.log('Auto-creating metadata for:', name);
-
-             // Create metadata
-             const newMeta = createMetadataForDetection(detection);
-             detectionMetadata[name] = newMeta;
-
-             // Save to GitHub
-             if (github) {
-                 const filename = generateMetaFileName(name);
-                 const metadataPath = githubConfig.metadataPath || PATHS.metadata;
-                 const path = metadataPath + '/' + filename;
-
-                 try {
-                     const existingSha = await github.getFileSha(path);
-                     const result = await github.createOrUpdateFile(
-                         path,
-                         newMeta,
-                         'Auto-generate metadata: ' + name,
-                         existingSha
-                     );
-                     newMeta._sha = result.content.sha;
-                     newMeta._path = path;
-                     repaired++;
-                 } catch (e) {
-                     console.warn('Failed to save metadata for:', name, e);
-                 }
-             }
-         }
-     }
-
-     // Update compiled files if any repairs were made
-     if (repaired > 0) {
-         console.log('Repaired metadata for', repaired, 'detection(s)');
-         await updateCompiledFiles();
-     }
-
-     return repaired;
- }    
+    
     showToast('Refreshing from repository...', 'info');
     updateSyncStatus('syncing', 'Refreshing...');
     isLoading = true;
@@ -1532,11 +1534,16 @@ async function validateAndRepairMetadata() {
         isLoading = false;
         updateSyncStatus('synced', 'Refreshed');
         showToast('Loaded ' + detections.length + ' detections', 'success');
-    validateAndRepairMetadata().then(function(repaired) {
-        if (repaired > 0) {
-             showToast('Auto-generated metadata for ' + repaired + ' detection(s)', 'info');
+
+        // Validate and repair any missing metadata
+        validateAndRepairMetadata().then(function(repaired) {
+            if (repaired > 0) {
+                showToast('Auto-generated metadata for ' + repaired + ' detection(s)', 'info');
+                saveToLocalStorage(); // Update cache with new metadata
             }
-    });
+        }).catch(function(e) {
+            console.warn('Metadata validation failed:', e);
+        });
     })
     .catch(function(error) {
         console.error('Refresh failed:', error);
@@ -1544,6 +1551,64 @@ async function validateAndRepairMetadata() {
         updateSyncStatus('error', 'Refresh Failed');
         showToast('Could not refresh: ' + error.message, 'error');
     });
+}
+
+// =============================================================================
+// V11.16 - METADATA INTEGRITY CHECKING
+// =============================================================================
+
+async function validateAndRepairMetadata() {
+    let repaired = 0;
+
+    for (let i = 0; i < detections.length; i++) {
+        const detection = detections[i];
+        const name = detection['Detection Name'];
+
+        if (name && !detectionMetadata[name]) {
+            console.log('Auto-creating metadata for:', name);
+
+            // Create metadata using existing function
+            const newMeta = createMetadataForDetection(detection);
+            detectionMetadata[name] = newMeta;
+
+            // Save to GitHub if connected
+            if (github) {
+                const filename = generateMetaFileName(name);
+                const metadataPath = sanitizePathInput(githubConfig.metadataPath) || PATHS.metadata;
+                const path = metadataPath + '/' + filename;
+
+                try {
+                    const existingSha = await github.getFileSha(path);
+                    const result = await github.createOrUpdateFile(
+                        path,
+                        Object.assign({ detectionName: name }, newMeta),
+                        'Auto-generate metadata: ' + name,
+                        existingSha
+                    );
+                    newMeta._sha = result.content.sha;
+                    newMeta._path = path;
+                    repaired++;
+                } catch (e) {
+                    console.warn('Failed to save metadata for:', name, e);
+                }
+            } else {
+                // No GitHub connection, just count as repaired in memory
+                repaired++;
+            }
+        }
+    }
+
+    // Update compiled files if any repairs were made and GitHub is connected
+    if (repaired > 0 && github) {
+        console.log('Repaired metadata for', repaired, 'detection(s)');
+        try {
+            await updateCompiledFiles();
+        } catch (e) {
+            console.warn('Failed to update compiled files after metadata repair:', e);
+        }
+    }
+
+    return repaired;
 }
 
 function switchView(viewName) {
@@ -4317,118 +4382,6 @@ async function saveSettings() {
 }
 
 // =============================================================================
-// CONFIG VIEW - GITHUB SETTINGS (in-page configuration)
-// =============================================================================
-
-function initConfigViewSettings() {
-    var testBtn = document.getElementById('btn-config-test');
-    var saveBtn = document.getElementById('btn-config-save');
-
-    if (testBtn) {
-        testBtn.addEventListener('click', testConfigConnection);
-    }
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveConfigSettings);
-    }
-
-    // Load saved settings into config view fields
-    loadConfigViewSettings();
-}
-
-function loadConfigViewSettings() {
-    var urlEl = document.getElementById('config-github-url');
-    var repoEl = document.getElementById('config-repo');
-    var branchEl = document.getElementById('config-branch');
-    var tokenEl = document.getElementById('config-token');
-    var detectionsEl = document.getElementById('config-detections-path');
-    var metadataEl = document.getElementById('config-metadata-path');
-
-    if (urlEl) urlEl.value = githubConfig.baseUrl || 'https://github.com';
-    if (repoEl) repoEl.value = githubConfig.repo || '';
-    if (branchEl) branchEl.value = githubConfig.branch || 'main';
-    if (tokenEl) tokenEl.value = githubConfig.token || '';
-    if (detectionsEl) detectionsEl.value = githubConfig.detectionsPath || 'detections';
-    if (metadataEl) metadataEl.value = githubConfig.metadataPath || 'metadata';
-}
-
-function getConfigViewSettings() {
-    return {
-        baseUrl: (document.getElementById('config-github-url').value || '').trim() || 'https://github.com',
-        repo: (document.getElementById('config-repo').value || '').trim(),
-        branch: (document.getElementById('config-branch').value || '').trim() || 'main',
-        token: (document.getElementById('config-token').value || '').trim(),
-        detectionsPath: sanitizePathInput((document.getElementById('config-detections-path').value || '').trim()) || 'detections',
-        metadataPath: sanitizePathInput((document.getElementById('config-metadata-path').value || '').trim()) || 'metadata'
-    };
-}
-
-async function testConfigConnection() {
-    var config = getConfigViewSettings();
-    var statusEl = document.getElementById('config-connection-status');
-
-    if (!config.repo || !config.token) {
-        statusEl.className = 'settings-status error';
-        statusEl.textContent = '✗ Repository and Token are required';
-        return;
-    }
-
-    statusEl.className = 'settings-status info';
-    statusEl.textContent = '🔄 Testing connection...';
-
-    var testApi = new GitHubAPI(config);
-    var result = await testApi.testConnection();
-
-    if (result.success) {
-        try {
-            await testApi.listFiles(config.detectionsPath);
-            statusEl.className = 'settings-status success';
-            statusEl.innerHTML = '✓ Connection successful! Repository and paths verified.';
-        } catch (e) {
-            statusEl.className = 'settings-status warning';
-            statusEl.innerHTML = '✓ Connected to repository<br>⚠ Detections folder not found - will be created on first save.';
-        }
-    } else {
-        statusEl.className = 'settings-status error';
-        statusEl.textContent = '✗ Connection failed: ' + result.message;
-    }
-}
-
-async function saveConfigSettings() {
-    var config = getConfigViewSettings();
-    var statusEl = document.getElementById('config-connection-status');
-
-    if (!config.repo || !config.token) {
-        statusEl.className = 'settings-status error';
-        statusEl.textContent = '✗ Repository and Token are required';
-        showToast('Repository and Token are required', 'warning');
-        return;
-    }
-
-    statusEl.className = 'settings-status info';
-    statusEl.textContent = '🔄 Verifying connection...';
-
-    var testApi = new GitHubAPI(config);
-    var result = await testApi.testConnection();
-
-    if (!result.success) {
-        statusEl.className = 'settings-status error';
-        statusEl.textContent = '✗ Connection failed: ' + result.message;
-        showToast('Connection failed: ' + result.message, 'error');
-        return;
-    }
-
-    // Save to global config and localStorage
-    githubConfig = Object.assign({}, config, { connected: true });
-    localStorage.setItem('dmf_github_config', JSON.stringify(githubConfig));
-    github = new GitHubAPI(githubConfig);
-
-    statusEl.className = 'settings-status success';
-    statusEl.innerHTML = '✓ Settings saved! Your token is stored securely in your browser.';
-    showToast('Settings saved! Click Sync to load data from GitHub.', 'success');
-    updateSyncStatus('idle', 'Click Sync');
-}
-
-// =============================================================================
 // MODALS - TUNE/RETROFIT OPENS EDITOR
 // =============================================================================
 
@@ -4516,16 +4469,31 @@ async function handleFiles(files) {
                 detections.push(detection);
             }
             parseAndSaveMetadata(detection);
-            
-            if (github) await saveDetectionToGitHub(detection);
-            
+
+            if (github) {
+                var saved = await saveDetectionToGitHub(detection);
+                if (saved) {
+                    await saveMetadataToGitHub(detection['Detection Name'], detectionMetadata[detection['Detection Name']]);
+                }
+            }
+
             imported++;
         } catch (e) {
             console.error('Failed: ' + file.name, e);
             failed++;
         }
     }
-    
+
+    // Update compiled files after all imports complete
+    if (github && imported > 0) {
+        progressText.textContent = 'Updating aggregate files...';
+        try {
+            await updateCompiledFiles();
+        } catch (compileError) {
+            console.warn('Could not update compiled files:', compileError.message);
+        }
+    }
+
     saveToLocalStorage();
     filteredDetections = detections.slice();
     progressText.textContent = 'Complete!';
