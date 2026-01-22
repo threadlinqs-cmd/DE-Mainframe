@@ -1,0 +1,42 @@
+{
+  "detectionName": "Windows AD Replication Service Traffic",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "drop_dm_object_name(\"All_Traffic\")",
+      "windows_ad_replication_service_traffic_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "All_Traffic"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "All_Traffic"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:51.548Z"
+}
