@@ -1,0 +1,65 @@
+{
+  "detectionName": "Azure AD AzureHound UserAgent Detected",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "azure_monitor_aad",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "azure_ad_azurehound_useragent_detected_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "signature"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [
+      "category"
+    ],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "signature"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [
+      "category"
+    ],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:26.968Z"
+}
