@@ -65,10 +65,10 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-22T19:01:27.579Z",
+    "lastParsed": "2026-01-22T19:46:22.324Z",
     "needsTune": false,
     "needsRetrofit": false,
-    "_sha": "6af4103bf5c60657a78b5818ee29e808e0d99c12",
+    "_sha": "7972a70381e9a78dc0efcdba1ca1be3c6eb48598",
     "_path": "docs/metadata/azure_active_directory_high_risk_sign_in_meta.json"
   },
   "M365 Copilot Agentic Jailbreak Attack": {
@@ -242,5 +242,2846 @@
     "lastParsed": "2026-01-22T19:29:03.960Z",
     "_sha": "8218761e90c92ce9b127f73628e1fc522c9ba1b9",
     "_path": "docs/metadata/m365_copilot_failed_authentication_patterns_meta.json"
+  },
+  "ProxyShell ProxyNotShell Behavior Detected": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(All_Risk)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "proxyshell_proxynotshell_behavior_detected_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "span"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "_time",
+        "span"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "risk_object"
+        ],
+        "drilldown_2": [
+          "risk_object"
+        ]
+      },
+      "allDrilldownVars": [
+        "risk_object"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:09.721Z",
+    "detectionName": "ProxyShell ProxyNotShell Behavior Detected",
+    "_sha": "7c9bbd87489d2c3f1c87bfc2c6da0af0a2ce4be0",
+    "_path": "docs/metadata/proxyshell_proxynotshell_behavior_detected_meta.json"
+  },
+  "Spring4Shell Payload URL Request": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "drop_dm_object_name(\"Web\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "spring4shell_payload_url_request_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:10.970Z",
+    "detectionName": "Spring4Shell Payload URL Request",
+    "_sha": "bfce66d5563fce528e0496367fe07efa51ca6d4d",
+    "_path": "docs/metadata/spring4shell_payload_url_request_meta.json"
+  },
+  "SQL Injection with Long URLs": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(\"Web\")",
+        "sql_injection_with_long_urls_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "url",
+        "num_sql_cmds"
+      ],
+      "categories": [
+        "web_server"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:12.415Z",
+    "detectionName": "SQL Injection with Long URLs",
+    "_sha": "011b411a08bc970cc82df846f9cf403b7e9f5480",
+    "_path": "docs/metadata/sql_injection_with_long_urls_meta.json"
+  },
+  "M365 Copilot Impersonation Jailbreak Attack": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_exported_ediscovery_prompt_logs",
+        "m365_copilot_impersonation_jailbreak_attack_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "user",
+        "Subject_Title",
+        "impersonation_type",
+        "Workload"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "impersonation_type"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:13.665Z",
+    "detectionName": "M365 Copilot Impersonation Jailbreak Attack",
+    "_sha": "58e70e2410f1a91838740da72ba77f1a0ee698ee",
+    "_path": "docs/metadata/m365_copilot_impersonation_jailbreak_attack_meta.json"
+  },
+  "M365 Copilot Information Extraction Jailbreak Attack": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_exported_ediscovery_prompt_logs",
+        "m365_copilot_information_extraction_jailbreak_attack_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "user",
+        "Subject_Title",
+        "extraction_type",
+        "severity",
+        "data_risk_flags",
+        "Size",
+        "step"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "extraction_type",
+        "severity",
+        "data_risk_flags"
+      ],
+      "categories": [],
+      "mainSearchFields": [
+        "severity"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "step"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "severity"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:14.879Z",
+    "detectionName": "M365 Copilot Information Extraction Jailbreak Attack",
+    "_sha": "83e6ac7527015493b4d48f18954e402d5c6af407",
+    "_path": "docs/metadata/m365_copilot_information_extraction_jailbreak_attack_meta.json"
+  },
+  "M365 Copilot Jailbreak Attempts": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_exported_ediscovery_prompt_logs",
+        "m365_copilot_jailbreak_attempts_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "user",
+        "Subject_Title",
+        "jailbreak_score",
+        "Workload",
+        "Size"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "jailbreak_score"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:16.086Z",
+    "detectionName": "M365 Copilot Jailbreak Attempts",
+    "_sha": "30ff3fa59c3591ed38acb642d2abdfc4378e739a",
+    "_path": "docs/metadata/m365_copilot_jailbreak_attempts_meta.json"
+  },
+  "M365 Copilot Non Compliant Devices Accessing M365 Copilot": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_copilot_graph_api",
+        "m365_copilot_non_compliant_devices_accessing_m365_copilot_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "user",
+        "deviceDetail"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "days_active",
+        "first_seen",
+        "last_seen"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "user",
+        "deviceDetail"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:17.366Z",
+    "detectionName": "M365 Copilot Non Compliant Devices Accessing M365 Copilot",
+    "_sha": "8afd51e8c4ce40f92559c893d488b73a8ac07fa1",
+    "_path": "docs/metadata/m365_copilot_non_compliant_devices_accessing_m365_copilot_meta.json"
+  },
+  "M365 Copilot Session Origin Anomalies": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_copilot_graph_api",
+        "m365_copilot_session_origin_anomalies_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "user"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "days_active",
+        "locations_per_day",
+        "first_seen",
+        "last_seen"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "user"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": []
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:18.681Z",
+    "detectionName": "M365 Copilot Session Origin Anomalies",
+    "_sha": "74bf602cf0ca8020f3449a9177e95f13fcf920f0",
+    "_path": "docs/metadata/m365_copilot_session_origin_anomalies_meta.json"
+  },
+  "Zoom High Video Latency": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "zoom_index",
+        "zoom_high_video_latency_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "email",
+        "overall_latency",
+        "latency",
+        "avg_latency",
+        "average_latency",
+        "_raw"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "email",
+        "_raw"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "email"
+        ],
+        "drilldown_1": [
+          "email"
+        ],
+        "drilldown_2": [
+          "email"
+        ]
+      },
+      "allDrilldownVars": [
+        "email"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:19.886Z",
+    "detectionName": "Zoom High Video Latency",
+    "_sha": "059477f2dbbe6741043f8d50675477ace5cd8579",
+    "_path": "docs/metadata/zoom_high_video_latency_meta.json"
+  },
+  "Zoom Rare Audio Devices": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "zoom_index",
+        "zoom_rare_audio_devices_filter"
+      ],
+      "lookups": [],
+      "fields": [],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": []
+      },
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:21.172Z",
+    "detectionName": "Zoom Rare Audio Devices",
+    "_sha": "d9a1a4a2867530f4979b17ff7c111c98596d1c53",
+    "_path": "docs/metadata/zoom_rare_audio_devices_meta.json"
+  },
+  "Azure AD Admin Consent Bypassed by Service Principal": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_admin_consent_bypassed_by_service_principal_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "src_user",
+        "user_id",
+        "roleId",
+        "roleValue",
+        "roleDescription",
+        "user_agent",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "roleId",
+        "roleValue",
+        "roleDescription",
+        "user_id"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "src_user",
+        "user_id",
+        "roleId",
+        "roleValue",
+        "roleDescription",
+        "user_agent",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:23.085Z",
+    "detectionName": "Azure AD Admin Consent Bypassed by Service Principal",
+    "_sha": "883138c156afa5563a655f12f6a8df01145e48d8",
+    "_path": "docs/metadata/azure_ad_admin_consent_bypassed_by_service_principal_meta.json"
+  },
+  "Azure AD Application Administrator Role Assigned": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_application_administrator_role_assigned_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "initiatedBy",
+        "user_agent",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "initiatedBy",
+        "user_agent",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:24.325Z",
+    "detectionName": "Azure AD Application Administrator Role Assigned",
+    "_sha": "9707358a2d3ad132eb8346f47eaaa86c675f998e",
+    "_path": "docs/metadata/azure_ad_application_administrator_role_assigned_meta.json"
+  },
+  "Azure AD Authentication Failed During MFA Challenge": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_authentication_failed_during_mfa_challenge_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "auth_method",
+        "auth_msg",
+        "user_agent",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "time",
+        "auth_detail",
+        "auth_method"
+      ],
+      "categories": [
+        "SignInLogs"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "auth_method",
+        "auth_msg",
+        "user_agent",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:25.509Z",
+    "detectionName": "Azure AD Authentication Failed During MFA Challenge",
+    "_sha": "15e15c47611020b3ace6ad1b877ce76322be9f54",
+    "_path": "docs/metadata/azure_ad_authentication_failed_during_mfa_challenge_meta.json"
+  },
+  "Azure AD AzureHound UserAgent Detected": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_azurehound_useragent_detected_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "category"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "category"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:26.968Z",
+    "detectionName": "Azure AD AzureHound UserAgent Detected",
+    "_sha": "a57fb7f71baea8a0eaaa0de9b3ed90d15d44b3e3",
+    "_path": "docs/metadata/azure_ad_azurehound_useragent_detected_meta.json"
+  },
+  "Azure AD Block User Consent For Risky Apps Disabled": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_block_user_consent_for_risky_apps_disabled_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "index_number",
+        "AllowUserConsentForRiskyApps"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:28.165Z",
+    "detectionName": "Azure AD Block User Consent For Risky Apps Disabled",
+    "_sha": "09aace4b893821393fa46560ca9ac91ed0550825",
+    "_path": "docs/metadata/azure_ad_block_user_consent_for_risky_apps_disabled_meta.json"
+  },
+  "Azure AD Concurrent Sessions From Different Ips": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_concurrent_sessions_from_different_ips_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "user",
+        "_time",
+        "vendor_account",
+        "vendor_product",
+        "category"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [
+        "NonInteractiveUserSignInLogs"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "user",
+        "_time",
+        "vendor_account",
+        "vendor_product",
+        "category"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:29.303Z",
+    "detectionName": "Azure AD Concurrent Sessions From Different Ips",
+    "_sha": "8f748bd09772b0b381c496b50ee3867c73f211e4",
+    "_path": "docs/metadata/azure_ad_concurrent_sessions_from_different_ips_meta.json"
+  },
+  "Azure AD Device Code Authentication": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_device_code_authentication_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "category"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [
+        "SignInLogs"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "category"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:30.582Z",
+    "detectionName": "Azure AD Device Code Authentication",
+    "_sha": "c46e1a09bbb9b9f3c61847cd4c71de195567cc0c",
+    "_path": "docs/metadata/azure_ad_device_code_authentication_meta.json"
+  },
+  "Azure AD External Guest User Invited": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_external_guest_user_invited_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "initiatedBy",
+        "type",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "initiatedBy",
+        "type",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:32.354Z",
+    "detectionName": "Azure AD External Guest User Invited",
+    "_sha": "232339604491509163cfedcfa6cafa385e320528",
+    "_path": "docs/metadata/azure_ad_external_guest_user_invited_meta.json"
+  },
+  "Azure AD FullAccessAsApp Permission Assigned": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "azure_ad_fullaccessasapp_permission_assigned_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "Permissions",
+        "object",
+        "signature"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "newvalue",
+        "Permissions"
+      ],
+      "categories": [
+        "AuditLogs"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "user",
+        "src",
+        "vendor_account",
+        "vendor_product",
+        "user_agent",
+        "Permissions",
+        "object",
+        "signature"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:33.485Z",
+    "detectionName": "Azure AD FullAccessAsApp Permission Assigned",
+    "_sha": "939cef8d202ddd5207e3b1d303c042bdbd973ed4",
+    "_path": "docs/metadata/azure_ad_fullaccessasapp_permission_assigned_meta.json"
+  },
+  "7zip CommandLine To SMB Share Path": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Processes)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "7zip_commandline_to_smb_share_path_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Processes"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Processes"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:34.589Z",
+    "detectionName": "7zip CommandLine To SMB Share Path",
+    "_sha": "00b95d8227440e53a072a2f540e001d41defdb57",
+    "_path": "docs/metadata/7zip_commandline_to_smb_share_path_meta.json"
+  },
+  "Access LSASS Memory for Dump Creation": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "10"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "access_lsass_memory_for_dump_creation_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "CallTrace",
+        "EventID",
+        "GrantedAccess",
+        "Guid",
+        "Opcode",
+        "ProcessID",
+        "SecurityID",
+        "SourceImage",
+        "SourceProcessGUID",
+        "SourceProcessId",
+        "TargetImage",
+        "TargetProcessGUID",
+        "TargetProcessId",
+        "UserID",
+        "dest",
+        "granted_access",
+        "parent_process_exec",
+        "parent_process_guid",
+        "parent_process_id",
+        "parent_process_name",
+        "parent_process_path",
+        "process_exec",
+        "process_guid",
+        "process_id",
+        "process_name",
+        "process_path",
+        "signature",
+        "signature_id",
+        "user_id",
+        "vendor_product"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "CallTrace",
+        "EventID",
+        "GrantedAccess",
+        "Guid",
+        "Opcode",
+        "ProcessID",
+        "SecurityID",
+        "SourceImage",
+        "SourceProcessGUID",
+        "SourceProcessId",
+        "TargetImage",
+        "TargetProcessGUID",
+        "TargetProcessId",
+        "UserID",
+        "dest",
+        "granted_access",
+        "parent_process_exec",
+        "parent_process_guid",
+        "parent_process_id",
+        "parent_process_name",
+        "parent_process_path",
+        "process_exec",
+        "process_guid",
+        "process_id",
+        "process_name",
+        "process_path",
+        "signature",
+        "signature_id",
+        "user_id",
+        "vendor_product"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:35.875Z",
+    "detectionName": "Access LSASS Memory for Dump Creation",
+    "_sha": "6f6f09939cc00336fff0a91e638a58b0cb73e7f1",
+    "_path": "docs/metadata/access_lsass_memory_for_dump_creation_meta.json"
+  },
+  "Active Setup Registry Autostart": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Registry)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "active_setup_registry_autostart_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Registry"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Registry"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest",
+          "user"
+        ],
+        "drilldown_2": [
+          "dest",
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:37.321Z",
+    "detectionName": "Active Setup Registry Autostart",
+    "_sha": "0f854f39ad2c38127ffac1bb01d1b06582794e60",
+    "_path": "docs/metadata/active_setup_registry_autostart_meta.json"
+  },
+  "Add DefaultUser And Password In Registry": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Registry)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "add_defaultuser_and_password_in_registry_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Registry"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Registry"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:38.463Z",
+    "detectionName": "Add DefaultUser And Password In Registry",
+    "_sha": "e7df74af2e28eb4d81929463766b6312a962a24d",
+    "_path": "docs/metadata/add_defaultuser_and_password_in_registry_meta.json"
+  },
+  "AdsiSearcher Account Discovery": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "4104"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "powershell",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "adsisearcher_account_discovery_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "dest",
+        "signature",
+        "signature_id",
+        "user_id",
+        "vendor_product",
+        "EventID",
+        "Guid",
+        "Opcode",
+        "Name",
+        "Path",
+        "ProcessID",
+        "ScriptBlockId",
+        "ScriptBlockText"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [
+        "user*\""
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "dest",
+        "signature",
+        "signature_id",
+        "user_id",
+        "vendor_product",
+        "EventID",
+        "Guid",
+        "Opcode",
+        "Name",
+        "Path",
+        "ProcessID",
+        "ScriptBlockId",
+        "ScriptBlockText"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest",
+          "user_id"
+        ],
+        "drilldown_2": [
+          "dest",
+          "user_id"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user_id"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:39.672Z",
+    "detectionName": "AdsiSearcher Account Discovery",
+    "_sha": "2a3890588d14e7a7050b9008b0d97443b371ac60",
+    "_path": "docs/metadata/adsisearcher_account_discovery_meta.json"
+  },
+  "Attacker Tools On Endpoint": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "drop_dm_object_name(Processes)",
+        "attacker_tools_on_endpoint_filter"
+      ],
+      "lookups": [
+        "attacker_tools"
+      ],
+      "fields": [
+        "Processes"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Processes"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "user",
+          "dest"
+        ],
+        "drilldown_2": [
+          "user",
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:41.048Z",
+    "detectionName": "Attacker Tools On Endpoint",
+    "_sha": "56e729c61989022387f45a9ff01d501fcedb07c4",
+    "_path": "docs/metadata/attacker_tools_on_endpoint_meta.json"
+  },
+  "Attempt To Add Certificate To Untrusted Store": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "process_certutil",
+        "drop_dm_object_name(\"Processes\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "attempt_to_add_certificate_to_untrusted_store_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Processes"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Processes"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "user",
+          "dest"
+        ],
+        "drilldown_2": [
+          "user",
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:42.340Z",
+    "detectionName": "Attempt To Add Certificate To Untrusted Store",
+    "_sha": "db8c61ecd2b9afb695ae14b1134550af417a1ec8",
+    "_path": "docs/metadata/attempt_to_add_certificate_to_untrusted_store_meta.json"
+  },
+  "Auto Admin Logon Registry Entry": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Registry)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "auto_admin_logon_registry_entry_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Registry"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Registry"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:43.514Z",
+    "detectionName": "Auto Admin Logon Registry Entry",
+    "_sha": "e56dd4e44ed165ee23e9e55273cd5f9dc971d39f",
+    "_path": "docs/metadata/auto_admin_logon_registry_entry_meta.json"
+  },
+  "Batch File Write to System32": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Filesystem)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "batch_file_write_to_system32_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Filesystem"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Filesystem"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "user",
+          "dest"
+        ],
+        "drilldown_2": [
+          "user",
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:44.588Z",
+    "detectionName": "Batch File Write to System32",
+    "_sha": "0f13f625dcb1644aaa6652f8e90ed2fc43d6ab0b",
+    "_path": "docs/metadata/batch_file_write_to_system32_meta.json"
+  },
+  "BCDEdit Failure Recovery Modification": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(Processes)",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "bcdedit_failure_recovery_modification_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Processes"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Processes"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "legacy": [
+          "dest"
+        ],
+        "drilldown_1": [
+          "user",
+          "dest"
+        ],
+        "drilldown_2": [
+          "user",
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest",
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:45.752Z",
+    "detectionName": "BCDEdit Failure Recovery Modification",
+    "_sha": "4d43e67eabbd13966953c389f1380f4a1e4a641e",
+    "_path": "docs/metadata/bcdedit_failure_recovery_modification_meta.json"
+  },
+  "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging": {
+    "history": [],
+    "parsed": {
+      "indexes": [
+        "azure_cloud"
+      ],
+      "sources": [],
+      "sourcetypes": [
+        "mscs:azure:eventhub:defender"
+      ],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "properties.DeviceName",
+        "properties.FileName",
+        "properties.FolderPath",
+        "properties.SHA1",
+        "properties.ProcessCommandLine",
+        "properties.InitiatingProcessFileName",
+        "properties.InitiatingProcessCommandLine",
+        "user"
+      ],
+      "customTags": [
+        {
+          "category": "datasource",
+          "tag": "Microsoft Defender"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "properties.FileName"
+      ],
+      "mainSearchFunctions": [
+        "table"
+      ],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "properties.FileName"
+      ],
+      "mainSearchFunctions": [
+        "table"
+      ],
+      "drilldownVars": {
+        "legacy": [],
+        "drilldown_1": [],
+        "drilldown_2": []
+      },
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:46.898Z",
+    "detectionName": "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging",
+    "_sha": "ddaa6ca3d19d68beaeb4b1922812675e0b8cc91a",
+    "_path": "docs/metadata/t1055_003_process_injection_browser_process_injection_to_enable_remote_debugging_meta.json"
+  },
+  "Detect Windows DNS SIGRed via Splunk Stream": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "stream_dns",
+        "stream_tcp",
+        "detect_windows_dns_sigred_via_splunk_stream_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "flow_id"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "flow_id"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:48.175Z",
+    "detectionName": "Detect Windows DNS SIGRed via Splunk Stream",
+    "_sha": "c197d7e71adf9a24ad083e2a3fd56a9311077409",
+    "_path": "docs/metadata/detect_windows_dns_sigred_via_splunk_stream_meta.json"
+  },
+  "Detect Windows DNS SIGRed via Zeek": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "detect_windows_dns_sigred_via_zeek_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "DNS",
+        "All_Traffic",
+        "flow_id"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "DNS",
+        "All_Traffic",
+        "flow_id"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:49.297Z",
+    "detectionName": "Detect Windows DNS SIGRed via Zeek",
+    "_sha": "fb1c645083d35410348399690e2097d19d1572af",
+    "_path": "docs/metadata/detect_windows_dns_sigred_via_zeek_meta.json"
+  },
+  "Windows Abused Web Services": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "22"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_abused_web_services_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:50.439Z",
+    "detectionName": "Windows Abused Web Services",
+    "_sha": "16b6f72e6461652a1693d21a10a5cdd7093827c2",
+    "_path": "docs/metadata/windows_abused_web_services_meta.json"
+  },
+  "Windows AD Replication Service Traffic": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "drop_dm_object_name(\"All_Traffic\")",
+        "windows_ad_replication_service_traffic_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "All_Traffic"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "All_Traffic"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:51.548Z",
+    "detectionName": "Windows AD Replication Service Traffic",
+    "_sha": "bce1a30a0e97b75e070a3418491ce505e1fd3c6b",
+    "_path": "docs/metadata/windows_ad_replication_service_traffic_meta.json"
+  },
+  "Windows AD Rogue Domain Controller Network Activity": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "zeek_rpc",
+        "windows_ad_rogue_domain_controller_network_activity_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "_time",
+        "endpoint",
+        "operation",
+        "src",
+        "src_category",
+        "dest",
+        "dest_category"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [
+        "Domain Controller"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:52.771Z",
+    "detectionName": "Windows AD Rogue Domain Controller Network Activity",
+    "_sha": "44c37d9ed649c18a349070a18485ea5b564dfcbc",
+    "_path": "docs/metadata/windows_ad_rogue_domain_controller_network_activity_meta.json"
+  },
+  "Windows DNS Query Request by Telegram Bot API": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "22"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_dns_query_request_by_telegram_bot_api_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "process_name"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "process_name"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:53.947Z",
+    "detectionName": "Windows DNS Query Request by Telegram Bot API",
+    "_sha": "63cd42d5671ea10138cc074f33e3765b9567d713",
+    "_path": "docs/metadata/windows_dns_query_request_by_telegram_bot_api_meta.json"
+  },
+  "Windows Gather Victim Network Info Through Ip Check Web Services": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "22"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_gather_victim_network_info_through_ip_check_web_services_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:55.031Z",
+    "detectionName": "Windows Gather Victim Network Info Through Ip Check Web Services",
+    "_sha": "9211a44e4e90934ed21b9279a92ce1071ca3b1a1",
+    "_path": "docs/metadata/windows_gather_victim_network_info_through_ip_check_web_services_meta.json"
+  },
+  "Windows Multi hop Proxy TOR Website Query": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "22"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_multi_hop_proxy_tor_website_query_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:56.151Z",
+    "detectionName": "Windows Multi hop Proxy TOR Website Query",
+    "_sha": "a35058b0d3559029d538556d84b0b5380817b011",
+    "_path": "docs/metadata/windows_multi_hop_proxy_tor_website_query_meta.json"
+  },
+  "Windows Remote Desktop Network Bruteforce Attempt": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "security_content_summariesonly",
+        "drop_dm_object_name(\"All_Traffic\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_remote_desktop_network_bruteforce_attempt_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "All_Traffic"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "duration"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "All_Traffic"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:46:57.441Z",
+    "detectionName": "Windows Remote Desktop Network Bruteforce Attempt",
+    "_sha": "3115505864b10b1ff26cc1a4fe792c4cb57bdc43",
+    "_path": "docs/metadata/windows_remote_desktop_network_bruteforce_attempt_meta.json"
+  },
+  "Windows Spearphishing Attachment Connect To None MS Office Domain": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [
+        "22"
+      ],
+      "actionTypes": [],
+      "macros": [
+        "sysmon",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "windows_spearphishing_attachment_connect_to_none_ms_office_domain_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ],
+      "customTags": [
+        {
+          "category": "technology",
+          "tag": "Sysmon Events"
+        }
+      ],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [
+        "Image",
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "answer",
+        "answer_count",
+        "dvc",
+        "process_exec",
+        "process_guid",
+        "process_name",
+        "query",
+        "query_count",
+        "reply_code_id",
+        "signature",
+        "signature_id",
+        "src",
+        "user_id",
+        "vendor_product",
+        "QueryName",
+        "QueryResults",
+        "QueryStatus"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [
+        "Image",
+        "QueryName"
+      ],
+      "mainSearchFunctions": [],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:58.571Z",
+    "detectionName": "Windows Spearphishing Attachment Connect To None MS Office Domain",
+    "_sha": "7f3716feae43165cec9474ca228f5577bcaf21a4",
+    "_path": "docs/metadata/windows_spearphishing_attachment_connect_to_none_ms_office_domain_meta.json"
+  },
+  "Citrix ADC Exploitation CVE-2023-3519": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "drop_dm_object_name(\"Web\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "citrix_adc_exploitation_cve_2023_3519_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:46:59.668Z",
+    "detectionName": "Citrix ADC Exploitation CVE-2023-3519",
+    "_sha": "56cb7e74e8d54dce7c19d2b30f1933256c68023d",
+    "_path": "docs/metadata/citrix_adc_exploitation_cve_2023_3519_meta.json"
+  },
+  "Detect F5 TMUI RCE CVE-2020-5902": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "f5_bigip_rogue",
+        "detect_f5_tmui_rce_cve_2020_5902_filter"
+      ],
+      "lookups": [],
+      "fields": [],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": []
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {},
+      "allDrilldownVars": []
+    },
+    "lastParsed": "2026-01-22T19:47:00.892Z",
+    "detectionName": "Detect F5 TMUI RCE CVE-2020-5902",
+    "_sha": "7f133f214eecf3ae808031c25f251eeb7cecdf13",
+    "_path": "docs/metadata/detect_f5_tmui_rce_cve_2020_5902_meta.json"
+  },
+  "Fortinet Appliance Auth bypass": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "drop_dm_object_name(\"Web\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "fortinet_appliance_auth_bypass_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:47:02.295Z",
+    "detectionName": "Fortinet Appliance Auth bypass",
+    "_sha": "6d9c69f1c1c6855fd3eb615ae499c09172ed8fb9",
+    "_path": "docs/metadata/fortinet_appliance_auth_bypass_meta.json"
+  },
+  "Jenkins Arbitrary File Read CVE-2024-23897": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "drop_dm_object_name(\"Web\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "jenkins_arbitrary_file_read_cve_2024_23897_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:47:03.442Z",
+    "detectionName": "Jenkins Arbitrary File Read CVE-2024-23897",
+    "_sha": "f89dd270da92d587b4358b3eee7995691812be58",
+    "_path": "docs/metadata/jenkins_arbitrary_file_read_cve_2024_23897_meta.json"
+  },
+  "Web JSP Request via URL": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "drop_dm_object_name(\"Web\")",
+        "security_content_ctime(firstTime)",
+        "security_content_ctime(lastTime)",
+        "web_jsp_request_via_url_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "Web"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "byFields": [
+        "Web"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "tstats"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "dest"
+        ],
+        "drilldown_2": [
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:47:04.638Z",
+    "detectionName": "Web JSP Request via URL",
+    "_sha": "b6363545330cd93dec8818ebcf0cf3bbd973fb51",
+    "_path": "docs/metadata/web_jsp_request_via_url_meta.json"
+  },
+  "Log4Shell JNDI Payload Injection Attempt": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "log4shell_jndi_payload_injection_attempt_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "action",
+        "category",
+        "dest",
+        "dest_port",
+        "http_content_type",
+        "http_method",
+        "http_referrer",
+        "http_user_agent",
+        "site",
+        "src",
+        "url",
+        "url_domain",
+        "user"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "from"
+      ],
+      "byFields": [
+        "action",
+        "category",
+        "dest",
+        "dest_port",
+        "http_content_type",
+        "http_method",
+        "http_referrer",
+        "http_user_agent",
+        "site",
+        "src",
+        "url",
+        "url_domain",
+        "user"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "from"
+      ],
+      "drilldownVars": {
+        "drilldown_1": [
+          "user",
+          "dest"
+        ],
+        "drilldown_2": [
+          "user",
+          "dest"
+        ]
+      },
+      "allDrilldownVars": [
+        "user",
+        "dest"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:47:05.890Z",
+    "detectionName": "Log4Shell JNDI Payload Injection Attempt",
+    "_sha": "a3729d9dbfca3f668306edabda653d95766e7691",
+    "_path": "docs/metadata/log4shell_jndi_payload_injection_attempt_meta.json"
   }
 }
