@@ -1,0 +1,64 @@
+{
+  "detectionName": "Azure AD Block User Consent For Risky Apps Disabled",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "azure_monitor_aad",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "azure_ad_block_user_consent_for_risky_apps_disabled_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "signature"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "index_number",
+      "AllowUserConsentForRiskyApps"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "signature"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:28.165Z"
+}
