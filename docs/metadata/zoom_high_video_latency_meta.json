@@ -1,0 +1,53 @@
+{
+  "detectionName": "Zoom High Video Latency",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "zoom_index",
+      "zoom_high_video_latency_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "email",
+      "overall_latency",
+      "latency",
+      "avg_latency",
+      "average_latency",
+      "_raw"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "email",
+      "_raw"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "email"
+      ],
+      "drilldown_1": [
+        "email"
+      ],
+      "drilldown_2": [
+        "email"
+      ]
+    },
+    "allDrilldownVars": [
+      "email"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:19.886Z"
+}
