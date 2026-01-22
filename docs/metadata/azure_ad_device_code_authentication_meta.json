@@ -1,0 +1,63 @@
+{
+  "detectionName": "Azure AD Device Code Authentication",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "azure_monitor_aad",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "azure_ad_device_code_authentication_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "category"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [
+      "SignInLogs"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "user_agent",
+      "category"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:30.582Z"
+}
