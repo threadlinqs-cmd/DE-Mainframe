@@ -1,0 +1,51 @@
+{
+  "detectionName": "M365 Copilot Failed Authentication Patterns",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "m365_copilot_graph_api",
+      "m365_copilot_failed_authentication_patterns_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "user"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "user",
+      "first_seen",
+      "last_seen"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "user"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:29:03.960Z"
+}
