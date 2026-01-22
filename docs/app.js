@@ -894,6 +894,7 @@ function initUI() {
     initReportsTabs();
     initModals();
     initSettings();
+    initConfigViewSettings();
     initKeyboardShortcuts();
     
     renderDashboard();
@@ -4263,6 +4264,118 @@ async function saveSettings() {
     github = new GitHubAPI(githubConfig);
     
     closeAllModals();
+    showToast('Settings saved! Click Sync to load data from GitHub.', 'success');
+    updateSyncStatus('idle', 'Click Sync');
+}
+
+// =============================================================================
+// CONFIG VIEW - GITHUB SETTINGS (in-page configuration)
+// =============================================================================
+
+function initConfigViewSettings() {
+    var testBtn = document.getElementById('btn-config-test');
+    var saveBtn = document.getElementById('btn-config-save');
+
+    if (testBtn) {
+        testBtn.addEventListener('click', testConfigConnection);
+    }
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveConfigSettings);
+    }
+
+    // Load saved settings into config view fields
+    loadConfigViewSettings();
+}
+
+function loadConfigViewSettings() {
+    var urlEl = document.getElementById('config-github-url');
+    var repoEl = document.getElementById('config-repo');
+    var branchEl = document.getElementById('config-branch');
+    var tokenEl = document.getElementById('config-token');
+    var detectionsEl = document.getElementById('config-detections-path');
+    var metadataEl = document.getElementById('config-metadata-path');
+
+    if (urlEl) urlEl.value = githubConfig.baseUrl || 'https://github.com';
+    if (repoEl) repoEl.value = githubConfig.repo || '';
+    if (branchEl) branchEl.value = githubConfig.branch || 'main';
+    if (tokenEl) tokenEl.value = githubConfig.token || '';
+    if (detectionsEl) detectionsEl.value = githubConfig.detectionsPath || 'detections';
+    if (metadataEl) metadataEl.value = githubConfig.metadataPath || 'metadata';
+}
+
+function getConfigViewSettings() {
+    return {
+        baseUrl: (document.getElementById('config-github-url').value || '').trim() || 'https://github.com',
+        repo: (document.getElementById('config-repo').value || '').trim(),
+        branch: (document.getElementById('config-branch').value || '').trim() || 'main',
+        token: (document.getElementById('config-token').value || '').trim(),
+        detectionsPath: sanitizePathInput((document.getElementById('config-detections-path').value || '').trim()) || 'detections',
+        metadataPath: sanitizePathInput((document.getElementById('config-metadata-path').value || '').trim()) || 'metadata'
+    };
+}
+
+async function testConfigConnection() {
+    var config = getConfigViewSettings();
+    var statusEl = document.getElementById('config-connection-status');
+
+    if (!config.repo || !config.token) {
+        statusEl.className = 'settings-status error';
+        statusEl.textContent = '✗ Repository and Token are required';
+        return;
+    }
+
+    statusEl.className = 'settings-status info';
+    statusEl.textContent = '🔄 Testing connection...';
+
+    var testApi = new GitHubAPI(config);
+    var result = await testApi.testConnection();
+
+    if (result.success) {
+        try {
+            await testApi.listFiles(config.detectionsPath);
+            statusEl.className = 'settings-status success';
+            statusEl.innerHTML = '✓ Connection successful! Repository and paths verified.';
+        } catch (e) {
+            statusEl.className = 'settings-status warning';
+            statusEl.innerHTML = '✓ Connected to repository<br>⚠ Detections folder not found - will be created on first save.';
+        }
+    } else {
+        statusEl.className = 'settings-status error';
+        statusEl.textContent = '✗ Connection failed: ' + result.message;
+    }
+}
+
+async function saveConfigSettings() {
+    var config = getConfigViewSettings();
+    var statusEl = document.getElementById('config-connection-status');
+
+    if (!config.repo || !config.token) {
+        statusEl.className = 'settings-status error';
+        statusEl.textContent = '✗ Repository and Token are required';
+        showToast('Repository and Token are required', 'warning');
+        return;
+    }
+
+    statusEl.className = 'settings-status info';
+    statusEl.textContent = '🔄 Verifying connection...';
+
+    var testApi = new GitHubAPI(config);
+    var result = await testApi.testConnection();
+
+    if (!result.success) {
+        statusEl.className = 'settings-status error';
+        statusEl.textContent = '✗ Connection failed: ' + result.message;
+        showToast('Connection failed: ' + result.message, 'error');
+        return;
+    }
+
+    // Save to global config and localStorage
+    githubConfig = Object.assign({}, config, { connected: true });
+    localStorage.setItem('dmf_github_config', JSON.stringify(githubConfig));
+    github = new GitHubAPI(githubConfig);
+
+    statusEl.className = 'settings-status success';
+    statusEl.innerHTML = '✓ Settings saved! Your token is stored securely in your browser.';
     showToast('Settings saved! Click Sync to load data from GitHub.', 'success');
     updateSyncStatus('idle', 'Click Sync');
 }
