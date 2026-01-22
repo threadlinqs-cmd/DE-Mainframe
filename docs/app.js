@@ -730,10 +730,10 @@ function autoLoadFromStaticFiles() {
     
     // Initialize GitHub API for writes
     github = new GitHubAPI({
-        baseUrl: GITHUB_CONFIG.baseUrl,
-        repo: GITHUB_CONFIG.repo,
-        branch: GITHUB_CONFIG.branch,
-        token: GITHUB_CONFIG.token,
+        baseUrl: githubConfig.baseUrl || GITHUB_CONFIG.baseUrl,
+        repo: githubConfig.repo || GITHUB_CONFIG.repo,
+        branch: githubConfig.branch || GITHUB_CONFIG.branch,
+        token: githubConfig.token || GITHUB_CONFIG.token,
         detectionsPath: PATHS.detections,
         metadataPath: PATHS.metadata
     });
@@ -1448,7 +1448,50 @@ function refreshFromRepository() {
         showToast('Already loading...', 'info');
         return;
     }
-    
+async function validateAndRepairMetadata() {
+     let repaired = 0;
+
+     for (const detection of detections) {
+         const name = detection['Detection Name'];
+         if (name && !detectionMetadata[name]) {
+             console.log('Auto-creating metadata for:', name);
+
+             // Create metadata
+             const newMeta = createMetadataForDetection(detection);
+             detectionMetadata[name] = newMeta;
+
+             // Save to GitHub
+             if (github) {
+                 const filename = generateMetaFileName(name);
+                 const metadataPath = githubConfig.metadataPath || PATHS.metadata;
+                 const path = metadataPath + '/' + filename;
+
+                 try {
+                     const existingSha = await github.getFileSha(path);
+                     const result = await github.createOrUpdateFile(
+                         path,
+                         newMeta,
+                         'Auto-generate metadata: ' + name,
+                         existingSha
+                     );
+                     newMeta._sha = result.content.sha;
+                     newMeta._path = path;
+                     repaired++;
+                 } catch (e) {
+                     console.warn('Failed to save metadata for:', name, e);
+                 }
+             }
+         }
+     }
+
+     // Update compiled files if any repairs were made
+     if (repaired > 0) {
+         console.log('Repaired metadata for', repaired, 'detection(s)');
+         await updateCompiledFiles();
+     }
+
+     return repaired;
+ }    
     showToast('Refreshing from repository...', 'info');
     updateSyncStatus('syncing', 'Refreshing...');
     isLoading = true;
@@ -1489,6 +1532,11 @@ function refreshFromRepository() {
         isLoading = false;
         updateSyncStatus('synced', 'Refreshed');
         showToast('Loaded ' + detections.length + ' detections', 'success');
+    validateAndRepairMetadata().then(function(repaired) {
+        if (repaired > 0) {
+             showToast('Auto-generated metadata for ' + repaired + ' detection(s)', 'info');
+            }
+    });
     })
     .catch(function(error) {
         console.error('Refresh failed:', error);
