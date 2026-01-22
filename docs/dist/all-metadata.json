@@ -134,5 +134,113 @@
     "lastParsed": "2026-01-22T19:18:20.501Z",
     "_sha": "6988011ac8ec34d0cd2fd70a07fddc84cb584cc4",
     "_path": "docs/metadata/m365_copilot_agentic_jailbreak_attack_meta.json"
+  },
+  "M365 Copilot Failed Authentication Patterns": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_copilot_graph_api",
+        "m365_copilot_failed_authentication_patterns_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "user"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "first_seen",
+        "last_seen"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "user"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:29:03.960Z",
+    "detectionName": "M365 Copilot Failed Authentication Patterns",
+    "_sha": "8218761e90c92ce9b127f73628e1fc522c9ba1b9",
+    "_path": "docs/metadata/m365_copilot_failed_authentication_patterns_meta.json"
+  },
+  "M365 Copilot Application Usage Pattern Anomalies": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sources": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "actionTypes": [],
+      "macros": [
+        "m365_copilot_graph_api",
+        "m365_copilot_application_usage_pattern_anomalies_filter"
+      ],
+      "lookups": [],
+      "fields": [
+        "user"
+      ],
+      "customTags": [],
+      "comments": [],
+      "evalFields": [
+        "user",
+        "days_active",
+        "first_seen",
+        "last_seen",
+        "events_per_day"
+      ],
+      "categories": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "byFields": [
+        "user"
+      ]
+    },
+    "drilldownVars": {
+      "mainSearchFields": [],
+      "mainSearchFunctions": [],
+      "drilldownVars": {
+        "legacy": [
+          "user"
+        ],
+        "drilldown_1": [
+          "user"
+        ],
+        "drilldown_2": [
+          "user"
+        ]
+      },
+      "allDrilldownVars": [
+        "user"
+      ]
+    },
+    "lastParsed": "2026-01-22T19:29:05.330Z",
+    "detectionName": "M365 Copilot Application Usage Pattern Anomalies",
+    "_sha": "69852d30cf9e69d690178827176ba50f4634bc85",
+    "_path": "docs/metadata/m365_copilot_application_usage_pattern_anomalies_meta.json"
   }
 }
