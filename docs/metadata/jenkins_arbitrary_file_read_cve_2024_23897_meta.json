@@ -1,0 +1,50 @@
+{
+  "detectionName": "Jenkins Arbitrary File Read CVE-2024-23897",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "drop_dm_object_name(\"Web\")",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "jenkins_arbitrary_file_read_cve_2024_23897_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Web"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Web"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:47:03.442Z"
+}
