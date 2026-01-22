@@ -1,0 +1,82 @@
+{
+  "detectionName": "Windows Spearphishing Attachment Connect To None MS Office Domain",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [
+      "22"
+    ],
+    "actionTypes": [],
+    "macros": [
+      "sysmon",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "windows_spearphishing_attachment_connect_to_none_ms_office_domain_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "answer",
+      "answer_count",
+      "dvc",
+      "process_exec",
+      "process_guid",
+      "process_name",
+      "query",
+      "query_count",
+      "reply_code_id",
+      "signature",
+      "signature_id",
+      "src",
+      "user_id",
+      "vendor_product",
+      "QueryName",
+      "QueryResults",
+      "QueryStatus"
+    ],
+    "customTags": [
+      {
+        "category": "technology",
+        "tag": "Sysmon Events"
+      }
+    ],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [
+      "Image",
+      "QueryName"
+    ],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "answer",
+      "answer_count",
+      "dvc",
+      "process_exec",
+      "process_guid",
+      "process_name",
+      "query",
+      "query_count",
+      "reply_code_id",
+      "signature",
+      "signature_id",
+      "src",
+      "user_id",
+      "vendor_product",
+      "QueryName",
+      "QueryResults",
+      "QueryStatus"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [
+      "Image",
+      "QueryName"
+    ],
+    "mainSearchFunctions": [],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:58.571Z"
+}
