@@ -1,0 +1,80 @@
+{
+  "detectionName": "AdsiSearcher Account Discovery",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [
+      "4104"
+    ],
+    "actionTypes": [],
+    "macros": [
+      "powershell",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "adsisearcher_account_discovery_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "dest",
+      "signature",
+      "signature_id",
+      "user_id",
+      "vendor_product",
+      "EventID",
+      "Guid",
+      "Opcode",
+      "Name",
+      "Path",
+      "ProcessID",
+      "ScriptBlockId",
+      "ScriptBlockText"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [
+      "user*\""
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "dest",
+      "signature",
+      "signature_id",
+      "user_id",
+      "vendor_product",
+      "EventID",
+      "Guid",
+      "Opcode",
+      "Name",
+      "Path",
+      "ProcessID",
+      "ScriptBlockId",
+      "ScriptBlockText"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "dest",
+        "user_id"
+      ],
+      "drilldown_2": [
+        "dest",
+        "user_id"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest",
+      "user_id"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:39.672Z"
+}
