@@ -1,0 +1,36 @@
+{
+  "detectionName": "Detect Windows DNS SIGRed via Splunk Stream",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "stream_dns",
+      "stream_tcp",
+      "detect_windows_dns_sigred_via_splunk_stream_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "flow_id"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "flow_id"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:48.175Z"
+}
