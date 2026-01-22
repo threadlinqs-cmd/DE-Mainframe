@@ -1,0 +1,53 @@
+{
+  "detectionName": "M365 Copilot Application Usage Pattern Anomalies",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "m365_copilot_graph_api",
+      "m365_copilot_application_usage_pattern_anomalies_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "user"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "user",
+      "days_active",
+      "first_seen",
+      "last_seen",
+      "events_per_day"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "user"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:29:05.330Z"
+}
