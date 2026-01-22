@@ -1,0 +1,57 @@
+{
+  "detectionName": "BCDEdit Failure Recovery Modification",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(Processes)",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "bcdedit_failure_recovery_modification_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Processes"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Processes"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "user",
+        "dest"
+      ],
+      "drilldown_2": [
+        "user",
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest",
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:45.752Z"
+}
