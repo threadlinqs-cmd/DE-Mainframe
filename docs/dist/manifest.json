@@ -1,18 +1,22 @@
 {
-  "lastCompiled": "2026-01-22T19:27:51.672Z",
+  "lastCompiled": "2026-01-22T19:29:06.699Z",
   "version": "11.1",
   "counts": {
-    "detections": 2,
-    "metadata": 2
+    "detections": 4,
+    "metadata": 4
   },
   "files": {
     "detections": [
       "T1110_003_azure_active_directory_high_risk_sign_in.json",
-      "application_m365_copilot_agentic_jailbreak_attack.json"
+      "application_m365_copilot_agentic_jailbreak_attack.json",
+      "application_m365_copilot_failed_authentication_patterns.json",
+      "application_m365_copilot_application_usage_pattern_anomalies.json"
     ],
     "metadata": [
       "Azure_Active_Directory_High_Risk_Sign-in.json",
-      "M365_Copilot_Agentic_Jailbreak_Attack.json"
+      "M365_Copilot_Agentic_Jailbreak_Attack.json",
+      "M365_Copilot_Failed_Authentication_Patterns.json",
+      "M365_Copilot_Application_Usage_Pattern_Anomalies.json"
     ]
   }
 }
