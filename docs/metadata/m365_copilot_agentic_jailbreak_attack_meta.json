@@ -1,0 +1,62 @@
+{
+  "detectionName": "M365 Copilot Agentic Jailbreak Attack",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "m365_exported_ediscovery_prompt_logs",
+      "m365_copilot_agentic_jailbreak_attack_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "\"Source",
+      "ID\"",
+      "user",
+      "Subject_Title",
+      "rule_injection",
+      "universal_trigger",
+      "response_automation",
+      "system_override",
+      "persona_establishment",
+      "Workload"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "user",
+      "rule_injection",
+      "universal_trigger",
+      "response_automation",
+      "system_override",
+      "persona_establishment"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:18:20.501Z"
+}
