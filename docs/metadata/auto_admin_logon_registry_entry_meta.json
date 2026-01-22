@@ -1,0 +1,54 @@
+{
+  "detectionName": "Auto Admin Logon Registry Entry",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(Registry)",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "auto_admin_logon_registry_entry_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Registry"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Registry"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:43.514Z"
+}
