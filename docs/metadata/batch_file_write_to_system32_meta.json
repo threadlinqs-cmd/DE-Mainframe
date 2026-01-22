@@ -1,0 +1,57 @@
+{
+  "detectionName": "Batch File Write to System32",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(Filesystem)",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "batch_file_write_to_system32_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Filesystem"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Filesystem"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "user",
+        "dest"
+      ],
+      "drilldown_2": [
+        "user",
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest",
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:44.588Z"
+}
