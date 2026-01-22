@@ -1,0 +1,33 @@
+{
+  "detectionName": "Zoom Rare Audio Devices",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "zoom_index",
+      "zoom_rare_audio_devices_filter"
+    ],
+    "lookups": [],
+    "fields": [],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": []
+    },
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:21.172Z"
+}
