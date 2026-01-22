@@ -1,0 +1,71 @@
+{
+  "detectionName": "Azure AD Authentication Failed During MFA Challenge",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "azure_monitor_aad",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "azure_ad_authentication_failed_during_mfa_challenge_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "auth_method",
+      "auth_msg",
+      "user_agent",
+      "signature"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "time",
+      "auth_detail",
+      "auth_method"
+    ],
+    "categories": [
+      "SignInLogs"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "auth_method",
+      "auth_msg",
+      "user_agent",
+      "signature"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:25.509Z"
+}
