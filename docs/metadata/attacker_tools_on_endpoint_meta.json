@@ -1,0 +1,59 @@
+{
+  "detectionName": "Attacker Tools On Endpoint",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "drop_dm_object_name(Processes)",
+      "attacker_tools_on_endpoint_filter"
+    ],
+    "lookups": [
+      "attacker_tools"
+    ],
+    "fields": [
+      "Processes"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Processes"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "user",
+        "dest"
+      ],
+      "drilldown_2": [
+        "user",
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest",
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:41.048Z"
+}
