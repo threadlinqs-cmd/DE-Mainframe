@@ -1,0 +1,58 @@
+{
+  "detectionName": "Attempt To Add Certificate To Untrusted Store",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "process_certutil",
+      "drop_dm_object_name(\"Processes\")",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "attempt_to_add_certificate_to_untrusted_store_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Processes"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Processes"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "user",
+        "dest"
+      ],
+      "drilldown_2": [
+        "user",
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest",
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:42.340Z"
+}
