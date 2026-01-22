@@ -1,0 +1,43 @@
+{
+  "detectionName": "Detect Windows DNS SIGRed via Zeek",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "detect_windows_dns_sigred_via_zeek_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "DNS",
+      "All_Traffic",
+      "flow_id"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "DNS",
+      "All_Traffic",
+      "flow_id"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:49.297Z"
+}
