@@ -72,6 +72,7 @@
     "_path": "docs/metadata/azure_active_directory_high_risk_sign_in_meta.json"
   },
   "M365 Copilot Agentic Jailbreak Attack": {
+    "detectionName": "M365 Copilot Agentic Jailbreak Attack",
     "history": [],
     "parsed": {
       "indexes": [],
@@ -131,7 +132,6 @@
       ]
     },
     "lastParsed": "2026-01-22T19:18:20.501Z",
-    "detectionName": "M365 Copilot Agentic Jailbreak Attack",
     "_sha": "6988011ac8ec34d0cd2fd70a07fddc84cb584cc4",
     "_path": "docs/metadata/m365_copilot_agentic_jailbreak_attack_meta.json"
   }
