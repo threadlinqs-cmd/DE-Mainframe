@@ -1,0 +1,16 @@
+{
+  "lastCompiled": "2026-01-22T19:01:28.248Z",
+  "version": "11.1",
+  "counts": {
+    "detections": 1,
+    "metadata": 1
+  },
+  "files": {
+    "detections": [
+      "T1110_003_azure_active_directory_high_risk_sign_in.json"
+    ],
+    "metadata": [
+      "Azure_Active_Directory_High_Risk_Sign-in.json"
+    ]
+  }
+}
