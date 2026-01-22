@@ -1,0 +1,59 @@
+{
+  "detectionName": "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging",
+  "history": [],
+  "parsed": {
+    "indexes": [
+      "azure_cloud"
+    ],
+    "sources": [],
+    "sourcetypes": [
+      "mscs:azure:eventhub:defender"
+    ],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "properties.DeviceName",
+      "properties.FileName",
+      "properties.FolderPath",
+      "properties.SHA1",
+      "properties.ProcessCommandLine",
+      "properties.InitiatingProcessFileName",
+      "properties.InitiatingProcessCommandLine",
+      "user"
+    ],
+    "customTags": [
+      {
+        "category": "datasource",
+        "tag": "Microsoft Defender"
+      }
+    ],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [
+      "properties.FileName"
+    ],
+    "mainSearchFunctions": [
+      "table"
+    ],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [
+      "properties.FileName"
+    ],
+    "mainSearchFunctions": [
+      "table"
+    ],
+    "drilldownVars": {
+      "legacy": [],
+      "drilldown_1": [],
+      "drilldown_2": []
+    },
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:46.898Z"
+}
