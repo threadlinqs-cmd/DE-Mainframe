@@ -1,0 +1,74 @@
+{
+  "detectionName": "Log4Shell JNDI Payload Injection Attempt",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "log4shell_jndi_payload_injection_attempt_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "action",
+      "category",
+      "dest",
+      "dest_port",
+      "http_content_type",
+      "http_method",
+      "http_referrer",
+      "http_user_agent",
+      "site",
+      "src",
+      "url",
+      "url_domain",
+      "user"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "from"
+    ],
+    "byFields": [
+      "action",
+      "category",
+      "dest",
+      "dest_port",
+      "http_content_type",
+      "http_method",
+      "http_referrer",
+      "http_user_agent",
+      "site",
+      "src",
+      "url",
+      "url_domain",
+      "user"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "from"
+    ],
+    "drilldownVars": {
+      "drilldown_1": [
+        "user",
+        "dest"
+      ],
+      "drilldown_2": [
+        "user",
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "user",
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:47:05.890Z"
+}
