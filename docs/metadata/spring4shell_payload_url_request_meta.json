@@ -1,0 +1,50 @@
+{
+  "detectionName": "Spring4Shell Payload URL Request",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "drop_dm_object_name(\"Web\")",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "spring4shell_payload_url_request_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Web"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Web"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:10.970Z"
+}
