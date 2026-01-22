@@ -1,0 +1,68 @@
+{
+  "detectionName": "T1999 - Persistence - DE Mainframe Demo",
+  "history": [
+    {
+      "id": 1766581864111,
+      "type": "version",
+      "description": "Detection created",
+      "timestamp": "2025-12-24T13:11:04.111Z"
+    }
+  ],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "boc_use_cases"
+    ],
+    "lookups": [],
+    "fields": [
+      "file_name",
+      "json"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "origin",
+      "file_name",
+      "Objective",
+      "Description",
+      "Assumptions",
+      "earliest",
+      "latest",
+      "throttle_enabled",
+      "throttle_fields",
+      "throttle_period",
+      "throttling_str",
+      "annotations_raw",
+      "mitre_array_str",
+      "dd_json",
+      "roles_array_str",
+      "json_obj",
+      "json"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "rest",
+      "eval",
+      "spath",
+      "table"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "rest",
+      "eval",
+      "spath",
+      "table"
+    ],
+    "drilldownVars": {
+      "legacy": []
+    },
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2025-12-24T13:11:04.112Z"
+}

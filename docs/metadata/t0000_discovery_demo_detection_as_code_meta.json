@@ -1,0 +1,119 @@
+{
+  "detectionName": "T0000 - Discovery - DEMO Detection as Code",
+  "history": [
+    {
+      "id": 1767621634086,
+      "type": "retrofit",
+      "subtype": "revalidation",
+      "description": "Testing for Retrofit Demo",
+      "jira": "MRDP-0001",
+      "analyst": "Hatim Bakkali",
+      "fieldsModified": [
+        "Assumptions",
+        "Notable Description"
+      ],
+      "timestamp": "2026-01-05T14:00:34.086Z"
+    },
+    {
+      "id": 1767621549292,
+      "type": "tune",
+      "description": "Testing tuning for demo",
+      "reason": "false_positives",
+      "jira": "MRDP-0000",
+      "analyst": "Hatim Bakkali",
+      "fieldsModified": [
+        "Description",
+        "Assumptions"
+      ],
+      "timestamp": "2026-01-05T13:59:09.292Z"
+    },
+    {
+      "id": 1767386564183,
+      "type": "version",
+      "description": "Detection created",
+      "timestamp": "2026-01-02T20:42:44.183Z"
+    }
+  ],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "boc_use_cases"
+    ],
+    "lookups": [],
+    "fields": [
+      "title",
+      "json"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "origin",
+      "file_name",
+      "Objective",
+      "Description",
+      "Assumptions",
+      "earliest",
+      "latest",
+      "throttle_enabled",
+      "throttle_fields",
+      "throttle_period",
+      "throttling_str",
+      "risk_raw",
+      "risk_array_str",
+      "annotations_raw",
+      "mitre_array_str",
+      "dd_json",
+      "roles_array_str",
+      "json_obj",
+      "json"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "rest",
+      "eval",
+      "spath",
+      "table"
+    ],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "rest",
+      "eval",
+      "spath",
+      "table"
+    ],
+    "drilldownVars": {
+      "legacy": [
+        "src",
+        "src_user",
+        "dd_min_time",
+        "dd_max_time"
+      ],
+      "drilldown_1": [
+        "src",
+        "src_user",
+        "dd_min_time",
+        "dd_max_time"
+      ]
+    },
+    "allDrilldownVars": [
+      "src",
+      "src_user",
+      "dd_min_time",
+      "dd_max_time"
+    ]
+  },
+  "lastParsed": "2026-01-05T14:00:34.086Z",
+  "_sha": "7587016ea7eed1f6ce101d35a1d0c4e02b1946ef",
+  "_path": "docs/metadata/t0000_discovery_demo_detection_as_code_meta.json",
+  "needsTune": false,
+  "lastTuned": "2026-01-05T13:59:09.293Z",
+  "needsRetrofit": false,
+  "lastRetrofitted": "2026-01-05T14:00:34.086Z"
+}
