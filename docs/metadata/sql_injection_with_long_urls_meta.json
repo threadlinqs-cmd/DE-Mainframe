@@ -1,0 +1,45 @@
+{
+  "detectionName": "SQL Injection with Long URLs",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "security_content_summariesonly",
+      "drop_dm_object_name(\"Web\")",
+      "sql_injection_with_long_urls_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "Web"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "url",
+      "num_sql_cmds"
+    ],
+    "categories": [
+      "web_server"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "byFields": [
+      "Web"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "tstats"
+    ],
+    "drilldownVars": {},
+    "allDrilldownVars": []
+  },
+  "lastParsed": "2026-01-22T19:46:12.415Z"
+}
