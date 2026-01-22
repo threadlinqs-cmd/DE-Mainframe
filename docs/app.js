@@ -703,7 +703,7 @@ function fetchGitHubFile(filePath) {
     return fetch(url, {
         method: 'GET',
         headers: {
-            'Authorization': 'token ' + GITHUB_CONFIG.token,
+            'Authorization': 'token ' + githubConfig.token,
             'Accept': 'application/vnd.github.v3.raw'  // Get raw content, not base64
         },
         cache: 'no-store'
