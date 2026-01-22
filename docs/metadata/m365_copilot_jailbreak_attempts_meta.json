@@ -1,0 +1,53 @@
+{
+  "detectionName": "M365 Copilot Jailbreak Attempts",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [],
+    "actionTypes": [],
+    "macros": [
+      "m365_exported_ediscovery_prompt_logs",
+      "m365_copilot_jailbreak_attempts_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "_time",
+      "user",
+      "Subject_Title",
+      "jailbreak_score",
+      "Workload",
+      "Size"
+    ],
+    "customTags": [],
+    "comments": [],
+    "evalFields": [
+      "user",
+      "jailbreak_score"
+    ],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:16.086Z"
+}
