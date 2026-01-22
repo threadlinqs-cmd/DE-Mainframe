@@ -1,0 +1,114 @@
+{
+  "detectionName": "Access LSASS Memory for Dump Creation",
+  "history": [],
+  "parsed": {
+    "indexes": [],
+    "sources": [],
+    "sourcetypes": [],
+    "eventCodes": [
+      "10"
+    ],
+    "actionTypes": [],
+    "macros": [
+      "sysmon",
+      "security_content_ctime(firstTime)",
+      "security_content_ctime(lastTime)",
+      "access_lsass_memory_for_dump_creation_filter"
+    ],
+    "lookups": [],
+    "fields": [
+      "CallTrace",
+      "EventID",
+      "GrantedAccess",
+      "Guid",
+      "Opcode",
+      "ProcessID",
+      "SecurityID",
+      "SourceImage",
+      "SourceProcessGUID",
+      "SourceProcessId",
+      "TargetImage",
+      "TargetProcessGUID",
+      "TargetProcessId",
+      "UserID",
+      "dest",
+      "granted_access",
+      "parent_process_exec",
+      "parent_process_guid",
+      "parent_process_id",
+      "parent_process_name",
+      "parent_process_path",
+      "process_exec",
+      "process_guid",
+      "process_id",
+      "process_name",
+      "process_path",
+      "signature",
+      "signature_id",
+      "user_id",
+      "vendor_product"
+    ],
+    "customTags": [
+      {
+        "category": "technology",
+        "tag": "Sysmon Events"
+      }
+    ],
+    "comments": [],
+    "evalFields": [],
+    "categories": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "byFields": [
+      "CallTrace",
+      "EventID",
+      "GrantedAccess",
+      "Guid",
+      "Opcode",
+      "ProcessID",
+      "SecurityID",
+      "SourceImage",
+      "SourceProcessGUID",
+      "SourceProcessId",
+      "TargetImage",
+      "TargetProcessGUID",
+      "TargetProcessId",
+      "UserID",
+      "dest",
+      "granted_access",
+      "parent_process_exec",
+      "parent_process_guid",
+      "parent_process_id",
+      "parent_process_name",
+      "parent_process_path",
+      "process_exec",
+      "process_guid",
+      "process_id",
+      "process_name",
+      "process_path",
+      "signature",
+      "signature_id",
+      "user_id",
+      "vendor_product"
+    ]
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "dest"
+      ],
+      "drilldown_1": [
+        "dest"
+      ],
+      "drilldown_2": [
+        "dest"
+      ]
+    },
+    "allDrilldownVars": [
+      "dest"
+    ]
+  },
+  "lastParsed": "2026-01-22T19:46:35.875Z"
+}
