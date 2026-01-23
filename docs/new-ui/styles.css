@@ -1,0 +1,63 @@
+/**
+ * DE-MainFrame New UI - Styles
+ *
+ * This is a standalone stylesheet for the new UI.
+ * It does not share any CSS imports with the current UI.
+ */
+
+/* Reset and base styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+}
+
+/* Application container */
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    padding: 1rem 2rem;
+    background-color: #1a1a2e;
+    color: #ffffff;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+header p {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* Main content */
+main {
+    flex: 1;
+    padding: 2rem;
+}
+
+#content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Footer */
+footer {
+    padding: 1rem 2rem;
+    background-color: #1a1a2e;
+    color: #ffffff;
+    text-align: center;
+    font-size: 0.875rem;
+}
