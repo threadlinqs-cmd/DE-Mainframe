@@ -3,26 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DE-MainFrame - New UI</title>
+    <title>DE-MainFrame</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="app">
-        <header>
-            <div class="header-left">
-                <h1>DE-MainFrame</h1>
-                <p>New UI - Under Development</p>
-                <button class="btn-classic-ui" onclick="window.location.href='../'" title="Return to Classic UI">🏛️ Classic UI</button>
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Collapsible Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Navigation</span>
+                <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close sidebar">×</button>
             </div>
-        </header>
-        <main>
-            <section id="content">
-                <!-- Application content will be rendered here -->
-            </section>
-        </main>
-        <footer>
-            <p>Detection MainFrame - New UI</p>
-        </footer>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">Dashboard</a>
+                <a href="#" class="nav-item">Detections</a>
+                <a href="#" class="nav-item">Macros</a>
+                <a href="#" class="nav-item">Lookups</a>
+                <a href="#" class="nav-item">Settings</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../" class="nav-item nav-classic">← Classic UI</a>
+            </div>
+        </aside>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Header Bar -->
+            <header class="header-bar">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+                    <h1 class="header-title">DE-MainFrame</h1>
+                </div>
+                <div class="header-right">
+                    <span class="header-subtitle">Detection Engineering</span>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="content-area">
+                <section id="content">
+                    <div class="content-header">
+                        <h2>Dashboard</h2>
+                    </div>
+                    <div class="content-body">
+                        <p class="placeholder-text">Select a section from the navigation menu.</p>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Status Bar -->
+            <footer class="status-bar">
+                <div class="status-left">
+                    <span class="status-indicator status-disconnected"></span>
+                    <span class="status-text">Disconnected</span>
+                </div>
+                <div class="status-right">
+                    <span class="status-version">v1.0.0</span>
+                </div>
+            </footer>
+        </div>
     </div>
 
     <script src="app.js"></script>
