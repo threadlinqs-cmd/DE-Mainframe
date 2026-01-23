@@ -3918,6 +3918,669 @@ function buildCorrelationSearchUrl(detectionName) {
         if (el) el.textContent = text;
     }
 
+    // =========================================================================
+    // SETTINGS VIEW FUNCTIONS
+    // =========================================================================
+
+    // Settings Storage Keys
+    var SETTINGS_STORAGE_KEY = 'dmf_settings';
+    var PARSING_RULES_STORAGE_KEY = 'dmf_parsing_rules';
+
+    // Settings State
+    var settingsState = {
+        initialized: false,
+        settings: {
+            github: {
+                baseUrl: 'https://api.github.com',
+                repo: '',
+                branch: 'main',
+                token: ''
+            },
+            splunk: {
+                baseUrl: 'https://myorg.splunkcloud.com',
+                correlationPath: '/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit'
+            }
+        },
+        parsingRules: [],
+        editingRuleId: null
+    };
+
+    // Initialize Settings
+    function initSettings() {
+        loadSettings();
+        loadParsingRules();
+        renderSettings();
+        renderParsingRules();
+        settingsState.initialized = true;
+    }
+
+    // Load settings from localStorage
+    function loadSettings() {
+        try {
+            var stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                settingsState.settings = Object.assign({}, settingsState.settings, parsed);
+            }
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+        }
+    }
+
+    // Save settings to localStorage
+    function saveSettingsToStorage() {
+        try {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsState.settings));
+            return true;
+        } catch (e) {
+            console.error('Failed to save settings:', e);
+            return false;
+        }
+    }
+
+    // Load parsing rules from localStorage
+    function loadParsingRules() {
+        try {
+            var stored = localStorage.getItem(PARSING_RULES_STORAGE_KEY);
+            if (stored) {
+                settingsState.parsingRules = JSON.parse(stored);
+            } else {
+                // Default parsing rules
+                settingsState.parsingRules = [
+                    {
+                        id: 'rule_1',
+                        name: 'Extract Index',
+                        pattern: 'index\\s*=\\s*["\']?([\\w\\-\\*]+)["\']?',
+                        field: 'indexes',
+                        enabled: true
+                    },
+                    {
+                        id: 'rule_2',
+                        name: 'Extract Sourcetype',
+                        pattern: 'sourcetype\\s*=\\s*["\']?([\\w\\-\\:\\.\\*]+)["\']?',
+                        field: 'sourcetypes',
+                        enabled: true
+                    },
+                    {
+                        id: 'rule_3',
+                        name: 'Extract Macro',
+                        pattern: '`([\\w_]+(?:\\([^)]*\\))?)`',
+                        field: 'macros',
+                        enabled: true
+                    },
+                    {
+                        id: 'rule_4',
+                        name: 'Extract Lookup',
+                        pattern: '\\|\\s*(?:lookup|inputlookup|outputlookup)\\s+([\\w_]+)',
+                        field: 'lookups',
+                        enabled: true
+                    }
+                ];
+            }
+        } catch (e) {
+            console.error('Failed to load parsing rules:', e);
+            settingsState.parsingRules = [];
+        }
+    }
+
+    // Save parsing rules to localStorage
+    function saveParsingRulesToStorage() {
+        try {
+            localStorage.setItem(PARSING_RULES_STORAGE_KEY, JSON.stringify(settingsState.parsingRules));
+            return true;
+        } catch (e) {
+            console.error('Failed to save parsing rules:', e);
+            return false;
+        }
+    }
+
+    // Render settings into both view and modal
+    function renderSettings() {
+        var s = settingsState.settings;
+
+        // View inputs
+        setInputValue('setting-github-base-url', s.github.baseUrl);
+        setInputValue('setting-github-repo', s.github.repo);
+        setInputValue('setting-github-branch', s.github.branch);
+        setInputValue('setting-github-token', s.github.token);
+        setInputValue('setting-splunk-base-url', s.splunk.baseUrl);
+        setInputValue('setting-splunk-correlation-path', s.splunk.correlationPath);
+
+        // Modal inputs
+        setInputValue('modal-github-base-url', s.github.baseUrl);
+        setInputValue('modal-github-repo', s.github.repo);
+        setInputValue('modal-github-branch', s.github.branch);
+        setInputValue('modal-github-token', s.github.token);
+        setInputValue('modal-splunk-base-url', s.splunk.baseUrl);
+        setInputValue('modal-splunk-correlation-path', s.splunk.correlationPath);
+    }
+
+    // Helper: Set input value
+    function setInputValue(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.value = value || '';
+    }
+
+    // Helper: Get input value
+    function getInputValue(id) {
+        var el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+    }
+
+    // Render parsing rules into both view and modal tables
+    function renderParsingRules() {
+        var rules = settingsState.parsingRules;
+
+        // View table
+        renderParsingRulesTable('parsing-rules-tbody', rules);
+        // Modal table
+        renderParsingRulesTable('modal-parsing-rules-tbody', rules);
+    }
+
+    // Render parsing rules table
+    function renderParsingRulesTable(tbodyId, rules) {
+        var tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        if (rules.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="parsing-rules-empty">No parsing rules configured. Add one to customize SPL parsing.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        rules.forEach(function(rule) {
+            html += '<tr>';
+            html += '<td>' + escapeHtml(rule.name) + '</td>';
+            html += '<td><code>' + escapeHtml(rule.pattern.substring(0, 30) + (rule.pattern.length > 30 ? '...' : '')) + '</code></td>';
+            html += '<td>' + escapeHtml(rule.field) + '</td>';
+            html += '<td><input type="checkbox" ' + (rule.enabled ? 'checked' : '') + ' onchange="toggleParsingRule(\'' + rule.id + '\', this.checked)"></td>';
+            html += '<td class="rule-actions">';
+            html += '<button class="btn-icon" onclick="editParsingRule(\'' + rule.id + '\')" title="Edit">&#x270E;</button>';
+            html += '<button class="btn-icon delete" onclick="deleteParsingRule(\'' + rule.id + '\')" title="Delete">&#x2715;</button>';
+            html += '</td>';
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    // Open Settings Modal
+    window.openSettingsModal = function() {
+        renderSettings();
+        renderParsingRules();
+        var modal = document.getElementById('modal-settings');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    // Close Settings Modal
+    window.closeSettingsModal = function() {
+        var modal = document.getElementById('modal-settings');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Switch Settings Tab
+    window.switchSettingsTab = function(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.settings-tab').forEach(function(tab) {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-settings-tab') === tabName) {
+                tab.classList.add('active');
+            }
+        });
+
+        // Update tab content
+        document.querySelectorAll('.settings-tab-content').forEach(function(content) {
+            content.classList.remove('active');
+        });
+        var activeContent = document.getElementById('settings-tab-' + tabName);
+        if (activeContent) activeContent.classList.add('active');
+    };
+
+    // Collect settings from inputs
+    function collectSettingsFromInputs(isModal) {
+        var prefix = isModal ? 'modal-' : 'setting-';
+
+        return {
+            github: {
+                baseUrl: getInputValue(prefix + 'github-base-url') || 'https://api.github.com',
+                repo: getInputValue(prefix + 'github-repo'),
+                branch: getInputValue(prefix + 'github-branch') || 'main',
+                token: getInputValue(prefix + 'github-token')
+            },
+            splunk: {
+                baseUrl: getInputValue(prefix + 'splunk-base-url'),
+                correlationPath: getInputValue(prefix + 'splunk-correlation-path')
+            }
+        };
+    }
+
+    // Save All Settings
+    window.saveAllSettings = function() {
+        // Determine which source to use (view or modal)
+        var modal = document.getElementById('modal-settings');
+        var isModal = modal && !modal.classList.contains('hidden');
+
+        settingsState.settings = collectSettingsFromInputs(isModal);
+
+        var settingsSaved = saveSettingsToStorage();
+        var rulesSaved = saveParsingRulesToStorage();
+
+        // Update Splunk config globally
+        if (settingsState.settings.splunk.baseUrl) {
+            SPLUNK_CONFIG.baseUrl = settingsState.settings.splunk.baseUrl;
+        }
+        if (settingsState.settings.splunk.correlationPath) {
+            SPLUNK_CONFIG.correlationSearchPath = settingsState.settings.splunk.correlationPath;
+        }
+
+        // Re-render to sync both view and modal
+        renderSettings();
+        renderParsingRules();
+
+        if (settingsSaved && rulesSaved) {
+            showToast('Settings saved successfully', 'success');
+        } else {
+            showToast('Failed to save some settings', 'error');
+        }
+    };
+
+    // Reset Settings to Defaults
+    window.resetSettings = function() {
+        if (!confirm('Are you sure you want to reset all settings to defaults?')) return;
+
+        settingsState.settings = {
+            github: {
+                baseUrl: 'https://api.github.com',
+                repo: '',
+                branch: 'main',
+                token: ''
+            },
+            splunk: {
+                baseUrl: 'https://myorg.splunkcloud.com',
+                correlationPath: '/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit'
+            }
+        };
+
+        settingsState.parsingRules = [
+            { id: 'rule_1', name: 'Extract Index', pattern: 'index\\s*=\\s*["\']?([\\w\\-\\*]+)["\']?', field: 'indexes', enabled: true },
+            { id: 'rule_2', name: 'Extract Sourcetype', pattern: 'sourcetype\\s*=\\s*["\']?([\\w\\-\\:\\.\\*]+)["\']?', field: 'sourcetypes', enabled: true },
+            { id: 'rule_3', name: 'Extract Macro', pattern: '`([\\w_]+(?:\\([^)]*\\))?)`', field: 'macros', enabled: true },
+            { id: 'rule_4', name: 'Extract Lookup', pattern: '\\|\\s*(?:lookup|inputlookup|outputlookup)\\s+([\\w_]+)', field: 'lookups', enabled: true }
+        ];
+
+        saveSettingsToStorage();
+        saveParsingRulesToStorage();
+        renderSettings();
+        renderParsingRules();
+        showToast('Settings reset to defaults', 'success');
+    };
+
+    // Test GitHub Connection
+    window.testGitHubConnection = function() {
+        var modal = document.getElementById('modal-settings');
+        var isModal = modal && !modal.classList.contains('hidden');
+        var prefix = isModal ? 'modal-' : '';
+
+        var baseUrl = getInputValue(prefix + 'github-base-url') || 'https://api.github.com';
+        var repo = getInputValue(prefix + 'github-repo');
+        var token = getInputValue(prefix + 'github-token');
+
+        var statusEl = document.getElementById(prefix + 'github-connection-status');
+        if (!statusEl) statusEl = document.getElementById('github-connection-status');
+
+        if (!repo) {
+            if (statusEl) {
+                statusEl.textContent = 'Repository required';
+                statusEl.className = 'connection-status error';
+            }
+            showToast('Please enter a repository (owner/repo)', 'error');
+            return;
+        }
+
+        if (statusEl) {
+            statusEl.textContent = 'Testing...';
+            statusEl.className = 'connection-status testing';
+        }
+
+        // Build API URL
+        var apiUrl = baseUrl + '/repos/' + repo;
+
+        var headers = {
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        if (token) {
+            headers['Authorization'] = 'token ' + token;
+        }
+
+        fetch(apiUrl, { headers: headers })
+            .then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401) {
+                    throw new Error('Invalid token');
+                } else if (response.status === 404) {
+                    throw new Error('Repository not found');
+                } else {
+                    throw new Error('HTTP ' + response.status);
+                }
+            })
+            .then(function(data) {
+                if (statusEl) {
+                    statusEl.textContent = 'Connected to ' + data.full_name;
+                    statusEl.className = 'connection-status success';
+                }
+                showToast('GitHub connection successful', 'success');
+            })
+            .catch(function(err) {
+                if (statusEl) {
+                    statusEl.textContent = err.message;
+                    statusEl.className = 'connection-status error';
+                }
+                showToast('GitHub connection failed: ' + err.message, 'error');
+            });
+    };
+
+    // Re-parse All Detections
+    window.reparseAllDetections = function() {
+        var detections = App.state.detections || [];
+        if (detections.length === 0) {
+            showToast('No detections to re-parse', 'error');
+            return;
+        }
+
+        // Show progress indicators
+        var progressEls = ['reparse-progress', 'modal-reparse-progress'];
+        progressEls.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        });
+
+        var total = detections.length;
+        var processed = 0;
+
+        function updateProgress(count) {
+            var percent = Math.round((count / total) * 100);
+            ['reparse-progress-fill', 'modal-reparse-progress-fill'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.width = percent + '%';
+            });
+            ['reparse-progress-text', 'modal-reparse-progress-text'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = percent + '%';
+            });
+        }
+
+        function processNext() {
+            if (processed >= total) {
+                // Done
+                progressEls.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        setTimeout(function() { el.classList.add('hidden'); }, 1500);
+                    }
+                });
+                showToast('Re-parsed ' + total + ' detections', 'success');
+                App.renderLibrary();
+                return;
+            }
+
+            var d = detections[processed];
+            var spl = d['Search String'] || '';
+            if (spl) {
+                var parsed = parseSPL(spl);
+                d['_parsed'] = parsed;
+
+                // Update Required_Data_Sources if not set
+                if (!d['Required_Data_Sources'] || d['Required_Data_Sources'] === '') {
+                    var sources = parsed.indexes.concat(parsed.sourcetypes);
+                    d['Required_Data_Sources'] = sources.join(', ');
+                }
+            }
+
+            processed++;
+            updateProgress(processed);
+
+            // Process in batches to avoid UI freeze
+            setTimeout(processNext, 10);
+        }
+
+        processNext();
+    };
+
+    // Import Detections from JSON File
+    window.handleImportFile = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var data = JSON.parse(e.target.result);
+
+                // Handle array or single detection
+                var importedDetections = Array.isArray(data) ? data : [data];
+
+                if (importedDetections.length === 0) {
+                    showToast('No detections found in file', 'error');
+                    return;
+                }
+
+                // Merge with existing detections
+                var existingNames = {};
+                App.state.detections.forEach(function(d) {
+                    existingNames[d['Detection Name']] = true;
+                });
+
+                var added = 0;
+                var updated = 0;
+
+                importedDetections.forEach(function(d) {
+                    if (!d['Detection Name']) return;
+
+                    var existingIndex = App.state.detections.findIndex(function(existing) {
+                        return existing['Detection Name'] === d['Detection Name'];
+                    });
+
+                    if (existingIndex >= 0) {
+                        App.state.detections[existingIndex] = d;
+                        updated++;
+                    } else {
+                        App.state.detections.push(d);
+                        added++;
+                    }
+                });
+
+                App.state.filteredDetections = App.state.detections.slice();
+                App.renderLibrary();
+                App.populateFilters();
+
+                var message = '';
+                if (added > 0) message += added + ' added';
+                if (updated > 0) message += (message ? ', ' : '') + updated + ' updated';
+                showToast('Import complete: ' + message, 'success');
+
+            } catch (err) {
+                showToast('Failed to parse JSON: ' + err.message, 'error');
+            }
+        };
+
+        reader.readAsText(file);
+        event.target.value = ''; // Reset file input
+    };
+
+    // Export All Detections to JSON File
+    window.exportAllDetections = function() {
+        var detections = App.state.detections || [];
+        if (detections.length === 0) {
+            showToast('No detections to export', 'error');
+            return;
+        }
+
+        var json = JSON.stringify(detections, null, 2);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'detections_export_' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('Exported ' + detections.length + ' detections', 'success');
+    };
+
+    // Add Parsing Rule
+    window.addParsingRule = function() {
+        settingsState.editingRuleId = null;
+
+        var modal = document.getElementById('modal-parsing-rule');
+        var title = document.getElementById('parsing-rule-modal-title');
+        var nameInput = document.getElementById('parsing-rule-name');
+        var patternInput = document.getElementById('parsing-rule-pattern');
+        var fieldInput = document.getElementById('parsing-rule-field');
+        var enabledInput = document.getElementById('parsing-rule-enabled');
+        var editIdInput = document.getElementById('parsing-rule-edit-id');
+
+        if (title) title.textContent = 'Add Parsing Rule';
+        if (nameInput) nameInput.value = '';
+        if (patternInput) patternInput.value = '';
+        if (fieldInput) fieldInput.value = '';
+        if (enabledInput) enabledInput.checked = true;
+        if (editIdInput) editIdInput.value = '';
+
+        if (modal) modal.classList.remove('hidden');
+        if (nameInput) nameInput.focus();
+    };
+
+    // Edit Parsing Rule
+    window.editParsingRule = function(ruleId) {
+        var rule = settingsState.parsingRules.find(function(r) {
+            return r.id === ruleId;
+        });
+        if (!rule) return;
+
+        settingsState.editingRuleId = ruleId;
+
+        var modal = document.getElementById('modal-parsing-rule');
+        var title = document.getElementById('parsing-rule-modal-title');
+        var nameInput = document.getElementById('parsing-rule-name');
+        var patternInput = document.getElementById('parsing-rule-pattern');
+        var fieldInput = document.getElementById('parsing-rule-field');
+        var enabledInput = document.getElementById('parsing-rule-enabled');
+        var editIdInput = document.getElementById('parsing-rule-edit-id');
+
+        if (title) title.textContent = 'Edit Parsing Rule';
+        if (nameInput) nameInput.value = rule.name || '';
+        if (patternInput) patternInput.value = rule.pattern || '';
+        if (fieldInput) fieldInput.value = rule.field || '';
+        if (enabledInput) enabledInput.checked = rule.enabled !== false;
+        if (editIdInput) editIdInput.value = ruleId;
+
+        if (modal) modal.classList.remove('hidden');
+        if (nameInput) nameInput.focus();
+    };
+
+    // Close Parsing Rule Modal
+    window.closeParsingRuleModal = function() {
+        var modal = document.getElementById('modal-parsing-rule');
+        if (modal) modal.classList.add('hidden');
+        settingsState.editingRuleId = null;
+    };
+
+    // Save Parsing Rule
+    window.saveParsingRule = function() {
+        var nameInput = document.getElementById('parsing-rule-name');
+        var patternInput = document.getElementById('parsing-rule-pattern');
+        var fieldInput = document.getElementById('parsing-rule-field');
+        var enabledInput = document.getElementById('parsing-rule-enabled');
+        var editIdInput = document.getElementById('parsing-rule-edit-id');
+
+        var name = nameInput ? nameInput.value.trim() : '';
+        var pattern = patternInput ? patternInput.value.trim() : '';
+        var field = fieldInput ? fieldInput.value.trim() : '';
+        var enabled = enabledInput ? enabledInput.checked : true;
+        var editId = editIdInput ? editIdInput.value : '';
+
+        // Validation
+        if (!name) {
+            alert('Please enter a rule name');
+            if (nameInput) nameInput.focus();
+            return;
+        }
+        if (!pattern) {
+            alert('Please enter a regex pattern');
+            if (patternInput) patternInput.focus();
+            return;
+        }
+        if (!field) {
+            alert('Please enter a field name');
+            if (fieldInput) fieldInput.focus();
+            return;
+        }
+
+        // Validate regex
+        try {
+            new RegExp(pattern, 'gi');
+        } catch (e) {
+            alert('Invalid regex pattern: ' + e.message);
+            if (patternInput) patternInput.focus();
+            return;
+        }
+
+        if (editId) {
+            // Update existing rule
+            var index = settingsState.parsingRules.findIndex(function(r) {
+                return r.id === editId;
+            });
+            if (index !== -1) {
+                settingsState.parsingRules[index].name = name;
+                settingsState.parsingRules[index].pattern = pattern;
+                settingsState.parsingRules[index].field = field;
+                settingsState.parsingRules[index].enabled = enabled;
+            }
+        } else {
+            // Add new rule
+            settingsState.parsingRules.push({
+                id: 'rule_' + Date.now(),
+                name: name,
+                pattern: pattern,
+                field: field,
+                enabled: enabled
+            });
+        }
+
+        saveParsingRulesToStorage();
+        renderParsingRules();
+        closeParsingRuleModal();
+        showToast('Parsing rule saved', 'success');
+    };
+
+    // Toggle Parsing Rule
+    window.toggleParsingRule = function(ruleId, enabled) {
+        var rule = settingsState.parsingRules.find(function(r) {
+            return r.id === ruleId;
+        });
+        if (rule) {
+            rule.enabled = enabled;
+            saveParsingRulesToStorage();
+        }
+    };
+
+    // Delete Parsing Rule
+    window.deleteParsingRule = function(ruleId) {
+        if (!confirm('Are you sure you want to delete this parsing rule?')) return;
+
+        settingsState.parsingRules = settingsState.parsingRules.filter(function(r) {
+            return r.id !== ruleId;
+        });
+
+        saveParsingRulesToStorage();
+        renderParsingRules();
+        showToast('Parsing rule deleted', 'success');
+    };
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -3937,6 +4600,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initHistory();
         initResources();
         initReports();
+        initSettings();
     };
 
     // Expose App to global scope for debugging

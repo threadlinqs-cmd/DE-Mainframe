@@ -63,6 +63,7 @@
                 </div>
                 <div class="header-right">
                     <span class="header-subtitle">Detection Engineering</span>
+                    <button class="settings-btn" onclick="openSettingsModal()" aria-label="Settings" title="Settings">&#x2699;</button>
                     <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark theme">☀</button>
                 </div>
             </header>
@@ -888,8 +889,140 @@
                     </div>
                 </section>
                 <section id="view-settings" class="view">
-                    <div class="content-header"><h2>Settings</h2></div>
-                    <div class="content-body"><p class="placeholder-text">Settings view coming soon.</p></div>
+                    <div class="settings-layout">
+                        <!-- GitHub Connection Settings -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <h3>GitHub Connection</h3>
+                            </div>
+                            <div class="settings-section-body">
+                                <div class="form-row two-col">
+                                    <div class="form-group">
+                                        <label for="setting-github-base-url">GitHub Base URL</label>
+                                        <input type="text" id="setting-github-base-url" class="form-input" placeholder="https://api.github.com">
+                                        <small class="form-hint">Leave default for github.com, or enter enterprise URL</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-github-repo">Repository</label>
+                                        <input type="text" id="setting-github-repo" class="form-input" placeholder="owner/repo-name">
+                                        <small class="form-hint">Format: owner/repository</small>
+                                    </div>
+                                </div>
+                                <div class="form-row two-col">
+                                    <div class="form-group">
+                                        <label for="setting-github-branch">Branch</label>
+                                        <input type="text" id="setting-github-branch" class="form-input" placeholder="main">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-github-token">Personal Access Token</label>
+                                        <input type="password" id="setting-github-token" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
+                                        <small class="form-hint">Requires repo scope permissions</small>
+                                    </div>
+                                </div>
+                                <div class="settings-actions">
+                                    <button class="btn-action" onclick="testGitHubConnection()">Test Connection</button>
+                                    <span id="github-connection-status" class="connection-status"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Operations -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <h3>Data Operations</h3>
+                            </div>
+                            <div class="settings-section-body">
+                                <div class="data-operations-grid">
+                                    <!-- Re-parse Detections -->
+                                    <div class="data-operation-card">
+                                        <div class="data-operation-icon">&#x1F504;</div>
+                                        <div class="data-operation-info">
+                                            <h4>Re-parse All Detections</h4>
+                                            <p>Re-analyze SPL and update metadata for all detections</p>
+                                        </div>
+                                        <button class="btn-action" onclick="reparseAllDetections()">Re-parse</button>
+                                        <div id="reparse-progress" class="progress-indicator hidden">
+                                            <div class="progress-bar"><div class="progress-fill" id="reparse-progress-fill"></div></div>
+                                            <span class="progress-text" id="reparse-progress-text">0%</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Import Detections -->
+                                    <div class="data-operation-card">
+                                        <div class="data-operation-icon">&#x1F4E5;</div>
+                                        <div class="data-operation-info">
+                                            <h4>Import Detections</h4>
+                                            <p>Import detections from a JSON file</p>
+                                        </div>
+                                        <input type="file" id="import-file-input" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                                        <button class="btn-action" onclick="document.getElementById('import-file-input').click()">Import JSON</button>
+                                    </div>
+
+                                    <!-- Export Detections -->
+                                    <div class="data-operation-card">
+                                        <div class="data-operation-icon">&#x1F4E4;</div>
+                                        <div class="data-operation-info">
+                                            <h4>Export Detections</h4>
+                                            <p>Download all detections as a JSON file</p>
+                                        </div>
+                                        <button class="btn-action" onclick="exportAllDetections()">Export JSON</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parsing Rules Configuration -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <h3>Parsing Rules</h3>
+                                <button class="btn-action btn-small" onclick="addParsingRule()">+ Add Rule</button>
+                            </div>
+                            <div class="settings-section-body">
+                                <p class="settings-description">Configure custom parsing rules for extracting metadata from SPL queries.</p>
+                                <div class="parsing-rules-table-container">
+                                    <table class="parsing-rules-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Rule Name</th>
+                                                <th>Pattern (Regex)</th>
+                                                <th>Extract Field</th>
+                                                <th>Enabled</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="parsing-rules-tbody">
+                                            <!-- Parsing rules will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Splunk Configuration -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <h3>Splunk Configuration</h3>
+                            </div>
+                            <div class="settings-section-body">
+                                <div class="form-row two-col">
+                                    <div class="form-group">
+                                        <label for="setting-splunk-base-url">Splunk Base URL</label>
+                                        <input type="text" id="setting-splunk-base-url" class="form-input" placeholder="https://myorg.splunkcloud.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-splunk-correlation-path">Correlation Search Path</label>
+                                        <input type="text" id="setting-splunk-correlation-path" class="form-input" placeholder="/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Settings Button -->
+                        <div class="settings-footer">
+                            <button class="btn-action btn-primary" onclick="saveAllSettings()">Save All Settings</button>
+                            <button class="btn-action" onclick="resetSettings()">Reset to Defaults</button>
+                        </div>
+                    </div>
                 </section>
             </main>
 
@@ -1036,6 +1169,165 @@
                     <div class="modal-footer">
                         <button class="btn-action" onclick="closeResourceModal()">Cancel</button>
                         <button id="btn-resource-save" class="btn-action btn-primary" onclick="saveResource()">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="modal-settings" class="modal hidden">
+                <div class="modal-overlay" onclick="closeSettingsModal()"></div>
+                <div class="modal-content modal-large settings-modal-content">
+                    <div class="modal-header">
+                        <h3>Settings</h3>
+                        <button class="modal-close" onclick="closeSettingsModal()">×</button>
+                    </div>
+                    <div class="modal-body settings-modal-body">
+                        <!-- Settings Tabs -->
+                        <div class="settings-tabs">
+                            <button class="settings-tab active" data-settings-tab="github" onclick="switchSettingsTab('github')">GitHub</button>
+                            <button class="settings-tab" data-settings-tab="data" onclick="switchSettingsTab('data')">Data</button>
+                            <button class="settings-tab" data-settings-tab="parsing" onclick="switchSettingsTab('parsing')">Parsing</button>
+                            <button class="settings-tab" data-settings-tab="splunk" onclick="switchSettingsTab('splunk')">Splunk</button>
+                        </div>
+
+                        <!-- GitHub Tab -->
+                        <div id="settings-tab-github" class="settings-tab-content active">
+                            <div class="form-group">
+                                <label for="modal-github-base-url">GitHub Base URL</label>
+                                <input type="text" id="modal-github-base-url" class="form-input" placeholder="https://api.github.com">
+                                <small class="form-hint">Leave default for github.com, or enter enterprise URL</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-github-repo">Repository</label>
+                                <input type="text" id="modal-github-repo" class="form-input" placeholder="owner/repo-name">
+                                <small class="form-hint">Format: owner/repository</small>
+                            </div>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="modal-github-branch">Branch</label>
+                                    <input type="text" id="modal-github-branch" class="form-input" placeholder="main">
+                                </div>
+                                <div class="form-group">
+                                    <label for="modal-github-token">Personal Access Token</label>
+                                    <input type="password" id="modal-github-token" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
+                                </div>
+                            </div>
+                            <div class="settings-actions">
+                                <button class="btn-action" onclick="testGitHubConnection()">Test Connection</button>
+                                <span id="modal-github-connection-status" class="connection-status"></span>
+                            </div>
+                        </div>
+
+                        <!-- Data Tab -->
+                        <div id="settings-tab-data" class="settings-tab-content">
+                            <div class="data-operations-list">
+                                <div class="data-operation-row">
+                                    <div class="data-operation-info">
+                                        <h4>Re-parse All Detections</h4>
+                                        <p>Re-analyze SPL and update metadata for all detections</p>
+                                    </div>
+                                    <button class="btn-action" onclick="reparseAllDetections()">Re-parse</button>
+                                </div>
+                                <div id="modal-reparse-progress" class="progress-indicator hidden">
+                                    <div class="progress-bar"><div class="progress-fill" id="modal-reparse-progress-fill"></div></div>
+                                    <span class="progress-text" id="modal-reparse-progress-text">0%</span>
+                                </div>
+                                <div class="data-operation-row">
+                                    <div class="data-operation-info">
+                                        <h4>Import Detections</h4>
+                                        <p>Import detections from a JSON file</p>
+                                    </div>
+                                    <input type="file" id="modal-import-file-input" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                                    <button class="btn-action" onclick="document.getElementById('modal-import-file-input').click()">Import JSON</button>
+                                </div>
+                                <div class="data-operation-row">
+                                    <div class="data-operation-info">
+                                        <h4>Export Detections</h4>
+                                        <p>Download all detections as a JSON file</p>
+                                    </div>
+                                    <button class="btn-action" onclick="exportAllDetections()">Export JSON</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parsing Tab -->
+                        <div id="settings-tab-parsing" class="settings-tab-content">
+                            <div class="parsing-rules-header">
+                                <p>Configure custom parsing rules for extracting metadata from SPL queries.</p>
+                                <button class="btn-action btn-small" onclick="addParsingRule()">+ Add Rule</button>
+                            </div>
+                            <div class="parsing-rules-table-container modal-table">
+                                <table class="parsing-rules-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rule Name</th>
+                                            <th>Pattern</th>
+                                            <th>Field</th>
+                                            <th>On</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modal-parsing-rules-tbody">
+                                        <!-- Parsing rules will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Splunk Tab -->
+                        <div id="settings-tab-splunk" class="settings-tab-content">
+                            <div class="form-group">
+                                <label for="modal-splunk-base-url">Splunk Base URL</label>
+                                <input type="text" id="modal-splunk-base-url" class="form-input" placeholder="https://myorg.splunkcloud.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-splunk-correlation-path">Correlation Search Path</label>
+                                <input type="text" id="modal-splunk-correlation-path" class="form-input" placeholder="/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeSettingsModal()">Cancel</button>
+                        <button class="btn-action btn-primary" onclick="saveAllSettings(); closeSettingsModal();">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parsing Rule Edit Modal -->
+            <div id="modal-parsing-rule" class="modal hidden">
+                <div class="modal-overlay" onclick="closeParsingRuleModal()"></div>
+                <div class="modal-content modal-small">
+                    <div class="modal-header">
+                        <h3 id="parsing-rule-modal-title">Add Parsing Rule</h3>
+                        <button class="modal-close" onclick="closeParsingRuleModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="parsing-rule-form">
+                            <div class="form-group">
+                                <label for="parsing-rule-name">Rule Name <span class="required">*</span></label>
+                                <input type="text" id="parsing-rule-name" class="form-input" placeholder="e.g., Extract Index">
+                            </div>
+                            <div class="form-group">
+                                <label for="parsing-rule-pattern">Regex Pattern <span class="required">*</span></label>
+                                <input type="text" id="parsing-rule-pattern" class="form-input code-input" placeholder="e.g., index=(\w+)">
+                                <small class="form-hint">Use capture groups () to extract values</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="parsing-rule-field">Extract to Field <span class="required">*</span></label>
+                                <input type="text" id="parsing-rule-field" class="form-input" placeholder="e.g., indexes">
+                            </div>
+                            <div class="form-group">
+                                <label class="toggle-label inline">
+                                    <input type="checkbox" id="parsing-rule-enabled" checked>
+                                    <span>Enabled</span>
+                                </label>
+                            </div>
+                            <input type="hidden" id="parsing-rule-edit-id" value="">
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeParsingRuleModal()">Cancel</button>
+                        <button class="btn-action btn-primary" onclick="saveParsingRule()">Save Rule</button>
                     </div>
                 </div>
             </div>

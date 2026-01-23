@@ -3635,3 +3635,362 @@ pre code {
         width: 80px;
     }
 }
+
+/* ========================================
+   Settings View & Modal
+   ======================================== */
+
+/* Settings Button in Header */
+.settings-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 16px;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-left: 12px;
+    line-height: 1;
+}
+
+.settings-btn:hover {
+    background-color: var(--color-hover);
+}
+
+/* Settings Layout */
+.settings-layout {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.settings-section {
+    margin-bottom: 24px;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+}
+
+.settings-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-alt);
+}
+
+.settings-section-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.settings-section-body {
+    padding: 16px;
+}
+
+.settings-description {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+}
+
+.settings-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.connection-status {
+    font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+
+.connection-status.success {
+    background-color: rgba(63, 185, 80, 0.1);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.connection-status.error {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.connection-status.testing {
+    background-color: rgba(88, 166, 255, 0.1);
+    color: #58a6ff;
+    border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+/* Data Operations Grid */
+.data-operations-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.data-operation-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 16px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border-light);
+}
+
+.data-operation-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.data-operation-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.data-operation-info p {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+/* Data Operations List (for modal) */
+.data-operations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.data-operation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border-light);
+}
+
+.data-operation-row .data-operation-info {
+    flex: 1;
+    text-align: left;
+}
+
+.data-operation-row .data-operation-info h4 {
+    margin-bottom: 4px;
+}
+
+.data-operation-row .data-operation-info p {
+    margin-bottom: 0;
+}
+
+/* Progress Indicator */
+.progress-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.progress-indicator.hidden {
+    display: none;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--color-text);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--color-text-secondary);
+    min-width: 40px;
+}
+
+/* Parsing Rules Table */
+.parsing-rules-table-container {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.parsing-rules-table-container.modal-table {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.parsing-rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.parsing-rules-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+}
+
+.parsing-rules-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border-light);
+    color: var(--color-text);
+}
+
+.parsing-rules-table tbody tr:hover {
+    background-color: var(--color-hover);
+}
+
+.parsing-rules-table code {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    background-color: var(--color-bg-alt);
+    padding: 2px 6px;
+}
+
+.parsing-rules-table .rule-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.parsing-rules-table .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    color: var(--color-text-secondary);
+}
+
+.parsing-rules-table .btn-icon:hover {
+    color: var(--color-text);
+}
+
+.parsing-rules-table .btn-icon.delete:hover {
+    color: #dc3545;
+}
+
+.parsing-rules-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--color-text-muted);
+}
+
+/* Settings Footer */
+.settings-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+    margin-top: 24px;
+}
+
+/* Settings Modal Styles */
+.settings-modal-content {
+    max-height: 85vh;
+}
+
+.settings-modal-body {
+    padding: 0;
+}
+
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.settings-tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-family: var(--font-family);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.settings-tab:hover {
+    color: var(--color-text);
+    background-color: var(--color-hover);
+}
+
+.settings-tab.active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+}
+
+.settings-tab-content {
+    display: none;
+    padding: 20px;
+}
+
+.settings-tab-content.active {
+    display: block;
+}
+
+/* Parsing Rules Header (in modal) */
+.parsing-rules-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.parsing-rules-header p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Settings Responsive */
+@media (max-width: 768px) {
+    .data-operations-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-footer {
+        flex-direction: column;
+    }
+
+    .settings-footer .btn-action {
+        width: 100%;
+    }
+
+    .settings-tabs {
+        flex-wrap: wrap;
+    }
+
+    .settings-tab {
+        flex: 1;
+        text-align: center;
+    }
+}
