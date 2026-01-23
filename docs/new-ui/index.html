@@ -69,15 +69,182 @@
 
             <!-- Main Content Area -->
             <main class="content-area">
-                <section id="content">
-                    <div class="content-header">
-                        <h2>Library</h2>
-                    </div>
-                    <div class="content-body">
-                        <p class="placeholder-text">Select a section from the navigation menu.</p>
+                <!-- Library View -->
+                <section id="view-library" class="view active">
+                    <div class="library-layout">
+                        <!-- Sidebar - Filters + Detection List -->
+                        <aside class="library-sidebar">
+                            <div class="library-search">
+                                <input type="text" id="library-search-input" class="search-input" placeholder="Search detections...">
+                            </div>
+                            <div class="library-filters">
+                                <div class="filter-row">
+                                    <select id="filter-severity" class="filter-select">
+                                        <option value="">All Severities</option>
+                                        <option value="critical">Critical</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                        <option value="informational">Informational</option>
+                                    </select>
+                                    <select id="filter-status" class="filter-select">
+                                        <option value="">All Status</option>
+                                        <option value="valid">Valid</option>
+                                        <option value="incomplete">Incomplete</option>
+                                        <option value="needs-tune">Needs Tune</option>
+                                        <option value="needs-retrofit">Needs Retrofit</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <select id="filter-domain" class="filter-select">
+                                        <option value="">All Domains</option>
+                                        <option value="access">Access</option>
+                                        <option value="endpoint">Endpoint</option>
+                                        <option value="network">Network</option>
+                                        <option value="threat">Threat</option>
+                                        <option value="identity">Identity</option>
+                                        <option value="audit">Audit</option>
+                                    </select>
+                                    <select id="filter-datasource" class="filter-select">
+                                        <option value="">All Datasources</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <select id="filter-mitre" class="filter-select">
+                                        <option value="">All MITRE</option>
+                                    </select>
+                                    <select id="filter-origin" class="filter-select">
+                                        <option value="">All Origins</option>
+                                        <option value="custom">Custom</option>
+                                        <option value="escu">ESCU</option>
+                                        <option value="sigma">Sigma</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="library-list-header">
+                                <span id="library-count">0 detections</span>
+                            </div>
+                            <div id="library-list" class="library-list"></div>
+                        </aside>
+                        <!-- Main content area - Detection Document -->
+                        <div class="library-main">
+                            <div id="detail-placeholder" class="detail-placeholder">
+                                <span class="placeholder-icon">📋</span>
+                                <p>Select a detection from the sidebar to view documentation</p>
+                            </div>
+                            <div id="library-detail-content" class="library-detail-content hidden">
+                                <div class="detail-header">
+                                    <div class="detail-actions">
+                                        <button id="btn-detail-correlation" class="btn-action" title="Edit Correlation Search in Splunk">Correlation</button>
+                                        <button id="btn-detail-tune" class="btn-action" title="Record Tuning">Tune</button>
+                                        <button id="btn-detail-retrofit" class="btn-action" title="Record Retrofit">Retrofit</button>
+                                        <button id="btn-detail-metadata" class="btn-action" title="View Metadata">Metadata</button>
+                                        <button id="btn-detail-edit" class="btn-action btn-primary" title="Edit Detection">Edit</button>
+                                        <button id="btn-detail-delete" class="btn-action btn-danger" title="Delete Detection">Delete</button>
+                                    </div>
+                                </div>
+                                <div id="library-detail-body" class="detail-body"></div>
+                            </div>
+                        </div>
                     </div>
                 </section>
+
+                <!-- Other Views (placeholders) -->
+                <section id="view-editor" class="view">
+                    <div class="content-header"><h2>Editor</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Editor view coming soon.</p></div>
+                </section>
+                <section id="view-macros" class="view">
+                    <div class="content-header"><h2>Macros</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Macros view coming soon.</p></div>
+                </section>
+                <section id="view-revalidation" class="view">
+                    <div class="content-header"><h2>Revalidation</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Revalidation view coming soon.</p></div>
+                </section>
+                <section id="view-history" class="view">
+                    <div class="content-header"><h2>History</h2></div>
+                    <div class="content-body"><p class="placeholder-text">History view coming soon.</p></div>
+                </section>
+                <section id="view-resources" class="view">
+                    <div class="content-header"><h2>Resources</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Resources view coming soon.</p></div>
+                </section>
+                <section id="view-reports" class="view">
+                    <div class="content-header"><h2>Reports</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Reports view coming soon.</p></div>
+                </section>
+                <section id="view-settings" class="view">
+                    <div class="content-header"><h2>Settings</h2></div>
+                    <div class="content-body"><p class="placeholder-text">Settings view coming soon.</p></div>
+                </section>
             </main>
+
+            <!-- Macro Modal -->
+            <div id="modal-macro" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="macro-modal-title">Macro Details</h3>
+                        <button class="modal-close" onclick="closeMacroModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="macro-modal-content">
+                            <p class="macro-name"><code id="macro-name-display"></code></p>
+                            <p class="macro-hint">This macro is used in the detection's search logic.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeMacroModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Modal -->
+            <div id="modal-metadata" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h3>Detection Metadata</h3>
+                        <div class="modal-header-actions">
+                            <div class="metadata-view-toggle">
+                                <button class="toggle-btn active" data-view="formatted" onclick="switchMetadataView('formatted')">Formatted</button>
+                                <button class="toggle-btn" data-view="json" onclick="switchMetadataView('json')">JSON</button>
+                            </div>
+                            <button class="modal-close" onclick="closeMetadataModal()">×</button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div id="metadata-detection-name" class="metadata-title"></div>
+                        <div id="metadata-formatted" class="metadata-formatted"></div>
+                        <div id="metadata-json" class="metadata-json hidden">
+                            <pre id="metadata-json-content" class="json-display"></pre>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="copyMetadataJson()">Copy JSON</button>
+                        <button class="btn-action" onclick="closeMetadataModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirm Modal -->
+            <div id="modal-confirm" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-content modal-small">
+                    <div class="modal-header">
+                        <h3>Confirm</h3>
+                        <button class="modal-close" onclick="closeConfirmModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="confirm-message">Are you sure?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeConfirmModal()">Cancel</button>
+                        <button id="btn-confirm-yes" class="btn-action btn-danger">Confirm</button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Status Bar -->
             <footer class="status-bar">
