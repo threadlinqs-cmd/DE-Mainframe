@@ -4321,6 +4321,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     min-width: 200px;
 }
 
+.macros-toolbar .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.macros-toolbar .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
 .macros-list {
     display: flex;
     flex-direction: column;
@@ -4336,7 +4352,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .macro-list-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 12px 16px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
@@ -4348,10 +4364,56 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     border-color: var(--accent);
 }
 
+.macro-list-item.macro-deprecated {
+    opacity: 0.7;
+    border-color: var(--warning);
+}
+
+.macro-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.macro-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .macro-name {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 14px;
     color: var(--accent);
+}
+
+.badge-deprecated {
+    background: var(--warning);
+    color: #000;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.macro-definition {
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+.macro-definition code {
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
+.macro-description {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
 }
 
 .btn-delete-macro {

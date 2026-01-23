@@ -24,7 +24,7 @@
                     <img src="assets/DE-Mainframe-logo.png" alt="DE-MainFrame" class="header-logo">
                 </a>
                 <span class="version">V11.15</span>
-                <button class="btn-new-ui" onclick="window.location.href='new-ui/'" title="Try the New UI">✨ New UI</button>
+                <button class="btn-new-ui" onclick="window.location.href='docs/new-ui/'" title="Try the New UI">✨ New UI</button>
             </div>
             <nav class="nav">
                 <button class="nav-btn active" data-view="library">Library</button>
@@ -535,8 +535,12 @@
                 </div>
                 <div class="macros-toolbar">
                     <div class="macros-search">
-                        <input type="text" id="macros-search-input" class="search-input" placeholder="🔍 Search macros...">
+                        <input type="text" id="macros-search-input" class="search-input" placeholder="🔍 Search macros by name, definition, or description...">
                     </div>
+                    <label class="checkbox-label" title="Show deprecated macros">
+                        <input type="checkbox" id="macros-show-deprecated">
+                        <span>Show Deprecated</span>
+                    </label>
                     <span id="macros-count" class="results-count">0 macros</span>
                     <button id="btn-add-macro" class="btn-primary">➕ Add Macro</button>
                 </div>
@@ -905,6 +909,20 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary modal-close">Cancel</button>
                 <button type="button" id="btn-save-macro" class="btn-primary">💾 Save Macro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Macro Details Modal (floating) -->
+    <div id="modal-macro-details" class="modal macro-details-modal hidden">
+        <div class="modal-overlay" onclick="closeMacroDetailsModal()"></div>
+        <div class="modal-content macro-details-content-wrapper">
+            <div class="modal-header">
+                <h3 id="macro-details-title">Macro Details</h3>
+                <button class="modal-close" onclick="closeMacroDetailsModal()">×</button>
+            </div>
+            <div class="modal-body" id="macro-details-body">
+                <!-- Content injected by JavaScript -->
             </div>
         </div>
     </div>

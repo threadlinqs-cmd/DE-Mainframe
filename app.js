@@ -778,7 +778,7 @@ function autoLoadFromStaticFiles() {
     var detectionsFile = PATHS.dist + '/all-detections.json';
     var metadataFile = PATHS.dist + '/all-metadata.json';
     var resourcesFile = PATHS.dist + '/resources.json';
-    var macrosFile = PATHS.dist + '/macros.json';
+    var macrosFile = PATHS.dist + '/all-macros.json';
 
     console.log('Loading from:', detectionsFile, metadataFile, resourcesFile, macrosFile);
 
@@ -5935,6 +5935,12 @@ function initMacros() {
         searchInput.addEventListener('input', debounce(renderMacros, 300));
     }
 
+    // Show deprecated checkbox
+    var deprecatedCheckbox = document.getElementById('macros-show-deprecated');
+    if (deprecatedCheckbox) {
+        deprecatedCheckbox.addEventListener('change', renderMacros);
+    }
+
     // Add Macro button
     var addBtn = document.getElementById('btn-add-macro');
     if (addBtn) {
@@ -5964,14 +5970,29 @@ function renderMacros() {
     if (!container) return;
 
     var searchTerm = (document.getElementById('macros-search-input')?.value || '').toLowerCase().trim();
+    var showDeprecated = document.getElementById('macros-show-deprecated')?.checked || false;
 
-    var filtered = loadedMacros.filter(function(m) {
-        return !searchTerm || m.toLowerCase().indexOf(searchTerm) !== -1;
+    // Filter macroObjects (rich objects) instead of just names
+    var filtered = macroObjects.filter(function(macro) {
+        // Filter by deprecated status
+        if (!showDeprecated && macro.deprecated) {
+            return false;
+        }
+        // Filter by search term across name, definition, and description
+        if (searchTerm) {
+            var name = (macro.name || '').toLowerCase();
+            var definition = (macro.definition || '').toLowerCase();
+            var description = (macro.description || '').toLowerCase();
+            return name.indexOf(searchTerm) !== -1 ||
+                   definition.indexOf(searchTerm) !== -1 ||
+                   description.indexOf(searchTerm) !== -1;
+        }
+        return true;
     });
 
-    // Sort alphabetically
+    // Sort alphabetically by name
     filtered.sort(function(a, b) {
-        return a.toLowerCase().localeCompare(b.toLowerCase());
+        return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
 
     // Update count
@@ -5981,15 +6002,28 @@ function renderMacros() {
     }
 
     if (filtered.length === 0) {
-        container.innerHTML = '<div class="empty-state"><span class="empty-icon">📐</span><p>No macros found</p><p class="empty-hint">Click "Add Macro" to register a macro for validation</p></div>';
+        container.innerHTML = '<div class="empty-state"><span class="empty-icon">📐</span><p>No macros found</p><p class="empty-hint">Try adjusting your search or check "Show Deprecated"</p></div>';
         return;
     }
 
     var html = '<div class="macros-grid-items">';
-    filtered.forEach(function(m) {
-        html += '<div class="macro-list-item">';
-        html += '<span class="macro-name">`' + escapeHtml(m) + '`</span>';
-        html += '<button class="btn-icon-small btn-delete-macro" onclick="confirmDeleteMacro(\'' + escapeAttr(m) + '\')" title="Delete macro">🗑️</button>';
+    filtered.forEach(function(macro) {
+        var deprecatedClass = macro.deprecated ? ' macro-deprecated' : '';
+        var deprecatedBadge = macro.deprecated ? '<span class="badge badge-deprecated">Deprecated</span>' : '';
+        html += '<div class="macro-list-item' + deprecatedClass + '">';
+        html += '<div class="macro-info">';
+        html += '<div class="macro-name-row">';
+        html += '<span class="macro-name">`' + escapeHtml(macro.name) + '`</span>';
+        html += deprecatedBadge;
+        html += '</div>';
+        if (macro.definition) {
+            html += '<div class="macro-definition"><code>' + escapeHtml(macro.definition) + '</code></div>';
+        }
+        if (macro.description) {
+            html += '<div class="macro-description">' + escapeHtml(macro.description.substring(0, 150)) + (macro.description.length > 150 ? '...' : '') + '</div>';
+        }
+        html += '</div>';
+        html += '<button class="btn-icon-small btn-delete-macro" onclick="confirmDeleteMacro(\'' + escapeAttr(macro.name) + '\')" title="Delete macro">🗑️</button>';
         html += '</div>';
     });
     html += '</div>';
@@ -6044,10 +6078,23 @@ function saveMacro() {
         return;
     }
 
-    // Add to loadedMacros
+    // Add to loadedMacros and macroObjects
     loadedMacros.push(macroName);
     loadedMacros.sort(function(a, b) {
         return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+
+    // Also add to macroObjects for rich display
+    macroObjects.push({
+        name: macroName,
+        definition: '',
+        description: 'User-added macro',
+        arguments: '',
+        deprecated: false,
+        usageCount: 0
+    });
+    macroObjects.sort(function(a, b) {
+        return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
 
     // Save to GitHub
@@ -6075,6 +6122,7 @@ function confirmDeleteMacro(macroName) {
 
 function deleteMacro(macroName) {
     loadedMacros = loadedMacros.filter(function(m) { return m !== macroName; });
+    macroObjects = macroObjects.filter(function(m) { return m.name !== macroName; });
 
     // Save to GitHub
     showToast('Deleting macro...', 'info');
