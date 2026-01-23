@@ -660,9 +660,80 @@
                         </div>
                     </div>
                 </section>
+                <!-- History View -->
                 <section id="view-history" class="view">
-                    <div class="content-header"><h2>History</h2></div>
-                    <div class="content-body"><p class="placeholder-text">History view coming soon.</p></div>
+                    <div class="history-layout">
+                        <!-- Sidebar - Filters -->
+                        <aside class="history-sidebar">
+                            <!-- Date Range Filter -->
+                            <div class="history-filter-section">
+                                <div class="filter-section-header">Date Range</div>
+                                <div class="date-range-picker">
+                                    <div class="form-group">
+                                        <label for="history-date-from">From</label>
+                                        <input type="date" id="history-date-from" class="form-input date-input" onchange="filterHistory()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="history-date-to">To</label>
+                                        <input type="date" id="history-date-to" class="form-input date-input" onchange="filterHistory()">
+                                    </div>
+                                    <div class="date-range-presets">
+                                        <button class="preset-btn" onclick="setDatePreset('7d')">7 days</button>
+                                        <button class="preset-btn" onclick="setDatePreset('30d')">30 days</button>
+                                        <button class="preset-btn" onclick="setDatePreset('90d')">90 days</button>
+                                        <button class="preset-btn" onclick="setDatePreset('all')">All time</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Change Type Filter -->
+                            <div class="history-filter-section">
+                                <div class="filter-section-header">Change Type</div>
+                                <div class="change-type-checkboxes">
+                                    <label class="change-type-checkbox created">
+                                        <input type="checkbox" id="history-type-created" checked onchange="filterHistory()">
+                                        <span class="change-type-label">Created</span>
+                                        <span id="history-count-created" class="change-type-count">0</span>
+                                    </label>
+                                    <label class="change-type-checkbox tuned">
+                                        <input type="checkbox" id="history-type-tuned" checked onchange="filterHistory()">
+                                        <span class="change-type-label">Tuned</span>
+                                        <span id="history-count-tuned" class="change-type-count">0</span>
+                                    </label>
+                                    <label class="change-type-checkbox retrofitted">
+                                        <input type="checkbox" id="history-type-retrofitted" checked onchange="filterHistory()">
+                                        <span class="change-type-label">Retrofitted</span>
+                                        <span id="history-count-retrofitted" class="change-type-count">0</span>
+                                    </label>
+                                    <label class="change-type-checkbox modified">
+                                        <input type="checkbox" id="history-type-modified" checked onchange="filterHistory()">
+                                        <span class="change-type-label">Modified</span>
+                                        <span id="history-count-modified" class="change-type-count">0</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Detection Name Search -->
+                            <div class="history-filter-section">
+                                <div class="filter-section-header">Detection Search</div>
+                                <div class="history-search">
+                                    <input type="text" id="history-search-input" class="search-input" placeholder="Search detections..." oninput="filterHistory()">
+                                </div>
+                            </div>
+
+                            <!-- Results Count -->
+                            <div class="history-list-header">
+                                <span id="history-count">0 changes</span>
+                            </div>
+                        </aside>
+
+                        <!-- Main content area - Timeline -->
+                        <div class="history-main">
+                            <div id="history-timeline" class="history-timeline">
+                                <!-- Timeline entries will be populated here -->
+                            </div>
+                        </div>
+                    </div>
                 </section>
                 <section id="view-resources" class="view">
                     <div class="content-header"><h2>Resources</h2></div>

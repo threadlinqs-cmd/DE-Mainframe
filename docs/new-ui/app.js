@@ -387,6 +387,10 @@ function buildCorrelationSearchUrl(detectionName) {
                         calculateStatusCounts();
                         filterRevalidation();
                     }
+                    // Update history view if initialized
+                    if (typeof buildHistoryEntries === 'function') {
+                        buildHistoryEntries();
+                    }
                 })
                 .catch(function(err) {
                     console.error('Failed to load detections:', err);
@@ -2901,6 +2905,402 @@ function buildCorrelationSearchUrl(detectionName) {
         }, 3000);
     }
 
+    // =========================================================================
+    // HISTORY VIEW FUNCTIONS
+    // =========================================================================
+
+    // History State
+    var historyState = {
+        entries: [],
+        filteredEntries: [],
+        typeCounts: {
+            created: 0,
+            tuned: 0,
+            retrofitted: 0,
+            modified: 0
+        },
+        dateFrom: null,
+        dateTo: null
+    };
+
+    // Initialize History View
+    function initHistory() {
+        // Set default date range to last 30 days
+        setDatePreset('30d');
+
+        // Build history entries from detections
+        buildHistoryEntries();
+    }
+
+    // Build history entries from all detections
+    function buildHistoryEntries() {
+        historyState.entries = [];
+
+        if (!App.state.detections || App.state.detections.length === 0) {
+            filterHistory();
+            return;
+        }
+
+        App.state.detections.forEach(function(d) {
+            var detectionName = d['Detection Name'] || 'Unnamed';
+            var severity = d['Severity/Priority'] || '';
+
+            // Add creation entry
+            if (d['First Created']) {
+                historyState.entries.push({
+                    detectionName: detectionName,
+                    type: 'created',
+                    date: new Date(d['First Created']),
+                    timestamp: d['First Created'],
+                    analyst: getAnalystFromRoles(d),
+                    severity: severity,
+                    detection: d
+                });
+            }
+
+            // Add entries from Revalidation_History
+            if (d['Revalidation_History'] && Array.isArray(d['Revalidation_History'])) {
+                d['Revalidation_History'].forEach(function(entry) {
+                    var changeType = getChangeTypeFromAction(entry.action);
+                    historyState.entries.push({
+                        detectionName: detectionName,
+                        type: changeType,
+                        date: new Date(entry.date),
+                        timestamp: entry.date,
+                        analyst: entry.user || 'Unknown',
+                        severity: severity,
+                        detection: d
+                    });
+                });
+            }
+
+            // Add modification entry if Last Modified is different from First Created
+            if (d['Last Modified'] && d['First Created']) {
+                var lastMod = new Date(d['Last Modified']);
+                var firstCreated = new Date(d['First Created']);
+                // Check if they're different (more than 1 minute apart)
+                if (Math.abs(lastMod - firstCreated) > 60000) {
+                    // Check if this modification is already covered by revalidation history
+                    var hasRecentRevalEntry = (d['Revalidation_History'] || []).some(function(entry) {
+                        var entryDate = new Date(entry.date);
+                        return Math.abs(entryDate - lastMod) < 60000;
+                    });
+
+                    if (!hasRecentRevalEntry) {
+                        historyState.entries.push({
+                            detectionName: detectionName,
+                            type: 'modified',
+                            date: lastMod,
+                            timestamp: d['Last Modified'],
+                            analyst: getAnalystFromRoles(d),
+                            severity: severity,
+                            detection: d
+                        });
+                    }
+                }
+            }
+        });
+
+        // Sort entries by date (newest first)
+        historyState.entries.sort(function(a, b) {
+            return b.date - a.date;
+        });
+
+        // Calculate type counts
+        calculateHistoryTypeCounts();
+
+        // Apply filters
+        filterHistory();
+    }
+
+    // Get analyst name from detection roles
+    function getAnalystFromRoles(d) {
+        if (!d['Roles'] || !Array.isArray(d['Roles'])) return 'Unknown';
+
+        // Try Technical Owner first, then Business Owner, then Requestor
+        var priorityOrder = ['Technical Owner', 'Business Owner', 'Requestor'];
+        for (var i = 0; i < priorityOrder.length; i++) {
+            var role = d['Roles'].find(function(r) {
+                return r.Role === priorityOrder[i] && r.Name;
+            });
+            if (role && role.Name) {
+                return role.Name;
+            }
+        }
+        return 'Unknown';
+    }
+
+    // Get change type from revalidation action string
+    function getChangeTypeFromAction(action) {
+        if (!action) return 'modified';
+        var actionLower = action.toLowerCase();
+        if (actionLower.indexOf('tune') !== -1) return 'tuned';
+        if (actionLower.indexOf('retrofit') !== -1) return 'retrofitted';
+        if (actionLower.indexOf('creat') !== -1) return 'created';
+        return 'modified';
+    }
+
+    // Calculate type counts for display
+    function calculateHistoryTypeCounts() {
+        historyState.typeCounts = {
+            created: 0,
+            tuned: 0,
+            retrofitted: 0,
+            modified: 0
+        };
+
+        historyState.entries.forEach(function(entry) {
+            if (historyState.typeCounts[entry.type] !== undefined) {
+                historyState.typeCounts[entry.type]++;
+            }
+        });
+
+        // Update count displays
+        var createdEl = document.getElementById('history-count-created');
+        var tunedEl = document.getElementById('history-count-tuned');
+        var retrofittedEl = document.getElementById('history-count-retrofitted');
+        var modifiedEl = document.getElementById('history-count-modified');
+
+        if (createdEl) createdEl.textContent = historyState.typeCounts.created;
+        if (tunedEl) tunedEl.textContent = historyState.typeCounts.tuned;
+        if (retrofittedEl) retrofittedEl.textContent = historyState.typeCounts.retrofitted;
+        if (modifiedEl) modifiedEl.textContent = historyState.typeCounts.modified;
+    }
+
+    // Set date preset
+    window.setDatePreset = function(preset) {
+        var now = new Date();
+        var fromDate = new Date();
+        var toDate = new Date();
+
+        // Reset to end of today
+        toDate.setHours(23, 59, 59, 999);
+
+        switch (preset) {
+            case '7d':
+                fromDate.setDate(now.getDate() - 7);
+                break;
+            case '30d':
+                fromDate.setDate(now.getDate() - 30);
+                break;
+            case '90d':
+                fromDate.setDate(now.getDate() - 90);
+                break;
+            case 'all':
+                fromDate = null;
+                toDate = null;
+                break;
+        }
+
+        if (fromDate) {
+            fromDate.setHours(0, 0, 0, 0);
+        }
+
+        // Update input fields
+        var fromInput = document.getElementById('history-date-from');
+        var toInput = document.getElementById('history-date-to');
+
+        if (fromInput) {
+            fromInput.value = fromDate ? formatDateForInput(fromDate) : '';
+        }
+        if (toInput) {
+            toInput.value = toDate ? formatDateForInput(toDate) : '';
+        }
+
+        // Update preset button states
+        var presetBtns = document.querySelectorAll('.preset-btn');
+        presetBtns.forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.getAttribute('onclick').indexOf("'" + preset + "'") !== -1) {
+                btn.classList.add('active');
+            }
+        });
+
+        historyState.dateFrom = fromDate;
+        historyState.dateTo = toDate;
+
+        filterHistory();
+    };
+
+    // Format date for input field (YYYY-MM-DD)
+    function formatDateForInput(date) {
+        if (!date) return '';
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+
+    // Filter history entries
+    window.filterHistory = function() {
+        // Get filter values
+        var searchInput = document.getElementById('history-search-input');
+        var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        var showCreated = document.getElementById('history-type-created')?.checked || false;
+        var showTuned = document.getElementById('history-type-tuned')?.checked || false;
+        var showRetrofitted = document.getElementById('history-type-retrofitted')?.checked || false;
+        var showModified = document.getElementById('history-type-modified')?.checked || false;
+
+        var fromInput = document.getElementById('history-date-from');
+        var toInput = document.getElementById('history-date-to');
+        var dateFrom = fromInput && fromInput.value ? new Date(fromInput.value) : historyState.dateFrom;
+        var dateTo = toInput && toInput.value ? new Date(toInput.value) : historyState.dateTo;
+
+        if (dateFrom) {
+            dateFrom.setHours(0, 0, 0, 0);
+        }
+        if (dateTo) {
+            dateTo.setHours(23, 59, 59, 999);
+        }
+
+        // Filter entries
+        historyState.filteredEntries = historyState.entries.filter(function(entry) {
+            // Type filter
+            if (entry.type === 'created' && !showCreated) return false;
+            if (entry.type === 'tuned' && !showTuned) return false;
+            if (entry.type === 'retrofitted' && !showRetrofitted) return false;
+            if (entry.type === 'modified' && !showModified) return false;
+
+            // Search filter
+            if (searchTerm && entry.detectionName.toLowerCase().indexOf(searchTerm) === -1) {
+                return false;
+            }
+
+            // Date filter
+            if (dateFrom && entry.date < dateFrom) return false;
+            if (dateTo && entry.date > dateTo) return false;
+
+            return true;
+        });
+
+        renderHistoryTimeline();
+    };
+
+    // Render history timeline
+    function renderHistoryTimeline() {
+        var container = document.getElementById('history-timeline');
+        var countEl = document.getElementById('history-count');
+
+        if (countEl) {
+            countEl.textContent = historyState.filteredEntries.length + ' change' + (historyState.filteredEntries.length !== 1 ? 's' : '');
+        }
+
+        if (!container) return;
+
+        if (historyState.filteredEntries.length === 0) {
+            container.innerHTML = '<div class="history-empty-state"><span class="empty-icon">📜</span><p>No history entries match the selected filters</p></div>';
+            return;
+        }
+
+        // Group entries by date
+        var groupedByDate = {};
+        historyState.filteredEntries.forEach(function(entry) {
+            var dateKey = formatDateForGrouping(entry.date);
+            if (!groupedByDate[dateKey]) {
+                groupedByDate[dateKey] = [];
+            }
+            groupedByDate[dateKey].push(entry);
+        });
+
+        // Render grouped entries
+        var html = '';
+        var dateKeys = Object.keys(groupedByDate);
+
+        dateKeys.forEach(function(dateKey) {
+            var entries = groupedByDate[dateKey];
+
+            html += '<div class="timeline-group">';
+            html += '<div class="timeline-date-header">' + formatDateForDisplay(entries[0].date) + '</div>';
+
+            entries.forEach(function(entry) {
+                var typeLabel = getTypeLabel(entry.type);
+                var sevClass = (entry.severity || '').toLowerCase();
+                var timeStr = formatTimeForDisplay(entry.date);
+
+                html += '<div class="timeline-entry ' + entry.type + '" onclick="viewDetectionFromHistory(\'' + escapeAttr(entry.detectionName) + '\')">';
+                html += '<div class="timeline-entry-header">';
+                html += '<span class="timeline-entry-name">' + escapeHtml(entry.detectionName) + '</span>';
+                html += '<span class="timeline-entry-type ' + entry.type + '">' + typeLabel + '</span>';
+                html += '</div>';
+                html += '<div class="timeline-entry-meta">';
+                html += '<span class="timeline-entry-time">' + timeStr + '</span>';
+                html += '<span class="timeline-entry-analyst"><span class="timeline-entry-analyst-icon">👤</span>' + escapeHtml(entry.analyst) + '</span>';
+                if (entry.severity) {
+                    html += '<span class="timeline-entry-severity"><span class="severity-badge ' + sevClass + '">' + escapeHtml(entry.severity) + '</span></span>';
+                }
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Get type label for display
+    function getTypeLabel(type) {
+        switch (type) {
+            case 'created': return 'Created';
+            case 'tuned': return 'Tuned';
+            case 'retrofitted': return 'Retrofitted';
+            case 'modified': return 'Modified';
+            default: return type;
+        }
+    }
+
+    // Format date for grouping key (YYYY-MM-DD)
+    function formatDateForGrouping(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    // Format date for display in group header
+    function formatDateForDisplay(date) {
+        var today = new Date();
+        var yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        var dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        var todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        var yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+        if (dateOnly.getTime() === todayOnly.getTime()) {
+            return 'Today';
+        } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    }
+
+    // Format time for display
+    function formatTimeForDisplay(date) {
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+
+    // View detection from history entry
+    window.viewDetectionFromHistory = function(detectionName) {
+        // Navigate to Library view
+        var navItem = document.querySelector('.nav-item[href="#library"]');
+        if (navItem) {
+            App.handleNavigation(navItem);
+            // Select the detection after a brief delay to allow view switch
+            setTimeout(function() {
+                App.selectDetection(detectionName);
+            }, 100);
+        }
+    };
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -2917,6 +3317,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initEditor();
         initMacros();
         initRevalidation();
+        initHistory();
     };
 
     // Expose App to global scope for debugging
