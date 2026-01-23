@@ -414,3 +414,132 @@ pre code {
         padding: 32px;
     }
 }
+
+/* ========================================
+   Password Modal
+   ======================================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.password-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.password-modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-overlay.no-close {
+    cursor: default;
+}
+
+.password-modal-content {
+    position: relative;
+    max-width: 360px;
+    width: 90%;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    text-align: center;
+}
+
+.password-modal .modal-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 24px 12px;
+    border-bottom: none;
+}
+
+.password-lock-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+}
+
+.password-modal .modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.password-modal .modal-body {
+    padding: 16px 24px;
+}
+
+.password-prompt {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.password-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 2px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg-alt);
+    color: var(--color-text);
+    font-family: var(--font-family);
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: var(--color-text-secondary);
+}
+
+.password-error {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 12px;
+    padding: 8px;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.password-error.hidden {
+    display: none;
+}
+
+.password-modal .modal-footer {
+    padding: 16px 24px 24px;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font-family);
+    background-color: var(--color-text);
+    color: var(--color-bg);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}

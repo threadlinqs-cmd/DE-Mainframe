@@ -8,6 +8,9 @@
  * - dist/ files: For accessing compiled detection data (via ../dist/)
  */
 
+// Password for access (shared with Classic UI)
+const ACCESS_PASSWORD = 'secmon2026';
+
 (function() {
     'use strict';
 
@@ -17,7 +20,8 @@
         config: {
             distPath: '../dist/',
             version: '1.0.0',
-            themeStorageKey: 'dmf_newui_theme'
+            themeStorageKey: 'dmf_newui_theme',
+            authStorageKey: 'dmf_authenticated'
         },
 
         // DOM elements
@@ -34,6 +38,56 @@
             sidebarOpen: false,
             connected: false,
             theme: 'light'
+        },
+
+        // Check password and initialize
+        checkPassword: function() {
+            var authenticated = sessionStorage.getItem(this.config.authStorageKey);
+            if (authenticated === 'true') {
+                this.init();
+                return;
+            }
+            this.showPasswordModal();
+        },
+
+        // Show password modal
+        showPasswordModal: function() {
+            var modal = document.getElementById('modal-password');
+            if (modal) {
+                modal.classList.remove('hidden');
+                var input = document.getElementById('password-input');
+                if (input) {
+                    input.focus();
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            window.validatePassword();
+                        }
+                    });
+                }
+            }
+        },
+
+        // Validate entered password
+        validatePassword: function() {
+            var input = document.getElementById('password-input');
+            var error = document.getElementById('password-error');
+            var enteredPassword = input ? input.value : '';
+
+            if (enteredPassword === ACCESS_PASSWORD) {
+                sessionStorage.setItem(this.config.authStorageKey, 'true');
+                var modal = document.getElementById('modal-password');
+                if (modal) modal.classList.add('hidden');
+                this.init();
+            } else {
+                if (error) {
+                    error.textContent = 'Incorrect password. Please try again.';
+                    error.classList.remove('hidden');
+                }
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
+            }
         },
 
         // Initialize the application
@@ -230,13 +284,17 @@
         App.toggleTheme();
     };
 
-    // Initialize when DOM is ready
+    window.validatePassword = function() {
+        App.validatePassword();
+    };
+
+    // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            App.init();
+            App.checkPassword();
         });
     } else {
-        App.init();
+        App.checkPassword();
     }
 
     // Expose App to global scope for debugging

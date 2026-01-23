@@ -7,6 +7,27 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Password Protection Modal -->
+    <div id="modal-password" class="modal password-modal">
+        <div class="modal-overlay no-close"></div>
+        <div class="modal-content password-modal-content">
+            <div class="modal-header">
+                <div class="password-lock-icon">🔒</div>
+                <h3>DE-MainFrame Access</h3>
+            </div>
+            <div class="modal-body">
+                <p class="password-prompt">Enter password to continue</p>
+                <div class="form-group">
+                    <input type="password" id="password-input" class="password-input" placeholder="Password" autocomplete="off">
+                </div>
+                <p id="password-error" class="password-error hidden">Incorrect password</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-password-submit" class="btn-primary" onclick="validatePassword()">Unlock</button>
+            </div>
+        </div>
+    </div>
+
     <div id="app">
         <!-- Sidebar Overlay (mobile) -->
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
