@@ -2178,3 +2178,527 @@ pre code {
         align-items: stretch;
     }
 }
+
+/* ========================================
+   Revalidation View
+   ======================================== */
+.revalidation-layout {
+    display: flex;
+    gap: 24px;
+    height: calc(100vh - var(--header-height) - var(--status-height) - 48px);
+}
+
+.revalidation-sidebar {
+    width: 400px;
+    min-width: 340px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+}
+
+.revalidation-main {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+}
+
+/* Status Classification Checkboxes */
+.revalidation-status-filters {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.status-filter-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+    margin-bottom: 10px;
+}
+
+.status-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.status-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    background-color: var(--color-bg);
+    font-size: 13px;
+}
+
+.status-checkbox:hover {
+    background-color: var(--color-hover);
+}
+
+.status-checkbox input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.status-checkbox .status-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+.status-checkbox .status-count {
+    font-size: 11px;
+    padding: 2px 8px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    border-radius: 10px;
+}
+
+/* Status Colors */
+.status-checkbox.valid .status-label {
+    color: #3fb950;
+}
+
+.status-checkbox.valid .status-count {
+    background-color: rgba(63, 185, 80, 0.1);
+    border-color: rgba(63, 185, 80, 0.3);
+    color: #3fb950;
+}
+
+.status-checkbox.incomplete .status-label {
+    color: #58a6ff;
+}
+
+.status-checkbox.incomplete .status-count {
+    background-color: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.3);
+    color: #58a6ff;
+}
+
+.status-checkbox.needs-tune .status-label {
+    color: #d29922;
+}
+
+.status-checkbox.needs-tune .status-count {
+    background-color: rgba(210, 153, 34, 0.1);
+    border-color: rgba(210, 153, 34, 0.3);
+    color: #d29922;
+}
+
+.status-checkbox.needs-retrofit .status-label {
+    color: #f0883e;
+}
+
+.status-checkbox.needs-retrofit .status-count {
+    background-color: rgba(240, 136, 62, 0.1);
+    border-color: rgba(240, 136, 62, 0.3);
+    color: #f0883e;
+}
+
+/* Batch Operations */
+.revalidation-batch-ops {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.batch-ops-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+    margin-bottom: 10px;
+}
+
+.batch-ops-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-batch {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.btn-batch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.batch-selection-info {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* Splunk Dashboard Link */
+.revalidation-splunk-link {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.btn-splunk-dashboard {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-splunk-dashboard:hover {
+    background-color: var(--color-hover);
+}
+
+.splunk-icon {
+    font-size: 16px;
+}
+
+/* Revalidation List Header */
+.revalidation-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.select-all-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.select-all-checkbox input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Revalidation List */
+.revalidation-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.revalidation-list-item {
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background-color: var(--color-bg);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.revalidation-list-item:hover {
+    background-color: var(--color-hover);
+}
+
+.revalidation-list-item.selected {
+    background-color: var(--color-active);
+    border-color: var(--color-text-secondary);
+}
+
+.reval-item-checkbox {
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.reval-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.reval-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.reval-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.reval-item-status {
+    font-size: 10px;
+    padding: 2px 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.reval-item-status.valid {
+    background-color: rgba(63, 185, 80, 0.15);
+    color: #3fb950;
+}
+
+.reval-item-status.incomplete {
+    background-color: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
+}
+
+.reval-item-status.needs-tune {
+    background-color: rgba(210, 153, 34, 0.15);
+    color: #d29922;
+}
+
+.reval-item-status.needs-retrofit {
+    background-color: rgba(240, 136, 62, 0.15);
+    color: #f0883e;
+}
+
+.reval-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* TTL Indicator with Color Coding */
+.ttl-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.ttl-indicator .ttl-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.ttl-indicator.ttl-green .ttl-dot {
+    background-color: #3fb950;
+}
+
+.ttl-indicator.ttl-green {
+    color: #3fb950;
+}
+
+.ttl-indicator.ttl-yellow .ttl-dot {
+    background-color: #d29922;
+}
+
+.ttl-indicator.ttl-yellow {
+    color: #d29922;
+}
+
+.ttl-indicator.ttl-red .ttl-dot {
+    background-color: #dc3545;
+}
+
+.ttl-indicator.ttl-red {
+    color: #dc3545;
+}
+
+/* Revalidation Detail Content */
+.revalidation-detail-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.revalidation-detail-content.hidden {
+    display: none;
+}
+
+.reval-detail-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg-alt);
+}
+
+.reval-detail-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reval-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* Revalidation Detail Sections */
+.reval-ttl-section {
+    margin-bottom: 20px;
+}
+
+.reval-ttl-banner {
+    padding: 16px;
+    border: 1px solid;
+    margin-bottom: 12px;
+}
+
+.reval-ttl-banner.ttl-green {
+    background-color: rgba(63, 185, 80, 0.1);
+    border-color: rgba(63, 185, 80, 0.3);
+    color: #3fb950;
+}
+
+.reval-ttl-banner.ttl-yellow {
+    background-color: rgba(210, 153, 34, 0.1);
+    border-color: rgba(210, 153, 34, 0.3);
+    color: #d29922;
+}
+
+.reval-ttl-banner.ttl-red {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+
+.reval-ttl-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.reval-ttl-subtitle {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.reval-ttl-progress {
+    height: 8px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.reval-ttl-progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.reval-ttl-progress-bar.ttl-green {
+    background-color: #3fb950;
+}
+
+.reval-ttl-progress-bar.ttl-yellow {
+    background-color: #d29922;
+}
+
+.reval-ttl-progress-bar.ttl-red {
+    background-color: #dc3545;
+}
+
+.reval-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.reval-info-item {
+    padding: 12px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border-light);
+}
+
+.reval-info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+}
+
+.reval-info-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.reval-history-section {
+    margin-top: 20px;
+}
+
+.reval-history-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.reval-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reval-history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border-light);
+    font-size: 13px;
+}
+
+.reval-history-date {
+    color: var(--color-text-muted);
+    min-width: 100px;
+}
+
+.reval-history-action {
+    flex: 1;
+}
+
+.reval-history-user {
+    color: var(--color-text-secondary);
+}
+
+/* Revalidation Responsive */
+@media (max-width: 900px) {
+    .revalidation-layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .revalidation-sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 60vh;
+    }
+
+    .revalidation-main {
+        min-height: 50vh;
+    }
+
+    .batch-ops-buttons {
+        flex-direction: column;
+    }
+
+    .reval-info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

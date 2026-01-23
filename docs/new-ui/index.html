@@ -578,9 +578,87 @@
                         </div>
                     </div>
                 </section>
+                <!-- Revalidation View -->
                 <section id="view-revalidation" class="view">
-                    <div class="content-header"><h2>Revalidation</h2></div>
-                    <div class="content-body"><p class="placeholder-text">Revalidation view coming soon.</p></div>
+                    <div class="revalidation-layout">
+                        <!-- Sidebar - Filters + Detection List -->
+                        <aside class="revalidation-sidebar">
+                            <!-- Status Classification Checkboxes -->
+                            <div class="revalidation-status-filters">
+                                <div class="status-filter-header">Status Classification</div>
+                                <div class="status-checkbox-group">
+                                    <label class="status-checkbox valid">
+                                        <input type="checkbox" id="reval-status-valid" checked onchange="filterRevalidation()">
+                                        <span class="status-label">Valid</span>
+                                        <span id="reval-count-valid" class="status-count">0</span>
+                                    </label>
+                                    <label class="status-checkbox incomplete">
+                                        <input type="checkbox" id="reval-status-incomplete" checked onchange="filterRevalidation()">
+                                        <span class="status-label">Incomplete</span>
+                                        <span id="reval-count-incomplete" class="status-count">0</span>
+                                    </label>
+                                    <label class="status-checkbox needs-tune">
+                                        <input type="checkbox" id="reval-status-needs-tune" checked onchange="filterRevalidation()">
+                                        <span class="status-label">Needs Tune</span>
+                                        <span id="reval-count-needs-tune" class="status-count">0</span>
+                                    </label>
+                                    <label class="status-checkbox needs-retrofit">
+                                        <input type="checkbox" id="reval-status-needs-retrofit" checked onchange="filterRevalidation()">
+                                        <span class="status-label">Needs Retrofit</span>
+                                        <span id="reval-count-needs-retrofit" class="status-count">0</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Batch Operations -->
+                            <div class="revalidation-batch-ops">
+                                <div class="batch-ops-header">Batch Operations</div>
+                                <div class="batch-ops-buttons">
+                                    <button class="btn-action btn-batch" id="btn-batch-tune" onclick="batchMarkAsTuned()" disabled>Mark as Tuned</button>
+                                    <button class="btn-action btn-batch" id="btn-batch-retrofit" onclick="batchMarkAsRetrofitted()" disabled>Mark as Retrofitted</button>
+                                </div>
+                                <div id="batch-selection-count" class="batch-selection-info">Select detections below</div>
+                            </div>
+
+                            <!-- Splunk Dashboard Link -->
+                            <div class="revalidation-splunk-link">
+                                <button class="btn-action btn-splunk-dashboard" onclick="openSplunkRevalidationDashboard()">
+                                    <span class="splunk-icon">&#x1F4CA;</span> Open Splunk Revalidation Dashboard
+                                </button>
+                            </div>
+
+                            <!-- Detection List Header -->
+                            <div class="revalidation-list-header">
+                                <label class="select-all-checkbox">
+                                    <input type="checkbox" id="reval-select-all" onchange="toggleRevalidationSelectAll()">
+                                    <span>Select All</span>
+                                </label>
+                                <span id="revalidation-count">0 detections</span>
+                            </div>
+
+                            <!-- Detection List -->
+                            <div id="revalidation-list" class="revalidation-list"></div>
+                        </aside>
+
+                        <!-- Main content area - Detection Detail -->
+                        <div class="revalidation-main">
+                            <div id="reval-detail-placeholder" class="detail-placeholder">
+                                <span class="placeholder-icon">&#x1F504;</span>
+                                <p>Select a detection from the sidebar to view revalidation details</p>
+                            </div>
+                            <div id="reval-detail-content" class="revalidation-detail-content hidden">
+                                <div class="reval-detail-header">
+                                    <div class="reval-detail-actions">
+                                        <button id="btn-reval-correlation" class="btn-action" title="Edit Correlation Search in Splunk">Correlation</button>
+                                        <button id="btn-reval-tune" class="btn-action btn-primary" title="Mark as Tuned">Mark as Tuned</button>
+                                        <button id="btn-reval-retrofit" class="btn-action btn-primary" title="Mark as Retrofitted">Mark as Retrofitted</button>
+                                        <button id="btn-reval-view-library" class="btn-action" title="View in Library">View in Library</button>
+                                    </div>
+                                </div>
+                                <div id="reval-detail-body" class="reval-detail-body"></div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
                 <section id="view-history" class="view">
                     <div class="content-header"><h2>History</h2></div>

@@ -382,6 +382,11 @@ function buildCorrelationSearchUrl(detectionName) {
                     self.updateStatus('connected');
                     self.populateFilters();
                     self.renderLibrary();
+                    // Update revalidation view if initialized
+                    if (typeof calculateStatusCounts === 'function') {
+                        calculateStatusCounts();
+                        filterRevalidation();
+                    }
                 })
                 .catch(function(err) {
                     console.error('Failed to load detections:', err);
@@ -2417,6 +2422,459 @@ function buildCorrelationSearchUrl(detectionName) {
         });
     }
 
+    // =========================================================================
+    // REVALIDATION VIEW FUNCTIONS
+    // =========================================================================
+
+    // Revalidation State
+    var revalidationState = {
+        filteredDetections: [],
+        selectedDetection: null,
+        selectedItems: [], // Array of detection names for batch operations
+        statusCounts: {
+            valid: 0,
+            incomplete: 0,
+            'needs-tune': 0,
+            'needs-retrofit': 0
+        }
+    };
+
+    // Splunk Revalidation Dashboard URL
+    var SPLUNK_REVAL_DASHBOARD_URL = SPLUNK_CONFIG.baseUrl + '/en-US/app/SplunkEnterpriseSecuritySuite/detection_revalidation';
+
+    // Initialize Revalidation View
+    function initRevalidation() {
+        // Wait for detections to load, then initialize
+        if (App.state.detections && App.state.detections.length > 0) {
+            calculateStatusCounts();
+            filterRevalidation();
+        }
+
+        // Set up event listeners for revalidation detail buttons
+        document.getElementById('btn-reval-correlation')?.addEventListener('click', function() {
+            var d = revalidationState.selectedDetection;
+            if (d) {
+                var url = buildCorrelationSearchUrl(d['Detection Name']);
+                window.open(url, '_blank');
+            }
+        });
+
+        document.getElementById('btn-reval-tune')?.addEventListener('click', function() {
+            var d = revalidationState.selectedDetection;
+            if (d) {
+                markDetectionAsTuned(d);
+            }
+        });
+
+        document.getElementById('btn-reval-retrofit')?.addEventListener('click', function() {
+            var d = revalidationState.selectedDetection;
+            if (d) {
+                markDetectionAsRetrofitted(d);
+            }
+        });
+
+        document.getElementById('btn-reval-view-library')?.addEventListener('click', function() {
+            var d = revalidationState.selectedDetection;
+            if (d) {
+                var navItem = document.querySelector('.nav-item[href="#library"]');
+                if (navItem) {
+                    App.handleNavigation(navItem);
+                    setTimeout(function() {
+                        App.selectDetection(d['Detection Name']);
+                    }, 100);
+                }
+            }
+        });
+    }
+
+    // Calculate status counts for all detections
+    function calculateStatusCounts() {
+        revalidationState.statusCounts = {
+            valid: 0,
+            incomplete: 0,
+            'needs-tune': 0,
+            'needs-retrofit': 0
+        };
+
+        App.state.detections.forEach(function(d) {
+            var status = App.getDetectionStatus(d);
+            if (revalidationState.statusCounts[status] !== undefined) {
+                revalidationState.statusCounts[status]++;
+            }
+        });
+
+        // Update count displays
+        document.getElementById('reval-count-valid').textContent = revalidationState.statusCounts.valid;
+        document.getElementById('reval-count-incomplete').textContent = revalidationState.statusCounts.incomplete;
+        document.getElementById('reval-count-needs-tune').textContent = revalidationState.statusCounts['needs-tune'];
+        document.getElementById('reval-count-needs-retrofit').textContent = revalidationState.statusCounts['needs-retrofit'];
+    }
+
+    // Filter revalidation list based on selected status checkboxes
+    window.filterRevalidation = function() {
+        // Get selected statuses
+        var showValid = document.getElementById('reval-status-valid')?.checked || false;
+        var showIncomplete = document.getElementById('reval-status-incomplete')?.checked || false;
+        var showNeedsTune = document.getElementById('reval-status-needs-tune')?.checked || false;
+        var showNeedsRetrofit = document.getElementById('reval-status-needs-retrofit')?.checked || false;
+
+        // Filter detections
+        revalidationState.filteredDetections = App.state.detections.filter(function(d) {
+            var status = App.getDetectionStatus(d);
+            if (status === 'valid' && showValid) return true;
+            if (status === 'incomplete' && showIncomplete) return true;
+            if (status === 'needs-tune' && showNeedsTune) return true;
+            if (status === 'needs-retrofit' && showNeedsRetrofit) return true;
+            return false;
+        });
+
+        // Sort by TTL remaining (most urgent first)
+        revalidationState.filteredDetections.sort(function(a, b) {
+            var ttlA = calculateTTL(a['Last Modified']);
+            var ttlB = calculateTTL(b['Last Modified']);
+            return ttlA.days - ttlB.days;
+        });
+
+        // Clear selection if selected item is no longer visible
+        if (revalidationState.selectedDetection) {
+            var stillVisible = revalidationState.filteredDetections.some(function(d) {
+                return d['Detection Name'] === revalidationState.selectedDetection['Detection Name'];
+            });
+            if (!stillVisible) {
+                revalidationState.selectedDetection = null;
+                document.getElementById('reval-detail-placeholder').classList.remove('hidden');
+                document.getElementById('reval-detail-content').classList.add('hidden');
+            }
+        }
+
+        renderRevalidationList();
+        updateBatchSelectionInfo();
+    };
+
+    // Render revalidation list
+    function renderRevalidationList() {
+        var container = document.getElementById('revalidation-list');
+        var countEl = document.getElementById('revalidation-count');
+
+        if (countEl) {
+            countEl.textContent = revalidationState.filteredDetections.length + ' detection' + (revalidationState.filteredDetections.length !== 1 ? 's' : '');
+        }
+
+        if (!container) return;
+
+        if (revalidationState.filteredDetections.length === 0) {
+            container.innerHTML = '<div class="empty-state"><span class="empty-icon">&#x2714;</span><p>No detections match the selected filters</p></div>';
+            return;
+        }
+
+        var html = '';
+        revalidationState.filteredDetections.forEach(function(d) {
+            var name = d['Detection Name'] || 'Unnamed';
+            var status = App.getDetectionStatus(d);
+            var statusLabel = getStatusLabel(status);
+            var ttl = calculateTTL(d['Last Modified']);
+            var ttlClass = getTTLColorClass(ttl.days);
+            var modified = d['Last Modified'] ? formatDate(d['Last Modified']) : 'N/A';
+            var isSelected = revalidationState.selectedDetection && revalidationState.selectedDetection['Detection Name'] === name;
+            var isChecked = revalidationState.selectedItems.indexOf(name) !== -1;
+
+            html += '<div class="revalidation-list-item' + (isSelected ? ' selected' : '') + '" onclick="selectRevalidationDetection(\'' + escapeAttr(name) + '\')">';
+            html += '<input type="checkbox" class="reval-item-checkbox" ' + (isChecked ? 'checked' : '') + ' onclick="event.stopPropagation(); toggleRevalidationItem(\'' + escapeAttr(name) + '\', this.checked)">';
+            html += '<div class="reval-item-content">';
+            html += '<div class="reval-item-header">';
+            html += '<span class="reval-item-name">' + escapeHtml(name) + '</span>';
+            html += '<span class="reval-item-status ' + status + '">' + statusLabel + '</span>';
+            html += '</div>';
+            html += '<div class="reval-item-meta">';
+            html += '<span class="ttl-indicator ' + ttlClass + '"><span class="ttl-dot"></span>' + getTTLText(ttl) + '</span>';
+            html += '<span>' + modified + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    // Get status label for display
+    function getStatusLabel(status) {
+        switch (status) {
+            case 'valid': return 'Valid';
+            case 'incomplete': return 'Incomplete';
+            case 'needs-tune': return 'Needs Tune';
+            case 'needs-retrofit': return 'Needs Retrofit';
+            default: return status;
+        }
+    }
+
+    // Get TTL color class based on days remaining
+    function getTTLColorClass(days) {
+        if (days <= 0) return 'ttl-red';
+        if (days <= 30) return 'ttl-red';
+        if (days <= 90) return 'ttl-yellow';
+        return 'ttl-green';
+    }
+
+    // Get TTL text for display
+    function getTTLText(ttl) {
+        if (ttl.expired || ttl.days <= 0) return 'EXPIRED';
+        if (ttl.days === 1) return '1 day';
+        return ttl.days + ' days';
+    }
+
+    // Select a detection in revalidation view
+    window.selectRevalidationDetection = function(name) {
+        var detection = App.state.detections.find(function(d) {
+            return d['Detection Name'] === name;
+        });
+        if (!detection) return;
+
+        revalidationState.selectedDetection = detection;
+        renderRevalidationList();
+        renderRevalidationDetail(detection);
+    };
+
+    // Toggle selection of a detection for batch operations
+    window.toggleRevalidationItem = function(name, checked) {
+        if (checked) {
+            if (revalidationState.selectedItems.indexOf(name) === -1) {
+                revalidationState.selectedItems.push(name);
+            }
+        } else {
+            revalidationState.selectedItems = revalidationState.selectedItems.filter(function(n) {
+                return n !== name;
+            });
+        }
+        updateBatchSelectionInfo();
+    };
+
+    // Toggle select all
+    window.toggleRevalidationSelectAll = function() {
+        var selectAllCheckbox = document.getElementById('reval-select-all');
+        var isChecked = selectAllCheckbox ? selectAllCheckbox.checked : false;
+
+        if (isChecked) {
+            revalidationState.selectedItems = revalidationState.filteredDetections.map(function(d) {
+                return d['Detection Name'];
+            });
+        } else {
+            revalidationState.selectedItems = [];
+        }
+
+        renderRevalidationList();
+        updateBatchSelectionInfo();
+    };
+
+    // Update batch selection info
+    function updateBatchSelectionInfo() {
+        var infoEl = document.getElementById('batch-selection-count');
+        var tuneBtn = document.getElementById('btn-batch-tune');
+        var retrofitBtn = document.getElementById('btn-batch-retrofit');
+        var count = revalidationState.selectedItems.length;
+
+        if (infoEl) {
+            if (count === 0) {
+                infoEl.textContent = 'Select detections below';
+            } else {
+                infoEl.textContent = count + ' detection' + (count !== 1 ? 's' : '') + ' selected';
+            }
+        }
+
+        if (tuneBtn) tuneBtn.disabled = count === 0;
+        if (retrofitBtn) retrofitBtn.disabled = count === 0;
+    }
+
+    // Render revalidation detail panel
+    function renderRevalidationDetail(d) {
+        document.getElementById('reval-detail-placeholder').classList.add('hidden');
+        document.getElementById('reval-detail-content').classList.remove('hidden');
+
+        var ttl = calculateTTL(d['Last Modified']);
+        var ttlClass = getTTLColorClass(ttl.days);
+        var status = App.getDetectionStatus(d);
+        var progressPercent = Math.max(0, Math.min(100, (ttl.days / TTL_DAYS) * 100));
+
+        var html = '';
+
+        // TTL Section with Banner and Progress Bar
+        html += '<div class="reval-ttl-section">';
+        html += '<div class="reval-ttl-banner ' + ttlClass + '">';
+        html += '<div class="reval-ttl-title">' + (ttl.expired ? 'TTL EXPIRED' : ttl.days + ' Days Remaining') + '</div>';
+        html += '<div class="reval-ttl-subtitle">' + (ttl.expired ? 'Revalidation is overdue' : 'Until revalidation required') + '</div>';
+        html += '</div>';
+        html += '<div class="reval-ttl-progress"><div class="reval-ttl-progress-bar ' + ttlClass + '" style="width: ' + progressPercent + '%"></div></div>';
+        html += '</div>';
+
+        // Detection Info Grid
+        html += '<div class="reval-info-grid">';
+        html += '<div class="reval-info-item"><div class="reval-info-label">Detection Name</div><div class="reval-info-value">' + escapeHtml(d['Detection Name'] || 'Unnamed') + '</div></div>';
+        html += '<div class="reval-info-item"><div class="reval-info-label">Status</div><div class="reval-info-value"><span class="reval-item-status ' + status + '">' + getStatusLabel(status) + '</span></div></div>';
+        html += '<div class="reval-info-item"><div class="reval-info-label">Severity</div><div class="reval-info-value"><span class="severity-badge ' + (d['Severity/Priority'] || '').toLowerCase() + '">' + (d['Severity/Priority'] || 'N/A') + '</span></div></div>';
+        html += '<div class="reval-info-item"><div class="reval-info-label">Domain</div><div class="reval-info-value">' + escapeHtml(d['Security Domain'] || 'N/A') + '</div></div>';
+        html += '<div class="reval-info-item"><div class="reval-info-label">Last Modified</div><div class="reval-info-value">' + (d['Last Modified'] ? formatDate(d['Last Modified']) : 'N/A') + '</div></div>';
+        html += '<div class="reval-info-item"><div class="reval-info-label">First Created</div><div class="reval-info-value">' + (d['First Created'] ? formatDate(d['First Created']) : 'N/A') + '</div></div>';
+        html += '</div>';
+
+        // Objective
+        if (d['Objective']) {
+            html += '<div class="doc-section">';
+            html += '<h3 class="doc-section-title">Objective</h3>';
+            html += '<div class="doc-field-value">' + escapeHtml(d['Objective']) + '</div>';
+            html += '</div>';
+        }
+
+        // Blind Spots (important for revalidation)
+        if (d['Blind_Spots_False_Positives']) {
+            html += '<div class="doc-section">';
+            html += '<h3 class="doc-section-title">Known Blind Spots / False Positives</h3>';
+            html += '<div class="doc-field-value">' + escapeHtml(d['Blind_Spots_False_Positives']) + '</div>';
+            html += '</div>';
+        }
+
+        // Revalidation History (if available)
+        if (d['Revalidation_History'] && d['Revalidation_History'].length > 0) {
+            html += '<div class="reval-history-section">';
+            html += '<div class="reval-history-title">Revalidation History</div>';
+            html += '<div class="reval-history-list">';
+            d['Revalidation_History'].forEach(function(entry) {
+                html += '<div class="reval-history-item">';
+                html += '<span class="reval-history-date">' + formatDate(entry.date) + '</span>';
+                html += '<span class="reval-history-action">' + escapeHtml(entry.action) + '</span>';
+                html += '<span class="reval-history-user">' + escapeHtml(entry.user || 'Unknown') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            html += '</div>';
+        }
+
+        document.getElementById('reval-detail-body').innerHTML = html;
+    }
+
+    // Batch mark as tuned
+    window.batchMarkAsTuned = function() {
+        var count = revalidationState.selectedItems.length;
+        if (count === 0) return;
+
+        if (confirm('Mark ' + count + ' detection' + (count !== 1 ? 's' : '') + ' as tuned?\n\nThis will update the Last Modified date.')) {
+            revalidationState.selectedItems.forEach(function(name) {
+                var detection = App.state.detections.find(function(d) {
+                    return d['Detection Name'] === name;
+                });
+                if (detection) {
+                    markDetectionAsTuned(detection, true);
+                }
+            });
+
+            // Clear selection
+            revalidationState.selectedItems = [];
+            document.getElementById('reval-select-all').checked = false;
+
+            // Refresh
+            calculateStatusCounts();
+            filterRevalidation();
+            showToast(count + ' detection' + (count !== 1 ? 's' : '') + ' marked as tuned', 'success');
+        }
+    };
+
+    // Batch mark as retrofitted
+    window.batchMarkAsRetrofitted = function() {
+        var count = revalidationState.selectedItems.length;
+        if (count === 0) return;
+
+        if (confirm('Mark ' + count + ' detection' + (count !== 1 ? 's' : '') + ' as retrofitted?\n\nThis will update the Last Modified date.')) {
+            revalidationState.selectedItems.forEach(function(name) {
+                var detection = App.state.detections.find(function(d) {
+                    return d['Detection Name'] === name;
+                });
+                if (detection) {
+                    markDetectionAsRetrofitted(detection, true);
+                }
+            });
+
+            // Clear selection
+            revalidationState.selectedItems = [];
+            document.getElementById('reval-select-all').checked = false;
+
+            // Refresh
+            calculateStatusCounts();
+            filterRevalidation();
+            showToast(count + ' detection' + (count !== 1 ? 's' : '') + ' marked as retrofitted', 'success');
+        }
+    };
+
+    // Mark single detection as tuned
+    function markDetectionAsTuned(detection, silent) {
+        detection['Last Modified'] = new Date().toISOString();
+
+        // Add to revalidation history
+        if (!detection['Revalidation_History']) {
+            detection['Revalidation_History'] = [];
+        }
+        detection['Revalidation_History'].push({
+            date: new Date().toISOString(),
+            action: 'Marked as Tuned',
+            user: 'Current User'
+        });
+
+        // Update in main state
+        var index = App.state.detections.findIndex(function(d) {
+            return d['Detection Name'] === detection['Detection Name'];
+        });
+        if (index >= 0) {
+            App.state.detections[index] = detection;
+        }
+
+        if (!silent) {
+            calculateStatusCounts();
+            filterRevalidation();
+            renderRevalidationDetail(detection);
+            showToast('Detection marked as tuned', 'success');
+        }
+    }
+
+    // Mark single detection as retrofitted
+    function markDetectionAsRetrofitted(detection, silent) {
+        detection['Last Modified'] = new Date().toISOString();
+
+        // Add to revalidation history
+        if (!detection['Revalidation_History']) {
+            detection['Revalidation_History'] = [];
+        }
+        detection['Revalidation_History'].push({
+            date: new Date().toISOString(),
+            action: 'Marked as Retrofitted',
+            user: 'Current User'
+        });
+
+        // Update in main state
+        var index = App.state.detections.findIndex(function(d) {
+            return d['Detection Name'] === detection['Detection Name'];
+        });
+        if (index >= 0) {
+            App.state.detections[index] = detection;
+        }
+
+        if (!silent) {
+            calculateStatusCounts();
+            filterRevalidation();
+            renderRevalidationDetail(detection);
+            showToast('Detection marked as retrofitted', 'success');
+        }
+    }
+
+    // Open Splunk Revalidation Dashboard in popup
+    window.openSplunkRevalidationDashboard = function() {
+        var width = 1200;
+        var height = 800;
+        var left = (screen.width - width) / 2;
+        var top = (screen.height - height) / 2;
+
+        window.open(
+            SPLUNK_REVAL_DASHBOARD_URL,
+            'SplunkRevalidationDashboard',
+            'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',scrollbars=yes,resizable=yes'
+        );
+    };
+
     // Simple toast notification
     function showToast(message, type) {
         // Create toast element if it doesn't exist
@@ -2458,6 +2916,7 @@ function buildCorrelationSearchUrl(detectionName) {
         originalInit.call(this);
         initEditor();
         initMacros();
+        initRevalidation();
     };
 
     // Expose App to global scope for debugging
