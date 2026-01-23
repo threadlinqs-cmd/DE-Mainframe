@@ -31,6 +31,7 @@
                 <button class="nav-btn" data-view="revalidation">Revalidation</button>
                 <button class="nav-btn" data-view="history">History</button>
                 <button class="nav-btn" data-view="resources">Resources</button>
+                <button class="nav-btn" data-view="macros">Macros</button>
                 <button class="nav-btn" data-view="reports">Reports</button>
             </nav>
             <div class="header-right">
@@ -525,6 +526,23 @@
             </div>
         </div>
 
+        <div id="view-macros" class="view">
+            <div class="macros-container">
+                <div class="macros-header">
+                    <h2>📐 Macros</h2>
+                    <p>Manage SPL macros for detection validation</p>
+                </div>
+                <div class="macros-toolbar">
+                    <div class="macros-search">
+                        <input type="text" id="macros-search-input" class="search-input" placeholder="🔍 Search macros...">
+                    </div>
+                    <span id="macros-count" class="results-count">0 macros</span>
+                    <button id="btn-add-macro" class="btn-primary">➕ Add Macro</button>
+                </div>
+                <div id="macros-grid" class="macros-list"></div>
+            </div>
+        </div>
+
         <div id="view-reports" class="view">
             <div class="reports-container">
                 <div class="reports-tabs">
@@ -866,6 +884,29 @@
     </div>
 
     <div id="modal-confirm" class="modal hidden"><div class="modal-overlay"></div><div class="modal-content small"><div class="modal-header"><h3>Confirm</h3><button class="modal-close">×</button></div><div class="modal-body"><p id="confirm-message">Are you sure?</p></div><div class="modal-footer"><button id="btn-confirm-no" class="btn-secondary">Cancel</button><button id="btn-confirm-yes" class="btn-danger">Confirm</button></div></div></div>
+
+    <div id="modal-macro" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="macro-modal-title">➕ Add Macro</h3>
+                <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="macro-form" class="macro-form">
+                    <div class="form-group">
+                        <label>Macro Name *</label>
+                        <input type="text" id="macro-name" required placeholder="macro_name">
+                        <small class="form-hint">Enter without backticks (e.g., "get_notable_index" not "`get_notable_index`")</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary modal-close">Cancel</button>
+                <button type="button" id="btn-save-macro" class="btn-primary">💾 Save Macro</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container" class="toast-container"></div>
     <script src="app.js?v=11.16"></script>

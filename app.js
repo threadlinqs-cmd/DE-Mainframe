@@ -970,6 +970,7 @@ function initUI() {
     initRevalidation();
     initHistory();
     initResources();
+    initMacros();
     initReportsTabs();
     initModals();
     initSettings();
@@ -1789,6 +1790,7 @@ function switchView(viewName) {
     else if (viewName === 'reports') { renderDashboard(); renderReports(); }
     else if (viewName === 'config') renderParsingRules();
     else if (viewName === 'resources') renderResources();
+    else if (viewName === 'macros') renderMacros();
 }
 
 // =============================================================================
@@ -3268,7 +3270,16 @@ function validateForm() {
     } else {
         statusContainer.innerHTML = '<div class="validation-indicator invalid">✗ ' + errors.length + ' Error(s)</div>';
         var errHtml = '';
-        errors.slice(0, 5).forEach(function(e) { errHtml += '<div class="validation-error">• ' + e + '</div>'; });
+        errors.slice(0, 5).forEach(function(e) {
+            // Check if this is a macro not found error and make it clickable
+            var macroMatch = e.match(/^Macro not found: `(.+)`$/);
+            if (macroMatch) {
+                var macroName = macroMatch[1];
+                errHtml += '<div class="validation-error">• <a href="#" class="validation-error-link" onclick="navigateToMacrosWithName(\'' + escapeAttr(macroName) + '\'); return false;">Macro not found: `' + escapeHtml(macroName) + '`</a></div>';
+            } else {
+                errHtml += '<div class="validation-error">• ' + e + '</div>';
+            }
+        });
         errorsContainer.innerHTML = errHtml;
         saveBtn.disabled = true;
     }
@@ -5734,6 +5745,223 @@ window.editResource = editResource;
 window.confirmDeleteResource = confirmDeleteResource;
 window.deleteResource = deleteResource;
 window.openResource = openResource;
+
+// =============================================================================
+// MACROS TAB
+// =============================================================================
+
+var pendingMacroName = null; // Used for pre-populating from validation errors
+
+function initMacros() {
+    renderMacros();
+
+    // Search input
+    var searchInput = document.getElementById('macros-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(renderMacros, 300));
+    }
+
+    // Add Macro button
+    var addBtn = document.getElementById('btn-add-macro');
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            openMacroModal();
+        });
+    }
+
+    // Save Macro button
+    var saveBtn = document.getElementById('btn-save-macro');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveMacro);
+    }
+
+    // Modal close handlers
+    document.querySelectorAll('#modal-macro .modal-close').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            closeMacroModal();
+        });
+    });
+
+    document.querySelector('#modal-macro .modal-overlay').addEventListener('click', closeMacroModal);
+}
+
+function renderMacros() {
+    var container = document.getElementById('macros-grid');
+    if (!container) return;
+
+    var searchTerm = (document.getElementById('macros-search-input')?.value || '').toLowerCase().trim();
+
+    var filtered = loadedMacros.filter(function(m) {
+        return !searchTerm || m.toLowerCase().indexOf(searchTerm) !== -1;
+    });
+
+    // Sort alphabetically
+    filtered.sort(function(a, b) {
+        return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+
+    // Update count
+    var countEl = document.getElementById('macros-count');
+    if (countEl) {
+        countEl.textContent = filtered.length + ' macro' + (filtered.length !== 1 ? 's' : '');
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><span class="empty-icon">📐</span><p>No macros found</p><p class="empty-hint">Click "Add Macro" to register a macro for validation</p></div>';
+        return;
+    }
+
+    var html = '<div class="macros-grid-items">';
+    filtered.forEach(function(m) {
+        html += '<div class="macro-list-item">';
+        html += '<span class="macro-name">`' + escapeHtml(m) + '`</span>';
+        html += '<button class="btn-icon-small btn-delete-macro" onclick="confirmDeleteMacro(\'' + escapeAttr(m) + '\')" title="Delete macro">🗑️</button>';
+        html += '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function openMacroModal(macroName) {
+    var modal = document.getElementById('modal-macro');
+    var titleEl = document.getElementById('macro-modal-title');
+    var nameInput = document.getElementById('macro-name');
+
+    // Clear form
+    nameInput.value = '';
+
+    // Check if we have a pending macro name from validation error click
+    if (pendingMacroName) {
+        nameInput.value = pendingMacroName;
+        pendingMacroName = null;
+        titleEl.textContent = '➕ Add Missing Macro';
+    } else if (macroName) {
+        nameInput.value = macroName;
+        titleEl.textContent = '➕ Add Macro';
+    } else {
+        titleEl.textContent = '➕ Add Macro';
+    }
+
+    modal.classList.remove('hidden');
+    nameInput.focus();
+}
+
+function closeMacroModal() {
+    var modal = document.getElementById('modal-macro');
+    modal.classList.add('hidden');
+    pendingMacroName = null;
+}
+
+function saveMacro() {
+    var nameInput = document.getElementById('macro-name');
+    var macroName = nameInput.value.trim();
+
+    // Remove backticks if user included them
+    macroName = macroName.replace(/^`|`$/g, '');
+
+    if (!macroName) {
+        showToast('Please enter a macro name', 'error');
+        return;
+    }
+
+    // Check for duplicates
+    if (loadedMacros.indexOf(macroName) !== -1) {
+        showToast('Macro already exists: ' + macroName, 'error');
+        return;
+    }
+
+    // Add to loadedMacros
+    loadedMacros.push(macroName);
+    loadedMacros.sort(function(a, b) {
+        return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+
+    // Save to GitHub
+    showToast('Saving macro...', 'info');
+    saveMacrosToGitHub()
+        .then(function() {
+            closeMacroModal();
+            renderMacros();
+            showToast('Macro added: ' + macroName, 'success');
+            // Also trigger re-validation if in editor
+            validateForm();
+        })
+        .catch(function(error) {
+            showToast('Failed to save macro: ' + error.message, 'error');
+        });
+}
+
+function confirmDeleteMacro(macroName) {
+    showConfirm('Are you sure you want to delete the macro "`' + macroName + '`"?', function(confirmed) {
+        if (confirmed) {
+            deleteMacro(macroName);
+        }
+    });
+}
+
+function deleteMacro(macroName) {
+    loadedMacros = loadedMacros.filter(function(m) { return m !== macroName; });
+
+    // Save to GitHub
+    showToast('Deleting macro...', 'info');
+    saveMacrosToGitHub()
+        .then(function() {
+            renderMacros();
+            showToast('Macro deleted', 'success');
+        })
+        .catch(function(error) {
+            showToast('Failed to delete macro: ' + error.message, 'error');
+        });
+}
+
+async function saveMacrosToGitHub() {
+    if (!github) {
+        saveToLocalStorage();
+        return Promise.resolve();
+    }
+
+    const macrosPath = PATHS.dist + '/macros.json';
+    const content = JSON.stringify(loadedMacros, null, 2);
+
+    try {
+        // Try to get current file SHA
+        let sha = null;
+        try {
+            const response = await github.getContents({ path: macrosPath });
+            sha = response.data.sha;
+        } catch (e) {
+            // File doesn't exist, will create new
+        }
+
+        await github.createOrUpdateFile({
+            path: macrosPath,
+            content: content,
+            message: 'Update macros.json',
+            sha: sha
+        });
+
+        saveToLocalStorage();
+    } catch (error) {
+        console.error('Failed to save macros to GitHub:', error);
+        saveToLocalStorage(); // Still save locally
+        throw error;
+    }
+}
+
+function navigateToMacrosWithName(macroName) {
+    // Set the pending macro name and switch to macros view
+    pendingMacroName = macroName;
+    switchView('macros');
+    // Open the modal after a short delay to ensure view is rendered
+    setTimeout(function() {
+        openMacroModal();
+    }, 100);
+}
+
+// Export Macros functions
+window.confirmDeleteMacro = confirmDeleteMacro;
+window.deleteMacro = deleteMacro;
+window.navigateToMacrosWithName = navigateToMacrosWithName;
 
 window.removeDrilldown = removeDrilldown;
 window.closeAllModals = closeAllModals;
