@@ -391,6 +391,10 @@ function buildCorrelationSearchUrl(detectionName) {
                     if (typeof buildHistoryEntries === 'function') {
                         buildHistoryEntries();
                     }
+                    // Update reports view if initialized
+                    if (typeof renderReports === 'function') {
+                        renderReports();
+                    }
                 })
                 .catch(function(err) {
                     console.error('Failed to load detections:', err);
@@ -3645,6 +3649,275 @@ function buildCorrelationSearchUrl(detectionName) {
         closeDeleteResourceModal();
     };
 
+    // =========================================================================
+    // REPORTS VIEW FUNCTIONS
+    // =========================================================================
+
+    // Reports State
+    var reportsState = {
+        initialized: false
+    };
+
+    // Initialize Reports View
+    function initReports() {
+        reportsState.initialized = true;
+        // Reports will be rendered when data is available
+        renderReports();
+    }
+
+    // Render Reports View
+    function renderReports() {
+        if (!reportsState.initialized) return;
+
+        var detections = App.state.detections || [];
+
+        // Render all report sections
+        renderStatCards(detections);
+        renderRevalidationStatus(detections);
+        renderDomainChart(detections);
+        renderDatasourceChart(detections);
+        renderMitreCoverage(detections);
+        renderMetadataStats(detections);
+    }
+
+    // Render Stats Cards
+    function renderStatCards(detections) {
+        var counts = {
+            total: detections.length,
+            critical: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            informational: 0
+        };
+
+        detections.forEach(function(d) {
+            var sev = (d['Severity/Priority'] || '').toLowerCase();
+            if (sev === 'critical') counts.critical++;
+            else if (sev === 'high') counts.high++;
+            else if (sev === 'medium') counts.medium++;
+            else if (sev === 'low') counts.low++;
+            else if (sev === 'informational' || sev === 'info') counts.informational++;
+        });
+
+        updateElementText('stat-total-detections', counts.total);
+        updateElementText('stat-critical', counts.critical);
+        updateElementText('stat-high', counts.high);
+        updateElementText('stat-medium', counts.medium);
+        updateElementText('stat-low', counts.low);
+        updateElementText('stat-info', counts.informational);
+    }
+
+    // Render Revalidation Status Summary
+    function renderRevalidationStatus(detections) {
+        var counts = {
+            valid: 0,
+            incomplete: 0,
+            needsTune: 0,
+            needsRetrofit: 0
+        };
+
+        detections.forEach(function(d) {
+            var status = App.getDetectionStatus(d);
+            if (status === 'valid') counts.valid++;
+            else if (status === 'incomplete') counts.incomplete++;
+            else if (status === 'needs-tune') counts.needsTune++;
+            else if (status === 'needs-retrofit') counts.needsRetrofit++;
+        });
+
+        updateElementText('reval-stat-valid', counts.valid);
+        updateElementText('reval-stat-incomplete', counts.incomplete);
+        updateElementText('reval-stat-needs-tune', counts.needsTune);
+        updateElementText('reval-stat-needs-retrofit', counts.needsRetrofit);
+    }
+
+    // Render Domain Bar Chart
+    function renderDomainChart(detections) {
+        var container = document.getElementById('chart-by-domain');
+        if (!container) return;
+
+        var domainCounts = {};
+        detections.forEach(function(d) {
+            var domain = d['Security Domain'] || 'Unknown';
+            domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+        });
+
+        var sortedDomains = Object.keys(domainCounts).sort(function(a, b) {
+            return domainCounts[b] - domainCounts[a];
+        });
+
+        if (sortedDomains.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No data available</div>';
+            return;
+        }
+
+        var maxCount = Math.max.apply(null, Object.values(domainCounts));
+        var html = '';
+
+        sortedDomains.forEach(function(domain) {
+            var count = domainCounts[domain];
+            var percentage = (count / maxCount) * 100;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label" title="' + escapeAttr(domain) + '">' + escapeHtml(domain) + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar" style="width: ' + percentage + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Data Source Bar Chart
+    function renderDatasourceChart(detections) {
+        var container = document.getElementById('chart-by-datasource');
+        if (!container) return;
+
+        var dsCounts = {};
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+
+            // Count indexes
+            parsed.indexes.forEach(function(idx) {
+                dsCounts[idx] = (dsCounts[idx] || 0) + 1;
+            });
+
+            // Count sourcetypes
+            parsed.sourcetypes.forEach(function(st) {
+                dsCounts[st] = (dsCounts[st] || 0) + 1;
+            });
+        });
+
+        var sortedDs = Object.keys(dsCounts).sort(function(a, b) {
+            return dsCounts[b] - dsCounts[a];
+        }).slice(0, 15); // Top 15
+
+        if (sortedDs.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No data available</div>';
+            return;
+        }
+
+        var maxCount = Math.max.apply(null, sortedDs.map(function(ds) { return dsCounts[ds]; }));
+        var html = '';
+
+        sortedDs.forEach(function(ds) {
+            var count = dsCounts[ds];
+            var percentage = (count / maxCount) * 100;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label" title="' + escapeAttr(ds) + '">' + escapeHtml(ds) + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar" style="width: ' + percentage + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render MITRE ATT&CK Coverage
+    function renderMitreCoverage(detections) {
+        var container = document.getElementById('mitre-coverage-list');
+        var countEl = document.getElementById('mitre-technique-count');
+        if (!container) return;
+
+        var mitreCounts = {};
+        detections.forEach(function(d) {
+            var mitreIds = d['Mitre ID'] || [];
+            if (!Array.isArray(mitreIds)) {
+                mitreIds = String(mitreIds).split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
+            }
+            mitreIds.forEach(function(id) {
+                mitreCounts[id] = (mitreCounts[id] || 0) + 1;
+            });
+        });
+
+        var sortedMitre = Object.keys(mitreCounts).sort(function(a, b) {
+            // Sort by technique ID
+            return a.localeCompare(b);
+        });
+
+        if (countEl) {
+            countEl.textContent = sortedMitre.length + ' technique' + (sortedMitre.length !== 1 ? 's' : '') + ' covered';
+        }
+
+        if (sortedMitre.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No MITRE techniques mapped</div>';
+            return;
+        }
+
+        var html = '';
+        sortedMitre.forEach(function(id) {
+            var count = mitreCounts[id];
+            html += '<div class="mitre-technique-tag">';
+            html += '<span class="mitre-technique-id">' + escapeHtml(id) + '</span>';
+            html += '<span class="mitre-technique-count">' + count + '</span>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Metadata Statistics (Top 15 each)
+    function renderMetadataStats(detections) {
+        var macroCounts = {};
+        var lookupCounts = {};
+        var indexCounts = {};
+
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+
+            parsed.macros.forEach(function(m) {
+                macroCounts[m] = (macroCounts[m] || 0) + 1;
+            });
+
+            parsed.lookups.forEach(function(l) {
+                lookupCounts[l] = (lookupCounts[l] || 0) + 1;
+            });
+
+            parsed.indexes.forEach(function(i) {
+                indexCounts[i] = (indexCounts[i] || 0) + 1;
+            });
+        });
+
+        renderMetadataList('top-macros-list', macroCounts, 15);
+        renderMetadataList('top-lookups-list', lookupCounts, 15);
+        renderMetadataList('top-indexes-list', indexCounts, 15);
+    }
+
+    // Helper: Render Metadata List
+    function renderMetadataList(containerId, counts, limit) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+
+        var sorted = Object.keys(counts).sort(function(a, b) {
+            return counts[b] - counts[a];
+        }).slice(0, limit);
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="metadata-empty">No data available</div>';
+            return;
+        }
+
+        var html = '';
+        sorted.forEach(function(name) {
+            var count = counts[name];
+            html += '<div class="metadata-item">';
+            html += '<span class="metadata-item-name" title="' + escapeAttr(name) + '">' + escapeHtml(name) + '</span>';
+            html += '<span class="metadata-item-count">' + count + '</span>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Helper: Update element text
+    function updateElementText(id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -3663,6 +3936,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initRevalidation();
         initHistory();
         initResources();
+        initReports();
     };
 
     // Expose App to global scope for debugging

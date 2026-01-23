@@ -787,9 +787,105 @@
                         </div>
                     </div>
                 </section>
+                <!-- Reports View -->
                 <section id="view-reports" class="view">
-                    <div class="content-header"><h2>Reports</h2></div>
-                    <div class="content-body"><p class="placeholder-text">Reports view coming soon.</p></div>
+                    <div class="reports-layout">
+                        <!-- Stats Cards Row -->
+                        <div class="reports-stats-row">
+                            <div class="stat-card stat-total">
+                                <div class="stat-value" id="stat-total-detections">0</div>
+                                <div class="stat-label">Total Detections</div>
+                            </div>
+                            <div class="stat-card stat-critical">
+                                <div class="stat-value" id="stat-critical">0</div>
+                                <div class="stat-label">Critical</div>
+                            </div>
+                            <div class="stat-card stat-high">
+                                <div class="stat-value" id="stat-high">0</div>
+                                <div class="stat-label">High</div>
+                            </div>
+                            <div class="stat-card stat-medium">
+                                <div class="stat-value" id="stat-medium">0</div>
+                                <div class="stat-label">Medium</div>
+                            </div>
+                            <div class="stat-card stat-low">
+                                <div class="stat-value" id="stat-low">0</div>
+                                <div class="stat-label">Low</div>
+                            </div>
+                            <div class="stat-card stat-info">
+                                <div class="stat-value" id="stat-info">0</div>
+                                <div class="stat-label">Info</div>
+                            </div>
+                        </div>
+
+                        <!-- Revalidation Status Summary -->
+                        <div class="reports-section">
+                            <h3 class="reports-section-title">Revalidation Status</h3>
+                            <div class="reval-status-cards">
+                                <div class="reval-status-card reval-valid">
+                                    <div class="reval-status-value" id="reval-stat-valid">0</div>
+                                    <div class="reval-status-label">Valid</div>
+                                </div>
+                                <div class="reval-status-card reval-incomplete">
+                                    <div class="reval-status-value" id="reval-stat-incomplete">0</div>
+                                    <div class="reval-status-label">Incomplete</div>
+                                </div>
+                                <div class="reval-status-card reval-needs-tune">
+                                    <div class="reval-status-value" id="reval-stat-needs-tune">0</div>
+                                    <div class="reval-status-label">Needs Tune</div>
+                                </div>
+                                <div class="reval-status-card reval-needs-retrofit">
+                                    <div class="reval-status-value" id="reval-stat-needs-retrofit">0</div>
+                                    <div class="reval-status-label">Needs Retrofit</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="reports-charts-row">
+                            <!-- Detections by Domain -->
+                            <div class="reports-section chart-section">
+                                <h3 class="reports-section-title">Detections by Domain</h3>
+                                <div id="chart-by-domain" class="bar-chart-container"></div>
+                            </div>
+
+                            <!-- Detections by Data Source -->
+                            <div class="reports-section chart-section">
+                                <h3 class="reports-section-title">Detections by Data Source</h3>
+                                <div id="chart-by-datasource" class="bar-chart-container"></div>
+                            </div>
+                        </div>
+
+                        <!-- MITRE ATT&CK Coverage -->
+                        <div class="reports-section">
+                            <h3 class="reports-section-title">MITRE ATT&CK Coverage</h3>
+                            <div class="mitre-coverage-header">
+                                <span id="mitre-technique-count">0 techniques covered</span>
+                            </div>
+                            <div id="mitre-coverage-list" class="mitre-coverage-list"></div>
+                        </div>
+
+                        <!-- Metadata Statistics Row -->
+                        <div class="reports-metadata-row">
+                            <!-- Most Used Macros -->
+                            <div class="reports-section metadata-section">
+                                <h3 class="reports-section-title">Most Used Macros</h3>
+                                <div id="top-macros-list" class="metadata-list"></div>
+                            </div>
+
+                            <!-- Most Used Lookups -->
+                            <div class="reports-section metadata-section">
+                                <h3 class="reports-section-title">Most Used Lookups</h3>
+                                <div id="top-lookups-list" class="metadata-list"></div>
+                            </div>
+
+                            <!-- Most Used Indexes -->
+                            <div class="reports-section metadata-section">
+                                <h3 class="reports-section-title">Most Used Indexes</h3>
+                                <div id="top-indexes-list" class="metadata-list"></div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
                 <section id="view-settings" class="view">
                     <div class="content-header"><h2>Settings</h2></div>
