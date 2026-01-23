@@ -16,7 +16,8 @@
         // Configuration
         config: {
             distPath: '../dist/',
-            version: '1.0.0'
+            version: '1.0.0',
+            themeStorageKey: 'dmf_newui_theme'
         },
 
         // DOM elements
@@ -24,19 +25,22 @@
             sidebar: null,
             overlay: null,
             statusIndicator: null,
-            statusText: null
+            statusText: null,
+            themeToggle: null
         },
 
         // State
         state: {
             sidebarOpen: false,
-            connected: false
+            connected: false,
+            theme: 'light'
         },
 
         // Initialize the application
         init: function() {
             this.cacheElements();
             this.bindEvents();
+            this.loadTheme();
             this.updateStatus('disconnected');
             console.log('DE-MainFrame New UI initialized');
         },
@@ -47,6 +51,7 @@
             this.elements.overlay = document.querySelector('.sidebar-overlay');
             this.elements.statusIndicator = document.querySelector('.status-indicator');
             this.elements.statusText = document.querySelector('.status-text');
+            this.elements.themeToggle = document.querySelector('.theme-toggle');
         },
 
         // Bind events
@@ -97,6 +102,41 @@
             }
         },
 
+        // Load theme from localStorage
+        loadTheme: function() {
+            var savedTheme = localStorage.getItem(this.config.themeStorageKey);
+            if (savedTheme === 'dark' || savedTheme === 'light') {
+                this.state.theme = savedTheme;
+            } else {
+                this.state.theme = 'light';
+            }
+            this.applyTheme();
+        },
+
+        // Apply current theme to document
+        applyTheme: function() {
+            if (this.state.theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            this.updateThemeToggleIcon();
+        },
+
+        // Update theme toggle button icon
+        updateThemeToggleIcon: function() {
+            if (this.elements.themeToggle) {
+                this.elements.themeToggle.textContent = this.state.theme === 'dark' ? '☾' : '☀';
+            }
+        },
+
+        // Toggle between light and dark theme
+        toggleTheme: function() {
+            this.state.theme = this.state.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(this.config.themeStorageKey, this.state.theme);
+            this.applyTheme();
+        },
+
         // Update connection status
         updateStatus: function(status) {
             this.state.connected = (status === 'connected');
@@ -112,9 +152,13 @@
         }
     };
 
-    // Global toggle function for onclick handlers
+    // Global toggle functions for onclick handlers
     window.toggleSidebar = function() {
         App.toggleSidebar();
+    };
+
+    window.toggleTheme = function() {
+        App.toggleTheme();
     };
 
     // Initialize when DOM is ready
