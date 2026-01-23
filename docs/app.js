@@ -734,7 +734,18 @@ function fetchGitHubFile(filePath) {
         if (!response.ok) {
             throw new Error('HTTP ' + response.status + ' fetching ' + filePath);
         }
-        return response.json();
+        return response.text().then(function(text) {
+            if (!text || text.trim() === '') {
+                console.warn('Empty file received:', filePath);
+                return null;
+            }
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.warn('Invalid JSON in file:', filePath, e.message);
+                return null;
+            }
+        });
     });
 }
 
@@ -782,22 +793,32 @@ function autoLoadFromStaticFiles() {
         if (bootStatus) bootStatus.textContent = 'Processing data...';
         
         // Load detections
-        if (Array.isArray(detectionsData)) {
+        if (Array.isArray(detectionsData) && detectionsData.length > 0) {
             detections = detectionsData;
             filteredDetections = detections.slice();
             console.log('✓ Loaded ' + detections.length + ' detections');
         } else {
-            console.warn('Invalid detections data, using empty array');
+            if (detectionsData === null) {
+                console.warn('No detections data (empty or invalid file), falling back to cache');
+            } else if (Array.isArray(detectionsData) && detectionsData.length === 0) {
+                console.warn('Detections file is empty array');
+            } else {
+                console.warn('Invalid detections data format');
+            }
             detections = [];
             filteredDetections = [];
         }
-        
+
         // Load metadata
-        if (metadataData && typeof metadataData === 'object') {
+        if (metadataData && typeof metadataData === 'object' && Object.keys(metadataData).length > 0) {
             detectionMetadata = metadataData;
             console.log('✓ Loaded metadata for ' + Object.keys(metadataData).length + ' detections');
         } else {
-            console.warn('Invalid metadata data, using empty object');
+            if (metadataData === null) {
+                console.warn('No metadata data (empty or invalid file), falling back to cache');
+            } else {
+                console.warn('Invalid or empty metadata data');
+            }
             detectionMetadata = {};
         }
         
@@ -1013,12 +1034,12 @@ async function syncWithGitHub() {
                 detectionMetadata[name] = newMeta;
                 
                 try {
-                    const filename = generateMetaFileName(name);
+                    const filename = generateMetaFileName(name, detection.file_name);
                     const path = metadataPath + '/' + filename;
-                    
+
                     // Check if file already exists and get its SHA
                     const existingSha = await github.getFileSha(path);
-                    
+
                     const result = await github.createOrUpdateFile(path, newMeta, 'Auto-generate metadata: ' + name, existingSha);
                     newMeta._sha = result.content.sha;
                     newMeta._path = path;
@@ -1110,12 +1131,12 @@ async function saveDetectionToGitHub(detection) {
     }
 }
 
-async function saveMetadataToGitHub(name, metadata) {
+async function saveMetadataToGitHub(name, metadata, detectionFileName) {
     if (!github) return false;
-    
+
     try {
         const metadataPath = sanitizePathInput(githubConfig.metadataPath) || 'metadata';
-        const filename = generateMetaFileName(name);
+        const filename = generateMetaFileName(name, detectionFileName);
         const path = metadataPath + '/' + filename;
         const message = 'Update metadata: ' + name;
         
@@ -1160,16 +1181,121 @@ async function deleteDetectionFromGitHub(detection) {
     }
 }
 
-function generateFileName(name, domain) {
-    if (!name) return 'unnamed_detection.json';
-    const baseName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const domainPrefix = domain ? domain.toLowerCase() + '_' : '';
-    return domainPrefix + baseName + '.json';
+/**
+ * Migrate existing files to new naming convention: <domain>_<name>_rule.json
+ * This renames files that don't follow the convention and updates compiled files
+ */
+async function migrateFileNamesToNewConvention() {
+    if (!github) {
+        showToast('Not connected to GitHub', 'error');
+        return { migrated: 0, errors: 0 };
+    }
+
+    console.log('Starting file name migration...');
+    showToast('Migrating file names...', 'info');
+    updateSyncStatus('syncing', 'Migrating...');
+
+    let migrated = 0;
+    let errors = 0;
+    const detectionsPath = sanitizePathInput(githubConfig.detectionsPath) || PATHS.detections;
+    const metadataPath = sanitizePathInput(githubConfig.metadataPath) || PATHS.metadata;
+
+    for (let i = 0; i < detections.length; i++) {
+        const detection = detections[i];
+        const name = detection['Detection Name'];
+        const domain = detection['Security Domain'] || '';
+        const currentFileName = detection.file_name;
+
+        // Generate correct filename
+        const correctFileName = generateFileName(name, domain);
+
+        // Skip if already correct
+        if (currentFileName === correctFileName) {
+            console.log('✓ Already correct:', name);
+            continue;
+        }
+
+        console.log('Migrating:', name, 'from', currentFileName, 'to', correctFileName);
+
+        try {
+            // 1. Delete old detection file if it exists
+            if (detection._sha && detection._path) {
+                await github.deleteFile(detection._path, 'Migrate: remove old file ' + currentFileName, detection._sha);
+            }
+
+            // 2. Delete old metadata file if it exists
+            const meta = detectionMetadata[name];
+            if (meta && meta._sha && meta._path) {
+                await github.deleteFile(meta._path, 'Migrate: remove old metadata', meta._sha);
+            }
+
+            // 3. Update detection with new filename
+            detection.file_name = correctFileName;
+            delete detection._sha;
+            delete detection._path;
+
+            // 4. Save detection with new filename
+            const detPath = detectionsPath + '/' + correctFileName;
+            const detResult = await github.createOrUpdateFile(detPath, detection, 'Migrate: ' + name + ' to new naming convention', null);
+            detection._sha = detResult.content.sha;
+            detection._path = detPath;
+
+            // 5. Save metadata with new filename
+            const metaFileName = generateMetaFileName(name, correctFileName);
+            const metaPath = metadataPath + '/' + metaFileName;
+            if (meta) {
+                delete meta._sha;
+                delete meta._path;
+                const metaResult = await github.createOrUpdateFile(metaPath, Object.assign({ detectionName: name }, meta), 'Migrate metadata: ' + name, null);
+                meta._sha = metaResult.content.sha;
+                meta._path = metaPath;
+            }
+
+            migrated++;
+            console.log('✓ Migrated:', name);
+        } catch (e) {
+            console.error('Failed to migrate:', name, e);
+            errors++;
+        }
+    }
+
+    // Update compiled files
+    if (migrated > 0) {
+        try {
+            await updateCompiledFiles();
+            saveToLocalStorage();
+        } catch (e) {
+            console.error('Failed to update compiled files after migration:', e);
+        }
+    }
+
+    updateSyncStatus('synced', 'Migration Complete');
+    const message = 'Migration complete: ' + migrated + ' files renamed' + (errors > 0 ? ', ' + errors + ' errors' : '');
+    showToast(message, errors > 0 ? 'warning' : 'success');
+    console.log(message);
+
+    return { migrated, errors };
 }
 
-function generateMetaFileName(name) {
-    if (!name) return 'unnamed_meta.json';
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_meta.json';
+function generateFileName(name, domain) {
+    if (!name) return 'unnamed_rule.json';
+    const baseName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const domainPrefix = domain ? domain.toLowerCase() + '_' : '';
+    return domainPrefix + baseName + '_rule.json';
+}
+
+function generateMetaFileName(name, detectionFileName) {
+    // If we have the detection's file_name, derive metadata filename from it
+    if (detectionFileName && detectionFileName.endsWith('_rule.json')) {
+        return detectionFileName.replace(/_rule\.json$/, '_rule_meta.json');
+    }
+    // Handle legacy files without _rule suffix
+    if (detectionFileName && detectionFileName.endsWith('.json')) {
+        return detectionFileName.replace(/\.json$/, '_meta.json');
+    }
+    // Fallback: generate from name
+    if (!name) return 'unnamed_rule_meta.json';
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_rule_meta.json';
 }
 
 // =============================================================================
@@ -1512,17 +1638,37 @@ function refreshFromRepository() {
         var metadataData = results[1];
         var resourcesData = results[2];
         
-        if (Array.isArray(detectionsData)) {
+        if (Array.isArray(detectionsData) && detectionsData.length > 0) {
             detections = detectionsData;
             filteredDetections = detections.slice();
+            console.log('✓ Refreshed ' + detections.length + ' detections');
+        } else {
+            if (detectionsData === null) {
+                console.warn('Detections file empty or invalid, keeping existing data');
+            } else if (Array.isArray(detectionsData) && detectionsData.length === 0) {
+                console.warn('Detections file is empty array, keeping existing data');
+            }
+            // Keep existing detections if refresh returns empty/invalid
         }
-        
-        if (metadataData && typeof metadataData === 'object') {
+
+        if (metadataData && typeof metadataData === 'object' && Object.keys(metadataData).length > 0) {
             detectionMetadata = metadataData;
+            console.log('✓ Refreshed metadata for ' + Object.keys(metadataData).length + ' detections');
+        } else {
+            if (metadataData === null) {
+                console.warn('Metadata file empty or invalid, keeping existing data');
+            }
+            // Keep existing metadata if refresh returns empty/invalid
         }
-        
-        if (Array.isArray(resourcesData)) {
+
+        if (Array.isArray(resourcesData) && resourcesData.length > 0) {
             resources = resourcesData;
+            console.log('✓ Refreshed ' + resources.length + ' resources');
+        } else {
+            if (resourcesData === null) {
+                console.warn('Resources file empty or invalid, keeping existing data');
+            }
+            // Keep existing resources if refresh returns empty/invalid
         }
         
         saveToLocalStorage();
@@ -1573,7 +1719,7 @@ async function validateAndRepairMetadata() {
 
             // Save to GitHub if connected
             if (github) {
-                const filename = generateMetaFileName(name);
+                const filename = generateMetaFileName(name, detection.file_name);
                 const metadataPath = sanitizePathInput(githubConfig.metadataPath) || PATHS.metadata;
                 const path = metadataPath + '/' + filename;
 
@@ -3182,10 +3328,10 @@ async function saveDetection() {
         try {
             // 1. Save individual detection file
             var success = await saveDetectionToGitHub(detection);
-            
+
             if (success) {
                 // 2. Save individual metadata file
-                await saveMetadataToGitHub(detection['Detection Name'], detectionMetadata[detection['Detection Name']]);
+                await saveMetadataToGitHub(detection['Detection Name'], detectionMetadata[detection['Detection Name']], detection.file_name);
                 
                 // 3. Update compiled files for other analysts
                 await updateCompiledFiles();
@@ -3412,12 +3558,6 @@ function downloadCurrentDetection() {
 
 function initConfig() {
     document.getElementById('btn-add-rule').addEventListener('click', addParsingRule);
-    document.getElementById('btn-reparse-all').addEventListener('click', function() {
-        detections.forEach(function(d) { parseAndSaveMetadata(d); });
-        saveToLocalStorage();
-        buildDynamicFilters();
-        showToast('Re-parsed ' + detections.length + ' detections', 'success');
-    });
 }
 
 function renderParsingRules() {
@@ -4275,6 +4415,19 @@ function renderReports() {
 function initSettings() {
     document.getElementById('btn-test-connection').addEventListener('click', testGitHubConnection);
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    document.getElementById('btn-migrate-filenames').addEventListener('click', function() {
+        if (confirm('This will rename all detection and metadata files to follow the naming convention:\\n\\n<domain>_<name>_rule.json\\n<domain>_<name>_rule_meta.json\\n\\nContinue?')) {
+            migrateFileNamesToNewConvention();
+        }
+    });
+    document.getElementById('btn-reparse-all').addEventListener('click', function() {
+        if (confirm('This will re-parse all ' + detections.length + ' detections and update their metadata.\\n\\nContinue?')) {
+            detections.forEach(function(d) { parseAndSaveMetadata(d); });
+            saveToLocalStorage();
+            buildDynamicFilters();
+            showToast('Re-parsed ' + detections.length + ' detections', 'success');
+        }
+    });
     
     var pathInputs = ['setting-detections-path', 'setting-metadata-path'];
     pathInputs.forEach(function(id) {
@@ -4454,7 +4607,11 @@ async function handleFiles(files) {
             var text = await file.text();
             var detection = JSON.parse(text);
             if (!detection['Detection Name'] && !detection['Search String']) throw new Error('Invalid format');
-            if (!detection['file_name']) detection['file_name'] = file.name;
+            // Always regenerate filename to follow naming convention (<domain>_<name>_rule.json)
+            detection['file_name'] = generateFileName(
+                detection['Detection Name'],
+                detection['Security Domain']
+            );
             
             var existingIndex = -1;
             for (var j = 0; j < detections.length; j++) {
@@ -4473,7 +4630,7 @@ async function handleFiles(files) {
             if (github) {
                 var saved = await saveDetectionToGitHub(detection);
                 if (saved) {
-                    await saveMetadataToGitHub(detection['Detection Name'], detectionMetadata[detection['Detection Name']]);
+                    await saveMetadataToGitHub(detection['Detection Name'], detectionMetadata[detection['Detection Name']], detection.file_name);
                 }
             }
 
