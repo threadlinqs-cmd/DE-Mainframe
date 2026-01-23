@@ -1,1 +1,51 @@
-[]
+[
+  {
+    "id": "res_default_1",
+    "name": "Splunk ES Dashboard",
+    "url": "https://myorg.splunkcloud.com/en-US/app/SplunkEnterpriseSecuritySuite/ess_dashboard",
+    "category": "dashboard",
+    "description": "Enterprise Security Suite main dashboard"
+  },
+  {
+    "id": "res_default_2",
+    "name": "Revalidation Dashboard",
+    "url": "https://myorg.splunkcloud.com/en-US/app/SplunkEnterpriseSecuritySuite/revalidation_dashboard",
+    "category": "dashboard",
+    "description": "Detection revalidation tracking dashboard"
+  },
+  {
+    "id": "res_default_3",
+    "name": "MITRE ATT&CK Navigator",
+    "url": "https://mitre-attack.github.io/attack-navigator/",
+    "category": "external",
+    "description": "ATT&CK technique visualization tool"
+  },
+  {
+    "id": "res_default_4",
+    "name": "Sigma Rules Repository",
+    "url": "https://github.com/SigmaHQ/sigma",
+    "category": "external",
+    "description": "Open signature format for SIEM systems"
+  },
+  {
+    "id": "res_default_5",
+    "name": "Splunk Security Essentials",
+    "url": "https://splunkbase.splunk.com/app/3435",
+    "category": "external",
+    "description": "Splunk app for security content and use cases"
+  },
+  {
+    "id": "res_default_6",
+    "name": "Detection Wiki",
+    "url": "https://internal.myorg.com/wiki/detection-engineering",
+    "category": "internal",
+    "description": "Internal documentation for detection engineering"
+  },
+  {
+    "id": "res_default_7",
+    "name": "Runbook Repository",
+    "url": "https://internal.myorg.com/runbooks",
+    "category": "internal",
+    "description": "SOC runbooks and response procedures"
+  }
+]

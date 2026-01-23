@@ -3301,6 +3301,350 @@ function buildCorrelationSearchUrl(detectionName) {
         }
     };
 
+    // =====================================================================
+    // RESOURCES VIEW FUNCTIONS
+    // =====================================================================
+
+    // Resources state
+    var resourcesState = {
+        resources: [],
+        editingResourceId: null,
+        deleteResourceId: null,
+        loaded: false
+    };
+
+    // Storage key for resources (fallback cache)
+    var RESOURCES_STORAGE_KEY = 'dmf_resources';
+    var RESOURCES_JSON_PATH = '../dist/resources.json';
+
+    // Initialize Resources view
+    function initResources() {
+        loadResources();
+    }
+
+    // Load resources from dist/resources.json (primary) or localStorage (fallback)
+    function loadResources() {
+        // Try to fetch from resources.json first
+        fetch(RESOURCES_JSON_PATH)
+            .then(function(response) {
+                if (!response.ok) throw new Error('Failed to load resources.json');
+                return response.json();
+            })
+            .then(function(data) {
+                if (Array.isArray(data) && data.length > 0) {
+                    resourcesState.resources = data;
+                } else {
+                    // resources.json is empty, try localStorage or use defaults
+                    loadResourcesFromLocalStorage();
+                }
+                resourcesState.loaded = true;
+                renderResources();
+            })
+            .catch(function(err) {
+                console.warn('Failed to load resources.json, using localStorage:', err);
+                loadResourcesFromLocalStorage();
+                resourcesState.loaded = true;
+                renderResources();
+            });
+    }
+
+    // Load resources from localStorage (fallback)
+    function loadResourcesFromLocalStorage() {
+        try {
+            var stored = localStorage.getItem(RESOURCES_STORAGE_KEY);
+            if (stored) {
+                resourcesState.resources = JSON.parse(stored);
+            } else {
+                // Initialize with some default resources
+                resourcesState.resources = [
+                    {
+                        id: generateResourceId(),
+                        name: 'Splunk ES Dashboard',
+                        url: 'https://myorg.splunkcloud.com/en-US/app/SplunkEnterpriseSecuritySuite/ess_dashboard',
+                        category: 'dashboard',
+                        description: 'Enterprise Security Suite main dashboard'
+                    },
+                    {
+                        id: generateResourceId(),
+                        name: 'MITRE ATT&CK Navigator',
+                        url: 'https://mitre-attack.github.io/attack-navigator/',
+                        category: 'external',
+                        description: 'ATT&CK technique visualization tool'
+                    },
+                    {
+                        id: generateResourceId(),
+                        name: 'Sigma Rules Repository',
+                        url: 'https://github.com/SigmaHQ/sigma',
+                        category: 'external',
+                        description: 'Open signature format for SIEM systems'
+                    },
+                    {
+                        id: generateResourceId(),
+                        name: 'Detection Wiki',
+                        url: 'https://internal.myorg.com/wiki/detection-engineering',
+                        category: 'internal',
+                        description: 'Internal documentation for detection engineering'
+                    }
+                ];
+            }
+        } catch (e) {
+            console.error('Failed to load resources from localStorage:', e);
+            resourcesState.resources = [];
+        }
+    }
+
+    // Save resources to localStorage and trigger GitHub sync
+    function saveResources() {
+        try {
+            // Save to localStorage as cache
+            localStorage.setItem(RESOURCES_STORAGE_KEY, JSON.stringify(resourcesState.resources));
+
+            // Trigger GitHub sync notification
+            // This follows the same pattern as other views (macros, detections)
+            // The actual GitHub commit is handled by external process or manual action
+            console.log('Resources updated - ready for GitHub sync via resources.json');
+
+            // Store pending changes indicator
+            sessionStorage.setItem('dmf_resources_pending_sync', 'true');
+        } catch (e) {
+            console.error('Failed to save resources:', e);
+        }
+    }
+
+    // Update resources.json file (for GitHub sync)
+    // This function prepares the data for export/sync
+    window.exportResourcesForSync = function() {
+        return JSON.stringify(resourcesState.resources, null, 2);
+    };
+
+    // Generate unique resource ID
+    function generateResourceId() {
+        return 'res_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Render all resources grouped by category
+    function renderResources() {
+        var categories = ['dashboard', 'external', 'internal'];
+
+        categories.forEach(function(category) {
+            var container = document.getElementById('resources-' + category);
+            var countEl = document.getElementById('count-' + category);
+
+            if (!container) return;
+
+            var categoryResources = resourcesState.resources.filter(function(r) {
+                return r.category === category;
+            });
+
+            // Update count
+            if (countEl) {
+                countEl.textContent = categoryResources.length;
+            }
+
+            // Render items
+            if (categoryResources.length === 0) {
+                container.innerHTML = '<div class="resource-list-empty">No resources in this category</div>';
+                return;
+            }
+
+            var html = '';
+            categoryResources.forEach(function(resource) {
+                html += renderResourceItem(resource);
+            });
+
+            container.innerHTML = html;
+        });
+    }
+
+    // Render a single resource item
+    function renderResourceItem(resource) {
+        var html = '<div class="resource-item" onclick="openResourceUrl(\'' + escapeAttr(resource.id) + '\')">';
+        html += '<div class="resource-item-content">';
+        html += '<div class="resource-item-name">' + escapeHtml(resource.name) + ' <span class="external-icon">&#x2197;</span></div>';
+        html += '<div class="resource-item-url">' + escapeHtml(resource.url) + '</div>';
+        if (resource.description) {
+            html += '<div class="resource-item-description">' + escapeHtml(resource.description) + '</div>';
+        }
+        html += '</div>';
+        html += '<div class="resource-item-actions">';
+        html += '<button class="btn-icon" onclick="event.stopPropagation(); openEditResourceModal(\'' + escapeAttr(resource.id) + '\')" title="Edit">&#x270E;</button>';
+        html += '<button class="btn-icon btn-danger" onclick="event.stopPropagation(); openDeleteResourceModal(\'' + escapeAttr(resource.id) + '\')" title="Delete">&#x2715;</button>';
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    // Open resource URL in new tab
+    window.openResourceUrl = function(resourceId) {
+        var resource = resourcesState.resources.find(function(r) {
+            return r.id === resourceId;
+        });
+        if (resource && resource.url) {
+            window.open(resource.url, '_blank');
+        }
+    };
+
+    // Open Add Resource Modal
+    window.openAddResourceModal = function() {
+        resourcesState.editingResourceId = null;
+
+        var modal = document.getElementById('modal-resource');
+        var title = document.getElementById('resource-modal-title');
+        var nameInput = document.getElementById('resource-name');
+        var urlInput = document.getElementById('resource-url');
+        var categorySelect = document.getElementById('resource-category');
+        var descInput = document.getElementById('resource-description');
+        var editIdInput = document.getElementById('resource-edit-id');
+
+        if (title) title.textContent = 'Add Resource';
+        if (nameInput) nameInput.value = '';
+        if (urlInput) urlInput.value = '';
+        if (categorySelect) categorySelect.value = '';
+        if (descInput) descInput.value = '';
+        if (editIdInput) editIdInput.value = '';
+
+        if (modal) modal.classList.remove('hidden');
+        if (nameInput) nameInput.focus();
+    };
+
+    // Open Edit Resource Modal
+    window.openEditResourceModal = function(resourceId) {
+        var resource = resourcesState.resources.find(function(r) {
+            return r.id === resourceId;
+        });
+        if (!resource) return;
+
+        resourcesState.editingResourceId = resourceId;
+
+        var modal = document.getElementById('modal-resource');
+        var title = document.getElementById('resource-modal-title');
+        var nameInput = document.getElementById('resource-name');
+        var urlInput = document.getElementById('resource-url');
+        var categorySelect = document.getElementById('resource-category');
+        var descInput = document.getElementById('resource-description');
+        var editIdInput = document.getElementById('resource-edit-id');
+
+        if (title) title.textContent = 'Edit Resource';
+        if (nameInput) nameInput.value = resource.name || '';
+        if (urlInput) urlInput.value = resource.url || '';
+        if (categorySelect) categorySelect.value = resource.category || '';
+        if (descInput) descInput.value = resource.description || '';
+        if (editIdInput) editIdInput.value = resourceId;
+
+        if (modal) modal.classList.remove('hidden');
+        if (nameInput) nameInput.focus();
+    };
+
+    // Close Resource Modal
+    window.closeResourceModal = function() {
+        var modal = document.getElementById('modal-resource');
+        if (modal) modal.classList.add('hidden');
+        resourcesState.editingResourceId = null;
+    };
+
+    // Save Resource (Add or Edit)
+    window.saveResource = function() {
+        var nameInput = document.getElementById('resource-name');
+        var urlInput = document.getElementById('resource-url');
+        var categorySelect = document.getElementById('resource-category');
+        var descInput = document.getElementById('resource-description');
+        var editIdInput = document.getElementById('resource-edit-id');
+
+        var name = nameInput ? nameInput.value.trim() : '';
+        var url = urlInput ? urlInput.value.trim() : '';
+        var category = categorySelect ? categorySelect.value : '';
+        var description = descInput ? descInput.value.trim() : '';
+        var editId = editIdInput ? editIdInput.value : '';
+
+        // Validation
+        if (!name) {
+            alert('Please enter a resource name');
+            if (nameInput) nameInput.focus();
+            return;
+        }
+        if (!url) {
+            alert('Please enter a URL');
+            if (urlInput) urlInput.focus();
+            return;
+        }
+        if (!category) {
+            alert('Please select a category');
+            if (categorySelect) categorySelect.focus();
+            return;
+        }
+
+        // Add https:// if no protocol
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        if (editId) {
+            // Update existing resource
+            var index = resourcesState.resources.findIndex(function(r) {
+                return r.id === editId;
+            });
+            if (index !== -1) {
+                resourcesState.resources[index].name = name;
+                resourcesState.resources[index].url = url;
+                resourcesState.resources[index].category = category;
+                resourcesState.resources[index].description = description;
+            }
+        } else {
+            // Add new resource
+            resourcesState.resources.push({
+                id: generateResourceId(),
+                name: name,
+                url: url,
+                category: category,
+                description: description
+            });
+        }
+
+        saveResources();
+        renderResources();
+        closeResourceModal();
+    };
+
+    // Open Delete Resource Confirmation Modal
+    window.openDeleteResourceModal = function(resourceId) {
+        var resource = resourcesState.resources.find(function(r) {
+            return r.id === resourceId;
+        });
+        if (!resource) return;
+
+        resourcesState.deleteResourceId = resourceId;
+
+        var modal = document.getElementById('modal-delete-resource');
+        var message = document.getElementById('delete-resource-message');
+
+        if (message) {
+            message.textContent = 'Are you sure you want to delete "' + resource.name + '"?';
+        }
+
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    // Close Delete Resource Modal
+    window.closeDeleteResourceModal = function() {
+        var modal = document.getElementById('modal-delete-resource');
+        if (modal) modal.classList.add('hidden');
+        resourcesState.deleteResourceId = null;
+    };
+
+    // Confirm Delete Resource
+    window.confirmDeleteResource = function() {
+        var resourceId = resourcesState.deleteResourceId;
+        if (!resourceId) return;
+
+        resourcesState.resources = resourcesState.resources.filter(function(r) {
+            return r.id !== resourceId;
+        });
+
+        saveResources();
+        renderResources();
+        closeDeleteResourceModal();
+    };
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -3318,6 +3662,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initMacros();
         initRevalidation();
         initHistory();
+        initResources();
     };
 
     // Expose App to global scope for debugging

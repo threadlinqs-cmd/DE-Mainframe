@@ -3098,3 +3098,212 @@ pre code {
         flex-wrap: wrap;
     }
 }
+
+/* ========================================
+   Resources View
+   ======================================== */
+.resources-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height) - var(--status-height) - 48px);
+}
+
+.resources-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* Resources Toolbar */
+.resources-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 16px 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 24px;
+}
+
+.resources-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+/* Resources Container */
+.resources-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Resource Category */
+.resource-category {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: var(--color-bg-alt);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.category-icon {
+    font-size: 20px;
+}
+
+.category-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+    flex: 1;
+}
+
+.category-count {
+    font-size: 12px;
+    padding: 2px 10px;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    border-radius: 12px;
+}
+
+/* Resource List */
+.resource-list {
+    padding: 8px;
+}
+
+.resource-list-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* Resource Item */
+.resource-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border-light);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.resource-item:hover {
+    background-color: var(--color-hover);
+}
+
+.resource-item:last-child {
+    margin-bottom: 0;
+}
+
+.resource-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.resource-item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.resource-item-name .external-icon {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.resource-item-url {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 500px;
+}
+
+.resource-item-description {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+.resource-item-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.resource-item:hover .resource-item-actions {
+    opacity: 1;
+}
+
+.btn-icon {
+    background: none;
+    border: 1px solid var(--color-border);
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    background-color: var(--color-bg);
+}
+
+.btn-icon:hover {
+    background-color: var(--color-hover);
+    color: var(--color-text);
+}
+
+.btn-icon.btn-danger {
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.btn-icon.btn-danger:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Resources Responsive */
+@media (max-width: 768px) {
+    .resources-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .resources-toolbar .btn-action {
+        width: 100%;
+    }
+
+    .resource-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .resource-item-actions {
+        opacity: 1;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .resource-item-url {
+        max-width: 100%;
+    }
+}
