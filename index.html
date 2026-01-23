@@ -909,6 +909,20 @@
         </div>
     </div>
 
+    <!-- Macro Details Modal (floating) -->
+    <div id="modal-macro-details" class="modal macro-details-modal hidden">
+        <div class="modal-overlay" onclick="closeMacroDetailsModal()"></div>
+        <div class="modal-content macro-details-content-wrapper">
+            <div class="modal-header">
+                <h3 id="macro-details-title">Macro Details</h3>
+                <button class="modal-close" onclick="closeMacroDetailsModal()">×</button>
+            </div>
+            <div class="modal-body" id="macro-details-body">
+                <!-- Content injected by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
     <script src="app.js?v=11.16"></script>
 </body>

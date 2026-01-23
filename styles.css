@@ -185,6 +185,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .card-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--bg-tertiary); color: var(--text-secondary); }
 .card-tag.datasource { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
 .card-tag.macro { background: rgba(163, 113, 247, 0.15); color: var(--retrofit-color); font-family: monospace; }
+.card-tag.macro.clickable { cursor: pointer; transition: all 0.2s ease; }
+.card-tag.macro.clickable:hover { background: rgba(163, 113, 247, 0.3); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+.card-tag.macro.macro-missing { background: rgba(210, 153, 34, 0.15); color: var(--warning); border: 1px dashed var(--warning); }
+.card-tag.macro.macro-missing:hover { background: rgba(210, 153, 34, 0.3); }
+.card-tag.macro.macro-deprecated { text-decoration: line-through; opacity: 0.7; }
+.card-tag.macro.macro-deprecated:hover { opacity: 1; }
 .card-tag.comment { background: rgba(99, 110, 123, 0.2); color: var(--text-muted); font-style: italic; }
 .card-tag.mitre { background: rgba(240, 136, 62, 0.15); color: var(--tune-color); }
 .card-tag.field { background: rgba(63, 185, 80, 0.15); color: var(--success); }
@@ -415,6 +421,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .progress-bar { height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
 .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
 .import-results { margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 6px; }
+
+/* Macro Details Modal */
+.macro-details-modal .modal-content { max-width: 550px; }
+.macro-details-modal .modal-header h3 { display: flex; align-items: center; gap: 8px; font-family: inherit; }
+.macro-details-modal .modal-header h3 code { font-size: 14px; background: var(--bg-tertiary); padding: 2px 8px; border-radius: 4px; }
+.macro-missing-indicator { color: var(--warning); }
+.macro-deprecated-indicator { color: var(--warning); }
+.macro-deprecated-badge { font-size: 10px; background: rgba(210, 153, 34, 0.2); color: var(--warning); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 500; }
+.macro-details-content { display: flex; flex-direction: column; gap: 16px; }
+.macro-detail-field { display: flex; flex-direction: column; gap: 4px; }
+.macro-detail-field label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; }
+.macro-detail-field .macro-detail-value { font-size: 13px; color: var(--text-primary); }
+.macro-detail-field .macro-detail-value pre { background: var(--bg-tertiary); padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; overflow-x: auto; }
+.macro-detail-field .macro-detail-value code { background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+.macro-detail-field .macro-detail-value .text-muted { color: var(--text-muted); }
+.macro-details-missing { text-align: center; padding: 20px 0; }
+.macro-details-missing p { margin-bottom: 12px; color: var(--text-secondary); }
+.macro-details-missing code { background: var(--bg-tertiary); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: var(--warning); }
+.macro-details-missing .btn-primary { margin-top: 8px; }
 
 /* Toast */
 .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; }

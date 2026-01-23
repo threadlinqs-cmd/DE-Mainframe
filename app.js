@@ -193,7 +193,8 @@ let selectedHistoryDetection = null;
 let detectionMetadata = {};
 let resources = []; // Resources for the Resources tab
 let resourceCategories = ['Dashboard', 'external url', 'internal url'];
-let loadedMacros = []; // Loaded macros for validation
+let loadedMacros = []; // Loaded macros for validation (array of names for backward compatibility)
+let macroObjects = []; // Rich macro objects: { name, definition, description, arguments, deprecated, usageCount }
 let parsingRules = [];
 let hasUnsavedChanges = false;
 let darkMode = true;
@@ -837,11 +838,36 @@ function autoLoadFromStaticFiles() {
 
         // Load macros for validation
         if (Array.isArray(macrosData)) {
-            loadedMacros = macrosData;
+            // Convert to rich macro objects and maintain backward-compatible loadedMacros array
+            macroObjects = macrosData.map(function(item) {
+                if (typeof item === 'string') {
+                    // Simple string: convert to object
+                    return {
+                        name: item,
+                        definition: '',
+                        description: '',
+                        arguments: '',
+                        deprecated: false,
+                        usageCount: 0
+                    };
+                }
+                // Already an object, ensure all fields exist
+                return Object.assign({
+                    name: '',
+                    definition: '',
+                    description: '',
+                    arguments: '',
+                    deprecated: false,
+                    usageCount: 0
+                }, item);
+            });
+            // Maintain loadedMacros as simple array of names for backward compatibility
+            loadedMacros = macroObjects.map(function(m) { return m.name; });
             console.log('✓ Loaded ' + loadedMacros.length + ' macros for validation');
         } else {
             console.warn('No macros found, macro validation will flag all macros as missing');
             loadedMacros = [];
+            macroObjects = [];
         }
 
         // Cache locally for offline access
@@ -2483,7 +2509,7 @@ function renderLibraryDetail(d) {
             }
             if (parsed.macros.length) {
                 html += '<div class="doc-tag-group"><span class="tag-group-label">Macros</span><div class="tag-group-items">';
-                parsed.macros.forEach(function(m) { html += '<span class="card-tag macro">`' + escapeHtml(m) + '`</span>'; });
+                parsed.macros.forEach(function(m) { html += renderClickableMacroTag(m); });
                 html += '</div></div>';
             }
             if (parsed.lookups.length) {
@@ -2605,8 +2631,8 @@ function renderLibraryDetail(d) {
                 
                 // Parse drilldown search for SPL metadata
                 var ddParsed = parseSPL(dd.search);
-                var ddHasParsed = ddParsed.indexes.length || ddParsed.sourcetypes.length || ddParsed.eventCodes.length || 
-                                  ddParsed.mainSearchFunctions.length || ddParsed.byFields.length;
+                var ddHasParsed = ddParsed.indexes.length || ddParsed.sourcetypes.length || ddParsed.eventCodes.length ||
+                                  ddParsed.macros.length || ddParsed.mainSearchFunctions.length || ddParsed.byFields.length;
                 if (ddHasParsed) {
                     html += '<div class="doc-parsed-metadata drilldown-parsed">';
                     html += '<div class="doc-parsed-title">Parsed from SPL</div>';
@@ -2619,6 +2645,11 @@ function renderLibraryDetail(d) {
                     if (ddParsed.eventCodes.length) {
                         html += '<div class="doc-tag-group"><span class="tag-group-label">Event Codes</span><div class="tag-group-items">';
                         ddParsed.eventCodes.forEach(function(e) { html += '<span class="card-tag">' + escapeHtml(e) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (ddParsed.macros.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Macros</span><div class="tag-group-items">';
+                        ddParsed.macros.forEach(function(m) { html += renderClickableMacroTag(m); });
                         html += '</div></div>';
                     }
                     if (ddParsed.mainSearchFunctions.length) {
@@ -3096,7 +3127,7 @@ function renderParsedMetadataSidebar() {
     }
     if (parsed.macros.length) {
         html += '<div class="metadata-group"><div class="metadata-label">Macros</div><div class="metadata-values">';
-        parsed.macros.forEach(function(m) { html += '<span class="metadata-tag">' + escapeHtml(m) + '</span>'; });
+        parsed.macros.forEach(function(m) { html += renderClickableMacroTag(m); });
         html += '</div></div>';
     }
     if (parsed.comments.length) {
@@ -3259,6 +3290,34 @@ function validateForm() {
         }
     }
 
+    // Validate macros in Legacy Drilldown Search
+    var legacyDrilldownSearch = d['Drilldown Search (Legacy)'] || '';
+    if (legacyDrilldownSearch) {
+        var parsedLegacy = parseSPL(legacyDrilldownSearch);
+        if (parsedLegacy.macros && parsedLegacy.macros.length > 0) {
+            parsedLegacy.macros.forEach(function(macro) {
+                if (loadedMacros.indexOf(macro) === -1) {
+                    errors.push('Macro not found in Drilldown (Legacy): `' + macro + '`');
+                }
+            });
+        }
+    }
+
+    // Validate macros in all 15 numbered Drilldown Searches
+    for (var i = 1; i <= 15; i++) {
+        var drilldownSearch = d['Drilldown Search ' + i] || '';
+        if (drilldownSearch) {
+            var parsedDrilldown = parseSPL(drilldownSearch);
+            if (parsedDrilldown.macros && parsedDrilldown.macros.length > 0) {
+                parsedDrilldown.macros.forEach(function(macro) {
+                    if (loadedMacros.indexOf(macro) === -1) {
+                        errors.push('Macro not found in Drilldown ' + i + ': `' + macro + '`');
+                    }
+                });
+            }
+        }
+    }
+
     var statusContainer = document.getElementById('validation-status');
     var errorsContainer = document.getElementById('validation-errors');
     var saveBtn = document.getElementById('btn-save');
@@ -3272,10 +3331,11 @@ function validateForm() {
         var errHtml = '';
         errors.slice(0, 5).forEach(function(e) {
             // Check if this is a macro not found error and make it clickable
-            var macroMatch = e.match(/^Macro not found: `(.+)`$/);
+            // Match both main search errors and drilldown errors
+            var macroMatch = e.match(/^Macro not found(?: in Drilldown (?:\d+|\(Legacy\)))?: `(.+)`$/);
             if (macroMatch) {
                 var macroName = macroMatch[1];
-                errHtml += '<div class="validation-error">• <a href="#" class="validation-error-link" onclick="navigateToMacrosWithName(\'' + escapeAttr(macroName) + '\'); return false;">Macro not found: `' + escapeHtml(macroName) + '`</a></div>';
+                errHtml += '<div class="validation-error">• <a href="#" class="validation-error-link" onclick="navigateToMacrosWithName(\'' + escapeAttr(macroName) + '\'); return false;">' + escapeHtml(e) + '</a></div>';
             } else {
                 errHtml += '<div class="validation-error">• ' + e + '</div>';
             }
@@ -4906,6 +4966,120 @@ async function deleteDetection(name) {
 // UTILITIES
 // =============================================================================
 
+// Get macro object by name (returns null if not found)
+function getMacroByName(macroName) {
+    if (!macroName) return null;
+    for (var i = 0; i < macroObjects.length; i++) {
+        if (macroObjects[i].name === macroName) {
+            return macroObjects[i];
+        }
+    }
+    return null;
+}
+
+// Check if a macro exists in the loaded macros
+function isMacroRegistered(macroName) {
+    return loadedMacros.indexOf(macroName) !== -1;
+}
+
+// Count how many detections use a specific macro
+function countMacroUsage(macroName) {
+    if (!detections || !macroName) return 0;
+    var count = 0;
+    var escapedName = macroName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp('`' + escapedName + '(?:\\([^)]*\\))?`', 'g');
+    detections.forEach(function(d) {
+        var spl = d['Search String'] || '';
+        // Also check drilldowns
+        var drilldowns = '';
+        if (d['Drilldown Search']) drilldowns += d['Drilldown Search'];
+        for (var i = 1; i <= 15; i++) {
+            if (d['Drilldown ' + i]) drilldowns += ' ' + d['Drilldown ' + i];
+        }
+        if (regex.test(spl) || regex.test(drilldowns)) {
+            count++;
+        }
+    });
+    return count;
+}
+
+// Open the floating macro details modal
+function openMacroDetailsModal(macroName) {
+    var modal = document.getElementById('modal-macro-details');
+    var macro = getMacroByName(macroName);
+    var isMissing = !isMacroRegistered(macroName);
+
+    // Build modal content
+    var titleEl = document.getElementById('macro-details-title');
+    var bodyEl = document.getElementById('macro-details-body');
+
+    if (isMissing) {
+        titleEl.innerHTML = '<span class="macro-missing-indicator">⚠</span> Missing Macro';
+        bodyEl.innerHTML = '<div class="macro-details-missing">' +
+            '<p>The macro <code>`' + escapeHtml(macroName) + '`</code> is not registered in your macros list.</p>' +
+            '<p>This may cause validation errors in detections that use this macro.</p>' +
+            '<button class="btn-primary" onclick="closeMacroDetailsModal(); navigateToMacrosWithName(\'' + escapeAttr(macroName) + '\');">➕ Add This Macro</button>' +
+            '</div>';
+    } else {
+        var usageCount = countMacroUsage(macroName);
+        var isDeprecated = macro && macro.deprecated;
+
+        titleEl.innerHTML = (isDeprecated ? '<span class="macro-deprecated-indicator">⚠</span> ' : '') +
+            '<code>`' + escapeHtml(macroName) + '`</code>' +
+            (isDeprecated ? ' <span class="macro-deprecated-badge">deprecated</span>' : '');
+
+        var html = '<div class="macro-details-content">';
+
+        // Definition
+        html += '<div class="macro-detail-field">';
+        html += '<label>Definition</label>';
+        html += '<div class="macro-detail-value"><pre>' + (macro && macro.definition ? escapeHtml(macro.definition) : '<em class="text-muted">No definition provided</em>') + '</pre></div>';
+        html += '</div>';
+
+        // Description
+        html += '<div class="macro-detail-field">';
+        html += '<label>Description</label>';
+        html += '<div class="macro-detail-value">' + (macro && macro.description ? escapeHtml(macro.description) : '<em class="text-muted">No description provided</em>') + '</div>';
+        html += '</div>';
+
+        // Arguments
+        html += '<div class="macro-detail-field">';
+        html += '<label>Arguments</label>';
+        html += '<div class="macro-detail-value">' + (macro && macro.arguments ? '<code>' + escapeHtml(macro.arguments) + '</code>' : '<em class="text-muted">None</em>') + '</div>';
+        html += '</div>';
+
+        // Usage count
+        html += '<div class="macro-detail-field">';
+        html += '<label>Usage</label>';
+        html += '<div class="macro-detail-value">' + usageCount + ' detection' + (usageCount !== 1 ? 's' : '') + '</div>';
+        html += '</div>';
+
+        html += '</div>';
+        bodyEl.innerHTML = html;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// Close the floating macro details modal
+function closeMacroDetailsModal() {
+    var modal = document.getElementById('modal-macro-details');
+    modal.classList.add('hidden');
+}
+
+// Render a clickable macro tag with appropriate styling
+function renderClickableMacroTag(macroName) {
+    var isMissing = !isMacroRegistered(macroName);
+    var macro = getMacroByName(macroName);
+    var isDeprecated = macro && macro.deprecated;
+
+    var classes = 'card-tag macro clickable';
+    if (isMissing) classes += ' macro-missing';
+    if (isDeprecated) classes += ' macro-deprecated';
+
+    return '<span class="' + classes + '" onclick="openMacroDetailsModal(\'' + escapeAttr(macroName) + '\')" title="Click to view macro details">`' + escapeHtml(macroName) + '`</span>';
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     var div = document.createElement('div');
@@ -5962,6 +6136,8 @@ function navigateToMacrosWithName(macroName) {
 window.confirmDeleteMacro = confirmDeleteMacro;
 window.deleteMacro = deleteMacro;
 window.navigateToMacrosWithName = navigateToMacrosWithName;
+window.openMacroDetailsModal = openMacroDetailsModal;
+window.closeMacroDetailsModal = closeMacroDetailsModal;
 
 window.removeDrilldown = removeDrilldown;
 window.closeAllModals = closeAllModals;
