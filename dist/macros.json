@@ -1,0 +1,11 @@
+[
+  "security_content_summariesonly",
+  "security_content_ctime",
+  "cim_authentication_indexes",
+  "cim_endpoint_indexes",
+  "cim_network_traffic_indexes",
+  "cim_web_indexes",
+  "cim_alerts_indexes",
+  "drop_dm_object_name",
+  "security_domain"
+]

@@ -193,6 +193,7 @@ let selectedHistoryDetection = null;
 let detectionMetadata = {};
 let resources = []; // Resources for the Resources tab
 let resourceCategories = ['Dashboard', 'external url', 'internal url'];
+let loadedMacros = []; // Loaded macros for validation
 let parsingRules = [];
 let hasUnsavedChanges = false;
 let darkMode = true;
@@ -776,20 +777,23 @@ function autoLoadFromStaticFiles() {
     var detectionsFile = PATHS.dist + '/all-detections.json';
     var metadataFile = PATHS.dist + '/all-metadata.json';
     var resourcesFile = PATHS.dist + '/resources.json';
-    
-    console.log('Loading from:', detectionsFile, metadataFile, resourcesFile);
-    
+    var macrosFile = PATHS.dist + '/macros.json';
+
+    console.log('Loading from:', detectionsFile, metadataFile, resourcesFile, macrosFile);
+
     // Fetch all files in parallel
     Promise.all([
         fetchGitHubFile(detectionsFile),
         fetchGitHubFile(metadataFile),
-        fetchGitHubFile(resourcesFile).catch(function() { return []; }) // Resources optional
+        fetchGitHubFile(resourcesFile).catch(function() { return []; }), // Resources optional
+        fetchGitHubFile(macrosFile).catch(function() { return []; }) // Macros optional
     ])
     .then(function(results) {
         var detectionsData = results[0];
         var metadataData = results[1];
         var resourcesData = results[2];
-        
+        var macrosData = results[3];
+
         if (bootStatus) bootStatus.textContent = 'Processing data...';
         
         // Load detections
@@ -830,7 +834,16 @@ function autoLoadFromStaticFiles() {
             console.warn('No resources found, using defaults');
             resources = getDefaultResources();
         }
-        
+
+        // Load macros for validation
+        if (Array.isArray(macrosData)) {
+            loadedMacros = macrosData;
+            console.log('✓ Loaded ' + loadedMacros.length + ' macros for validation');
+        } else {
+            console.warn('No macros found, macro validation will flag all macros as missing');
+            loadedMacros = [];
+        }
+
         // Cache locally for offline access
         saveToLocalStorage();
         
@@ -915,6 +928,11 @@ function loadFromLocalStorage() {
         try { detectionMetadata = JSON.parse(storedMetadata); } catch (e) { detectionMetadata = {}; }
     }
 
+    const storedMacros = localStorage.getItem('dmf_macros');
+    if (storedMacros) {
+        try { loadedMacros = JSON.parse(storedMacros); } catch (e) { loadedMacros = []; }
+    }
+
     filteredDetections = detections.slice();
     console.log('%c⚡ Loaded ' + detections.length + ' detections from cache', 'color: #50fa7b');
 }
@@ -941,6 +959,7 @@ function saveToLocalStorage() {
     localStorage.setItem('dmf_metadata', JSON.stringify(detectionMetadata));
     localStorage.setItem('dmf_parsing_rules', JSON.stringify(parsingRules));
     localStorage.setItem('dmf_github_config', JSON.stringify(githubConfig));
+    localStorage.setItem('dmf_macros', JSON.stringify(loadedMacros));
 }
 
 function initUI() {
@@ -3224,11 +3243,24 @@ function validateForm() {
     MANDATORY_FIELDS.forEach(function(field) {
         if (!hasValue(d, field)) errors.push((FIELD_LABELS[field] || field) + ' is required');
     });
-    
+
+    // Validate macros in Search String against loaded macros
+    var spl = d['Search String'] || '';
+    if (spl) {
+        var parsed = parseSPL(spl);
+        if (parsed.macros && parsed.macros.length > 0) {
+            parsed.macros.forEach(function(macro) {
+                if (loadedMacros.indexOf(macro) === -1) {
+                    errors.push('Macro not found: `' + macro + '`');
+                }
+            });
+        }
+    }
+
     var statusContainer = document.getElementById('validation-status');
     var errorsContainer = document.getElementById('validation-errors');
     var saveBtn = document.getElementById('btn-save');
-    
+
     if (errors.length === 0) {
         statusContainer.innerHTML = '<div class="validation-indicator valid">✓ Ready to Save</div>';
         errorsContainer.innerHTML = '';
