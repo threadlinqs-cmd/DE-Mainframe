@@ -1596,11 +1596,11 @@ function initNavigation() {
     document.getElementById('btn-new').addEventListener('click', createNewDetection);
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     
-    // Config button handler
+    // Config button handler - opens Settings modal
     var configBtn = document.getElementById('btn-config');
     if (configBtn) {
         configBtn.addEventListener('click', function() {
-            switchView('config');
+            openSettingsModal();
         });
     }
     
