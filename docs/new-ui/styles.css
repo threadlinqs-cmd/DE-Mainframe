@@ -1919,3 +1919,262 @@ pre code {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   Macros View
+   ======================================== */
+.macros-layout {
+    display: flex;
+    gap: 24px;
+    height: calc(100vh - var(--header-height) - var(--status-height) - 48px);
+}
+
+.macros-sidebar {
+    width: 360px;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+}
+
+.macros-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+}
+
+.macros-toolbar {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.macros-toolbar .btn-action {
+    width: 100%;
+}
+
+.macros-search {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.macros-filter-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.macros-filter-row .filter-select {
+    flex: 1;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.toggle-label input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.toggle-label.inline {
+    font-size: 13px;
+}
+
+.macros-list-header {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.macros-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.macro-list-item {
+    padding: 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background-color: var(--color-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.macro-list-item:hover {
+    background-color: var(--color-hover);
+}
+
+.macro-list-item.selected {
+    background-color: var(--color-active);
+    border-color: var(--color-text-secondary);
+}
+
+.macro-list-item.deprecated {
+    opacity: 0.6;
+}
+
+.macro-list-item-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.macro-list-item-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.macro-usage-count {
+    font-size: 10px;
+    padding: 2px 6px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.macro-deprecated-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background-color: rgba(240, 136, 62, 0.15);
+    border: 1px solid rgba(240, 136, 62, 0.3);
+    color: #f0883e;
+}
+
+/* Macro Detail Panel */
+.macro-detail-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.macro-detail-content.hidden {
+    display: none;
+}
+
+.macro-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg-alt);
+}
+
+.macro-detail-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.macro-detail-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.macro-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.macro-form {
+    max-width: 700px;
+}
+
+.macro-form .form-group {
+    margin-bottom: 16px;
+}
+
+.macro-usage-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border-light);
+}
+
+.macro-usage-section.hidden {
+    display: none;
+}
+
+.macro-usage-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--color-text);
+}
+
+.macro-usage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.macro-usage-item {
+    padding: 10px 12px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border-light);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.macro-usage-item:hover {
+    background-color: var(--color-hover);
+}
+
+.macro-usage-item-name {
+    font-weight: 500;
+}
+
+.macro-usage-item-meta {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+.macro-usage-warning {
+    padding: 12px;
+    background-color: rgba(240, 136, 62, 0.1);
+    border: 1px solid rgba(240, 136, 62, 0.3);
+    color: #f0883e;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+/* Macros Responsive */
+@media (max-width: 900px) {
+    .macros-layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .macros-sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 50vh;
+    }
+
+    .macros-main {
+        min-height: 50vh;
+    }
+
+    .macros-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

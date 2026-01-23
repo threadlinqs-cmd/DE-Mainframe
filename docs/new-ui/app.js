@@ -1948,6 +1948,501 @@ function buildCorrelationSearchUrl(detectionName) {
         alert('Detection saved successfully!\n\nNote: In production, this would sync to GitHub.');
     };
 
+    // =========================================================================
+    // MACROS VIEW FUNCTIONS
+    // =========================================================================
+
+    // Macros State
+    var macrosState = {
+        macros: [], // Array of macro objects: { name, definition, description, arguments, deprecated, usageCount }
+        filteredMacros: [],
+        selectedMacro: null,
+        isEditing: false,
+        isNewMacro: false
+    };
+
+    // Initialize Macros View
+    function initMacros() {
+        loadMacros();
+    }
+
+    // Load macros from dist folder
+    function loadMacros() {
+        fetch(App.config.distPath + 'macros.json')
+            .then(function(response) {
+                if (!response.ok) throw new Error('Failed to load macros');
+                return response.json();
+            })
+            .then(function(data) {
+                // Convert simple array to macro objects with usage counting
+                if (Array.isArray(data)) {
+                    macrosState.macros = data.map(function(name) {
+                        if (typeof name === 'string') {
+                            return {
+                                name: name,
+                                definition: '',
+                                description: '',
+                                arguments: '',
+                                deprecated: false,
+                                usageCount: countMacroUsage(name)
+                            };
+                        }
+                        // Already an object
+                        return Object.assign({
+                            definition: '',
+                            description: '',
+                            arguments: '',
+                            deprecated: false
+                        }, name, {
+                            usageCount: countMacroUsage(name.name || name)
+                        });
+                    });
+                } else {
+                    macrosState.macros = [];
+                }
+                macrosState.filteredMacros = macrosState.macros.slice();
+                editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
+                filterMacros();
+            })
+            .catch(function(err) {
+                console.error('Failed to load macros:', err);
+                macrosState.macros = [];
+                macrosState.filteredMacros = [];
+                renderMacrosList();
+            });
+    }
+
+    // Count how many detections use a macro
+    function countMacroUsage(macroName) {
+        if (!App.state.detections || !macroName) return 0;
+        var count = 0;
+        App.state.detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var regex = new RegExp('`' + escapeRegExp(macroName) + '(?:\\([^)]*\\))?`', 'g');
+            if (regex.test(spl)) {
+                count++;
+            }
+        });
+        return count;
+    }
+
+    // Escape special regex characters
+    function escapeRegExp(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Get detections that use a macro
+    function getDetectionsUsingMacro(macroName) {
+        if (!App.state.detections || !macroName) return [];
+        var detections = [];
+        App.state.detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var regex = new RegExp('`' + escapeRegExp(macroName) + '(?:\\([^)]*\\))?`', 'g');
+            if (regex.test(spl)) {
+                detections.push({
+                    name: d['Detection Name'],
+                    severity: d['Severity/Priority'],
+                    domain: d['Security Domain']
+                });
+            }
+        });
+        return detections;
+    }
+
+    // Filter macros based on search, sort, and deprecated toggle
+    window.filterMacros = function() {
+        var searchInput = document.getElementById('macros-search-input');
+        var sortSelect = document.getElementById('macros-sort');
+        var showDeprecated = document.getElementById('macros-show-deprecated');
+
+        var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        var sortOption = sortSelect ? sortSelect.value : 'name-asc';
+        var includeDeprecated = showDeprecated ? showDeprecated.checked : false;
+
+        // Filter
+        macrosState.filteredMacros = macrosState.macros.filter(function(m) {
+            // Search filter
+            if (searchTerm && m.name.toLowerCase().indexOf(searchTerm) === -1) {
+                return false;
+            }
+            // Deprecated filter
+            if (!includeDeprecated && m.deprecated) {
+                return false;
+            }
+            return true;
+        });
+
+        // Sort
+        macrosState.filteredMacros.sort(function(a, b) {
+            switch (sortOption) {
+                case 'name-desc':
+                    return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+                case 'most-used':
+                    return (b.usageCount || 0) - (a.usageCount || 0);
+                case 'least-used':
+                    return (a.usageCount || 0) - (b.usageCount || 0);
+                case 'name-asc':
+                default:
+                    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+            }
+        });
+
+        renderMacrosList();
+    };
+
+    // Render macros list
+    function renderMacrosList() {
+        var container = document.getElementById('macros-list');
+        var countEl = document.getElementById('macros-count');
+
+        if (countEl) {
+            countEl.textContent = macrosState.filteredMacros.length + ' macro' + (macrosState.filteredMacros.length !== 1 ? 's' : '');
+        }
+
+        if (!container) return;
+
+        if (macrosState.filteredMacros.length === 0) {
+            container.innerHTML = '<div class="empty-state"><span class="empty-icon">⚙</span><p>No macros found</p></div>';
+            return;
+        }
+
+        var html = '';
+        macrosState.filteredMacros.forEach(function(m) {
+            var isSelected = macrosState.selectedMacro && macrosState.selectedMacro.name === m.name;
+            var classes = 'macro-list-item';
+            if (isSelected) classes += ' selected';
+            if (m.deprecated) classes += ' deprecated';
+
+            html += '<div class="' + classes + '" onclick="selectMacro(\'' + escapeAttr(m.name) + '\')">';
+            html += '<span class="macro-list-item-name">`' + escapeHtml(m.name) + '`</span>';
+            html += '<div class="macro-list-item-meta">';
+            if (m.deprecated) {
+                html += '<span class="macro-deprecated-badge">deprecated</span>';
+            }
+            html += '<span class="macro-usage-count">' + (m.usageCount || 0) + ' use' + (m.usageCount !== 1 ? 's' : '') + '</span>';
+            html += '</div>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    // Select a macro
+    window.selectMacro = function(name) {
+        var macro = macrosState.macros.find(function(m) {
+            return m.name === name;
+        });
+        if (!macro) return;
+
+        macrosState.selectedMacro = macro;
+        macrosState.isNewMacro = false;
+        macrosState.isEditing = false;
+        renderMacrosList();
+        renderMacroDetail(macro);
+    };
+
+    // Render macro detail panel
+    function renderMacroDetail(macro) {
+        document.getElementById('macro-placeholder').classList.add('hidden');
+        document.getElementById('macro-detail-content').classList.remove('hidden');
+
+        var titleEl = document.getElementById('macro-detail-title');
+        titleEl.textContent = macrosState.isNewMacro ? 'New Macro' : 'Edit Macro';
+
+        // Populate form
+        document.getElementById('macro-field-name').value = macro.name || '';
+        document.getElementById('macro-field-definition').value = macro.definition || '';
+        document.getElementById('macro-field-description').value = macro.description || '';
+        document.getElementById('macro-field-arguments').value = macro.arguments || '';
+        document.getElementById('macro-field-deprecated').checked = macro.deprecated || false;
+
+        // Disable name field if editing existing macro
+        document.getElementById('macro-field-name').disabled = !macrosState.isNewMacro;
+
+        // Show/hide delete button
+        document.getElementById('btn-macro-delete').style.display = macrosState.isNewMacro ? 'none' : '';
+
+        // Show usage section
+        renderMacroUsage(macro);
+    }
+
+    // Render macro usage section
+    function renderMacroUsage(macro) {
+        var section = document.getElementById('macro-usage-section');
+        var listEl = document.getElementById('macro-usage-list');
+
+        if (macrosState.isNewMacro || !macro.name) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        var detections = getDetectionsUsingMacro(macro.name);
+        if (detections.length === 0) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        section.classList.remove('hidden');
+        var html = '';
+        detections.forEach(function(d) {
+            html += '<div class="macro-usage-item" onclick="goToDetection(\'' + escapeAttr(d.name) + '\')">';
+            html += '<div class="macro-usage-item-name">' + escapeHtml(d.name) + '</div>';
+            html += '<div class="macro-usage-item-meta">';
+            if (d.severity) html += '<span>' + escapeHtml(d.severity) + '</span>';
+            if (d.domain) html += '<span> | ' + escapeHtml(d.domain) + '</span>';
+            html += '</div>';
+            html += '</div>';
+        });
+        listEl.innerHTML = html;
+    }
+
+    // Go to detection in library view
+    window.goToDetection = function(name) {
+        var navItem = document.querySelector('.nav-item[href="#library"]');
+        if (navItem) {
+            App.handleNavigation(navItem);
+            setTimeout(function() {
+                App.selectDetection(name);
+            }, 100);
+        }
+    };
+
+    // Create new macro
+    window.createNewMacro = function() {
+        macrosState.selectedMacro = {
+            name: '',
+            definition: '',
+            description: '',
+            arguments: '',
+            deprecated: false,
+            usageCount: 0
+        };
+        macrosState.isNewMacro = true;
+        macrosState.isEditing = true;
+        renderMacrosList();
+        renderMacroDetail(macrosState.selectedMacro);
+        document.getElementById('macro-field-name').focus();
+    };
+
+    // Cancel macro edit
+    window.cancelMacroEdit = function() {
+        macrosState.selectedMacro = null;
+        macrosState.isNewMacro = false;
+        macrosState.isEditing = false;
+
+        document.getElementById('macro-placeholder').classList.remove('hidden');
+        document.getElementById('macro-detail-content').classList.add('hidden');
+
+        renderMacrosList();
+    };
+
+    // Validate macro name (no spaces, underscores only for special chars)
+    function validateMacroName(name) {
+        if (!name || name.trim() === '') {
+            return { valid: false, error: 'Macro name is required' };
+        }
+
+        // Remove backticks if present
+        name = name.replace(/^`|`$/g, '').trim();
+
+        if (name.indexOf(' ') !== -1) {
+            return { valid: false, error: 'Macro name cannot contain spaces. Use underscores instead.' };
+        }
+
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+            return { valid: false, error: 'Macro name must start with a letter or underscore and contain only letters, numbers, and underscores.' };
+        }
+
+        return { valid: true, name: name };
+    }
+
+    // Save macro edit
+    window.saveMacroEdit = function() {
+        var nameInput = document.getElementById('macro-field-name');
+        var definitionInput = document.getElementById('macro-field-definition');
+        var descriptionInput = document.getElementById('macro-field-description');
+        var argumentsInput = document.getElementById('macro-field-arguments');
+        var deprecatedInput = document.getElementById('macro-field-deprecated');
+
+        // Validate name
+        var validation = validateMacroName(nameInput.value);
+        if (!validation.valid) {
+            alert(validation.error);
+            nameInput.focus();
+            return;
+        }
+
+        var macroName = validation.name;
+
+        // Validate definition
+        var definition = definitionInput.value.trim();
+        if (!definition) {
+            alert('Macro definition is required');
+            definitionInput.focus();
+            return;
+        }
+
+        // Check for duplicate names when creating new
+        if (macrosState.isNewMacro) {
+            var exists = macrosState.macros.some(function(m) {
+                return m.name.toLowerCase() === macroName.toLowerCase();
+            });
+            if (exists) {
+                alert('A macro with this name already exists');
+                nameInput.focus();
+                return;
+            }
+        }
+
+        // Build macro object
+        var macro = {
+            name: macroName,
+            definition: definition,
+            description: descriptionInput.value.trim(),
+            arguments: argumentsInput.value.trim(),
+            deprecated: deprecatedInput.checked,
+            usageCount: macrosState.isNewMacro ? 0 : countMacroUsage(macroName)
+        };
+
+        if (macrosState.isNewMacro) {
+            // Add new macro
+            macrosState.macros.push(macro);
+        } else {
+            // Update existing macro
+            var index = macrosState.macros.findIndex(function(m) {
+                return m.name === macrosState.selectedMacro.name;
+            });
+            if (index >= 0) {
+                macrosState.macros[index] = macro;
+            }
+        }
+
+        // Sort macros
+        macrosState.macros.sort(function(a, b) {
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
+
+        // Update loaded macros for editor validation
+        editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
+
+        // Save to GitHub
+        updateMacrosFile()
+            .then(function() {
+                macrosState.selectedMacro = macro;
+                macrosState.isNewMacro = false;
+                macrosState.isEditing = false;
+                filterMacros();
+                renderMacroDetail(macro);
+                App.updateStatus('connected');
+                showToast('Macro saved successfully', 'success');
+            })
+            .catch(function(error) {
+                console.error('Failed to save macro:', error);
+                showToast('Failed to save macro: ' + error.message, 'error');
+            });
+    };
+
+    // Confirm delete macro
+    window.confirmDeleteMacroUI = function() {
+        if (!macrosState.selectedMacro) return;
+
+        var macro = macrosState.selectedMacro;
+        var detections = getDetectionsUsingMacro(macro.name);
+
+        var message = 'Are you sure you want to delete the macro "`' + macro.name + '`"?';
+        if (detections.length > 0) {
+            message += '\n\nWARNING: This macro is used in ' + detections.length + ' detection' + (detections.length > 1 ? 's' : '') + ':\n';
+            detections.slice(0, 5).forEach(function(d) {
+                message += '- ' + d.name + '\n';
+            });
+            if (detections.length > 5) {
+                message += '... and ' + (detections.length - 5) + ' more';
+            }
+        }
+
+        if (confirm(message)) {
+            deleteMacroUI();
+        }
+    };
+
+    // Delete macro
+    function deleteMacroUI() {
+        if (!macrosState.selectedMacro) return;
+
+        var macroName = macrosState.selectedMacro.name;
+        macrosState.macros = macrosState.macros.filter(function(m) {
+            return m.name !== macroName;
+        });
+
+        // Update loaded macros for editor validation
+        editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
+
+        // Save to GitHub
+        updateMacrosFile()
+            .then(function() {
+                macrosState.selectedMacro = null;
+                macrosState.isNewMacro = false;
+                document.getElementById('macro-placeholder').classList.remove('hidden');
+                document.getElementById('macro-detail-content').classList.add('hidden');
+                filterMacros();
+                App.updateStatus('connected');
+                showToast('Macro deleted', 'success');
+            })
+            .catch(function(error) {
+                console.error('Failed to delete macro:', error);
+                showToast('Failed to delete macro: ' + error.message, 'error');
+            });
+    }
+
+    // Update macros file (GitHub sync)
+    function updateMacrosFile() {
+        // For now, we'll store locally since GitHub integration would require auth
+        // In production, this would use the GitHub API
+
+        return new Promise(function(resolve, reject) {
+            try {
+                // Store in localStorage as backup
+                var macroNames = macrosState.macros.map(function(m) { return m.name; });
+                localStorage.setItem('dmf_macros', JSON.stringify(macroNames));
+
+                // Store full macro data
+                localStorage.setItem('dmf_macros_full', JSON.stringify(macrosState.macros));
+
+                // Simulate async operation
+                setTimeout(function() {
+                    resolve();
+                }, 100);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    // Simple toast notification
+    function showToast(message, type) {
+        // Create toast element if it doesn't exist
+        var toast = document.getElementById('toast-notification');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.style.cssText = 'position: fixed; bottom: 60px; right: 20px; padding: 12px 20px; background: var(--color-text); color: var(--color-bg); font-size: 13px; z-index: 10000; opacity: 0; transition: opacity 0.3s;';
+            document.body.appendChild(toast);
+        }
+
+        toast.textContent = message;
+        if (type === 'error') {
+            toast.style.background = '#dc3545';
+        } else if (type === 'success') {
+            toast.style.background = '#3fb950';
+        } else {
+            toast.style.background = 'var(--color-text)';
+        }
+
+        toast.style.opacity = '1';
+        setTimeout(function() {
+            toast.style.opacity = '0';
+        }, 3000);
+    }
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -1962,6 +2457,7 @@ function buildCorrelationSearchUrl(detectionName) {
     App.init = function() {
         originalInit.call(this);
         initEditor();
+        initMacros();
     };
 
     // Expose App to global scope for debugging

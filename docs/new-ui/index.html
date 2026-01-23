@@ -493,9 +493,90 @@
                         </aside>
                     </div>
                 </section>
+                <!-- Macros View -->
                 <section id="view-macros" class="view">
-                    <div class="content-header"><h2>Macros</h2></div>
-                    <div class="content-body"><p class="placeholder-text">Macros view coming soon.</p></div>
+                    <div class="macros-layout">
+                        <!-- Macros Sidebar -->
+                        <aside class="macros-sidebar">
+                            <div class="macros-toolbar">
+                                <button id="btn-macro-new" class="btn-action btn-primary" onclick="createNewMacro()">+ New Macro</button>
+                            </div>
+                            <div class="macros-search">
+                                <input type="text" id="macros-search-input" class="search-input" placeholder="Search macros..." oninput="filterMacros()">
+                            </div>
+                            <div class="macros-filter-row">
+                                <select id="macros-sort" class="filter-select" onchange="filterMacros()">
+                                    <option value="name-asc">Name A-Z</option>
+                                    <option value="name-desc">Name Z-A</option>
+                                    <option value="most-used">Most Used</option>
+                                    <option value="least-used">Least Used</option>
+                                </select>
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="macros-show-deprecated" onchange="filterMacros()">
+                                    <span>Show deprecated</span>
+                                </label>
+                            </div>
+                            <div class="macros-list-header">
+                                <span id="macros-count">0 macros</span>
+                            </div>
+                            <div id="macros-list" class="macros-list"></div>
+                        </aside>
+
+                        <!-- Macro Detail/Edit Panel -->
+                        <div class="macros-main">
+                            <div id="macro-placeholder" class="detail-placeholder">
+                                <span class="placeholder-icon">&#x2699;</span>
+                                <p>Select a macro from the sidebar or create a new one</p>
+                            </div>
+                            <div id="macro-detail-content" class="macro-detail-content hidden">
+                                <div class="macro-detail-header">
+                                    <h3 id="macro-detail-title">Macro Details</h3>
+                                    <div class="macro-detail-actions">
+                                        <button id="btn-macro-cancel" class="btn-action" onclick="cancelMacroEdit()">Cancel</button>
+                                        <button id="btn-macro-save" class="btn-action btn-primary" onclick="saveMacroEdit()">Save</button>
+                                        <button id="btn-macro-delete" class="btn-action btn-danger" onclick="confirmDeleteMacroUI()">Delete</button>
+                                    </div>
+                                </div>
+                                <div class="macro-detail-body">
+                                    <form id="macro-form" class="macro-form">
+                                        <div class="form-group">
+                                            <label for="macro-field-name">Macro Name <span class="required">*</span></label>
+                                            <input type="text" id="macro-field-name" class="form-input" placeholder="my_macro_name">
+                                            <small class="form-hint">No spaces allowed, use underscores. Example: security_content_summariesonly</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="macro-field-definition">Definition <span class="required">*</span></label>
+                                            <textarea id="macro-field-definition" class="form-textarea code-input" rows="6" placeholder="summariesonly=true"></textarea>
+                                            <small class="form-hint">SPL fragment that this macro expands to</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="macro-field-description">Description</label>
+                                            <textarea id="macro-field-description" class="form-textarea" rows="3" placeholder="What does this macro do?"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="macro-field-arguments">Arguments</label>
+                                            <input type="text" id="macro-field-arguments" class="form-input" placeholder="arg1, arg2">
+                                            <small class="form-hint">Comma-separated list of arguments (e.g., earliest, latest)</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="toggle-label inline">
+                                                <input type="checkbox" id="macro-field-deprecated">
+                                                <span>Mark as deprecated</span>
+                                            </label>
+                                        </div>
+                                    </form>
+
+                                    <!-- Usage Section -->
+                                    <div id="macro-usage-section" class="macro-usage-section hidden">
+                                        <h4>Usage in Detections</h4>
+                                        <div id="macro-usage-list" class="macro-usage-list">
+                                            <!-- Detection usage will be listed here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
                 <section id="view-revalidation" class="view">
                     <div class="content-header"><h2>Revalidation</h2></div>
