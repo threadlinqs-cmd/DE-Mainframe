@@ -149,10 +149,349 @@
                     </div>
                 </section>
 
-                <!-- Other Views (placeholders) -->
+                <!-- Editor View -->
                 <section id="view-editor" class="view">
-                    <div class="content-header"><h2>Editor</h2></div>
-                    <div class="content-body"><p class="placeholder-text">Editor view coming soon.</p></div>
+                    <div class="editor-layout">
+                        <!-- Editor Main Content -->
+                        <div class="editor-main">
+                            <!-- Editor Toolbar -->
+                            <div class="editor-toolbar">
+                                <div class="editor-toolbar-left">
+                                    <button id="btn-editor-new" class="btn-action" onclick="createNewDetection()">New</button>
+                                    <button id="btn-editor-load" class="btn-action" onclick="openLoadModal()">Load</button>
+                                </div>
+                                <div class="editor-toolbar-tabs">
+                                    <button class="editor-tab-btn active" data-tab="form" onclick="switchEditorTab('form')">Form</button>
+                                    <button class="editor-tab-btn" data-tab="json" onclick="switchEditorTab('json')">JSON</button>
+                                </div>
+                                <div class="editor-toolbar-right">
+                                    <button id="btn-editor-cancel" class="btn-action" onclick="cancelEditor()">Cancel</button>
+                                    <button id="btn-editor-save" class="btn-action btn-primary" onclick="saveDetection()" disabled>Save</button>
+                                </div>
+                            </div>
+
+                            <!-- Form Tab -->
+                            <div id="editor-tab-form" class="editor-tab-content active">
+                                <form id="detection-form" class="detection-form">
+                                    <!-- Section 1: Basic Information -->
+                                    <div class="form-section" data-section="1">
+                                        <div class="section-header" onclick="toggleFormSection(1)">
+                                            <span class="section-toggle">-</span>
+                                            <h3>Basic Information</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-detection-name">Detection Name <span class="required">*</span></label>
+                                                    <input type="text" id="field-detection-name" name="Detection Name" class="form-input" placeholder="e.g., Access - T1059 - Command Line Interface">
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-objective">Objective <span class="required">*</span></label>
+                                                    <textarea id="field-objective" name="Objective" class="form-textarea" rows="3" placeholder="What does this detection aim to identify?"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-description">Description</label>
+                                                    <textarea id="field-description" name="Description" class="form-textarea" rows="3" placeholder="Detailed description of the detection"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-row two-col">
+                                                <div class="form-group">
+                                                    <label for="field-severity">Severity/Priority <span class="required">*</span></label>
+                                                    <select id="field-severity" name="Severity/Priority" class="form-select">
+                                                        <option value="">Select Severity</option>
+                                                        <option value="critical">Critical</option>
+                                                        <option value="high">High</option>
+                                                        <option value="medium">Medium</option>
+                                                        <option value="low">Low</option>
+                                                        <option value="informational">Informational</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="field-domain">Security Domain</label>
+                                                    <select id="field-domain" name="Security Domain" class="form-select">
+                                                        <option value="">Select Domain</option>
+                                                        <option value="access">Access</option>
+                                                        <option value="endpoint">Endpoint</option>
+                                                        <option value="network">Network</option>
+                                                        <option value="threat">Threat</option>
+                                                        <option value="identity">Identity</option>
+                                                        <option value="audit">Audit</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-row two-col">
+                                                <div class="form-group">
+                                                    <label for="field-origin">Origin</label>
+                                                    <select id="field-origin" name="origin" class="form-select">
+                                                        <option value="custom">Custom</option>
+                                                        <option value="escu">ESCU</option>
+                                                        <option value="sigma">Sigma</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Roles & Ownership</label>
+                                                    <div class="roles-container" id="roles-container">
+                                                        <div class="role-row">
+                                                            <span class="role-label">Requestor:</span>
+                                                            <input type="text" id="field-role-requestor-name" class="form-input" placeholder="Name">
+                                                            <input type="text" id="field-role-requestor-title" class="form-input" placeholder="Title">
+                                                        </div>
+                                                        <div class="role-row">
+                                                            <span class="role-label">Business Owner:</span>
+                                                            <input type="text" id="field-role-business-name" class="form-input" placeholder="Name">
+                                                            <input type="text" id="field-role-business-title" class="form-input" placeholder="Title">
+                                                        </div>
+                                                        <div class="role-row">
+                                                            <span class="role-label">Technical Owner:</span>
+                                                            <input type="text" id="field-role-technical-name" class="form-input" placeholder="Name">
+                                                            <input type="text" id="field-role-technical-title" class="form-input" placeholder="Title">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-mitre">MITRE ATT&CK IDs</label>
+                                                    <input type="text" id="field-mitre" name="Mitre ID" class="form-input" placeholder="e.g., T1059, T1059.001 (comma-separated)">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 2: Search Configuration -->
+                                    <div class="form-section" data-section="2">
+                                        <div class="section-header" onclick="toggleFormSection(2)">
+                                            <span class="section-toggle">-</span>
+                                            <h3>Search Configuration</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-search-string">Search String (SPL) <span class="required">*</span></label>
+                                                    <textarea id="field-search-string" name="Search String" class="form-textarea code-input" rows="8" placeholder="| search index=..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-datasources">Required Data Sources <span class="required">*</span></label>
+                                                    <input type="text" id="field-datasources" name="Required_Data_Sources" class="form-input" placeholder="Auto-populated from SPL or enter manually">
+                                                    <small class="form-hint">Parsed from SPL - editable</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-assumptions">Assumptions</label>
+                                                    <textarea id="field-assumptions" name="Assumptions" class="form-textarea" rows="2" placeholder="Environmental assumptions for this detection"></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Parsed SPL Metadata Preview -->
+                                            <div id="spl-parsed-preview" class="spl-parsed-preview hidden">
+                                                <div class="spl-parsed-title">Parsed from SPL</div>
+                                                <div id="spl-parsed-content" class="spl-parsed-content"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 3: Risk Configuration (Collapsible) -->
+                                    <div class="form-section collapsed" data-section="3">
+                                        <div class="section-header" onclick="toggleFormSection(3)">
+                                            <span class="section-toggle">+</span>
+                                            <h3>Risk Configuration</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div id="risk-entries-container">
+                                                <div class="risk-entry" data-risk-index="0">
+                                                    <div class="form-row three-col">
+                                                        <div class="form-group">
+                                                            <label>Risk Object Field <span class="required">*</span></label>
+                                                            <input type="text" class="form-input risk-field" placeholder="e.g., $user$">
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Risk Object Type</label>
+                                                            <select class="form-select risk-type">
+                                                                <option value="user">User</option>
+                                                                <option value="system">System</option>
+                                                                <option value="other">Other</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Risk Score <span class="required">*</span></label>
+                                                            <input type="number" class="form-input risk-score" min="0" max="100" value="0">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn-action btn-small" onclick="addRiskEntry()">+ Add Risk Entry</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 4: Notable Event -->
+                                    <div class="form-section" data-section="4">
+                                        <div class="section-header" onclick="toggleFormSection(4)">
+                                            <span class="section-toggle">-</span>
+                                            <h3>Notable Event</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-notable-title">Notable Title <span class="required">*</span></label>
+                                                    <input type="text" id="field-notable-title" name="Notable Title" class="form-input" placeholder="Auto-populated from Detection Name">
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-notable-desc">Notable Description</label>
+                                                    <textarea id="field-notable-desc" name="Notable Description" class="form-textarea" rows="3" placeholder="Description shown in notable event"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-analyst-steps">Analyst Next Steps <span class="required">*</span></label>
+                                                    <textarea id="field-analyst-steps" name="Analyst Next Steps" class="form-textarea" rows="4" placeholder="Step-by-step investigation guidance"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-blind-spots">Blind Spots / False Positives <span class="required">*</span></label>
+                                                    <textarea id="field-blind-spots" name="Blind_Spots_False_Positives" class="form-textarea" rows="3" placeholder="Known limitations and potential false positives"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 5: Scheduling (Collapsible) -->
+                                    <div class="form-section collapsed" data-section="5">
+                                        <div class="section-header" onclick="toggleFormSection(5)">
+                                            <span class="section-toggle">+</span>
+                                            <h3>Scheduling</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div class="form-row three-col">
+                                                <div class="form-group">
+                                                    <label for="field-cron">Cron Schedule</label>
+                                                    <input type="text" id="field-cron" name="Cron Schedule" class="form-input" placeholder="*/5 * * * *">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="field-schedule-window">Schedule Window</label>
+                                                    <input type="text" id="field-schedule-window" name="Schedule Window" class="form-input" placeholder="auto">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="field-schedule-priority">Schedule Priority</label>
+                                                    <select id="field-schedule-priority" name="Schedule Priority" class="form-select">
+                                                        <option value="">Default</option>
+                                                        <option value="higher">Higher</option>
+                                                        <option value="highest">Highest</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-trigger">Trigger Condition</label>
+                                                    <input type="text" id="field-trigger" name="Trigger Condition" class="form-input" placeholder="search count > 0">
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <h4 class="sub-section-title">Throttling</h4>
+                                            </div>
+                                            <div class="form-row three-col">
+                                                <div class="form-group">
+                                                    <label for="field-throttle-enabled">Throttle Enabled</label>
+                                                    <select id="field-throttle-enabled" class="form-select">
+                                                        <option value="0">No</option>
+                                                        <option value="1">Yes</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="field-throttle-fields">Throttle Fields</label>
+                                                    <input type="text" id="field-throttle-fields" class="form-input" placeholder="user, dest">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="field-throttle-period">Throttle Period</label>
+                                                    <input type="text" id="field-throttle-period" class="form-input" placeholder="86400s">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 6: Drilldowns (Collapsible) -->
+                                    <div class="form-section collapsed" data-section="6">
+                                        <div class="section-header" onclick="toggleFormSection(6)">
+                                            <span class="section-toggle">+</span>
+                                            <h3>Drilldowns</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div id="drilldowns-container">
+                                                <!-- Drilldowns will be added dynamically -->
+                                            </div>
+                                            <button type="button" class="btn-action btn-small" onclick="addDrilldown()">+ Add Drilldown</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section 7: Test Plan (Collapsible) -->
+                                    <div class="form-section collapsed" data-section="7">
+                                        <div class="section-header" onclick="toggleFormSection(7)">
+                                            <span class="section-toggle">+</span>
+                                            <h3>Proposed Test Plan</h3>
+                                        </div>
+                                        <div class="section-content">
+                                            <div class="form-row">
+                                                <div class="form-group full-width">
+                                                    <label for="field-test-plan">Test Plan</label>
+                                                    <textarea id="field-test-plan" name="Proposed Test Plan" class="form-textarea" rows="4" placeholder="Steps to validate this detection"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- JSON Tab -->
+                            <div id="editor-tab-json" class="editor-tab-content">
+                                <div class="json-editor-container">
+                                    <textarea id="json-editor" class="json-editor" placeholder="Paste or edit JSON here..."></textarea>
+                                    <div class="json-editor-actions">
+                                        <button class="btn-action" onclick="formatJson()">Format JSON</button>
+                                        <button class="btn-action" onclick="applyJsonToForm()">Apply to Form</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation Sidebar -->
+                        <aside class="editor-sidebar">
+                            <div class="validation-panel">
+                                <div class="validation-header">
+                                    <h3>Validation</h3>
+                                    <span id="validation-status" class="validation-status">Not Ready</span>
+                                </div>
+                                <div id="validation-content" class="validation-content">
+                                    <div class="validation-section">
+                                        <h4>Required Fields</h4>
+                                        <ul id="validation-errors" class="validation-list">
+                                            <li class="validation-item error">Detection Name is required</li>
+                                        </ul>
+                                    </div>
+                                    <div class="validation-section">
+                                        <h4>Warnings</h4>
+                                        <ul id="validation-warnings" class="validation-list">
+                                            <!-- Warnings will be populated here -->
+                                        </ul>
+                                    </div>
+                                    <div class="validation-section">
+                                        <h4 id="missing-macros-header" class="hidden">Missing Macros</h4>
+                                        <ul id="missing-macros-list" class="validation-list macro-list">
+                                            <!-- Missing macros will be clickable links -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
                 </section>
                 <section id="view-macros" class="view">
                     <div class="content-header"><h2>Macros</h2></div>
@@ -242,6 +581,46 @@
                     <div class="modal-footer">
                         <button class="btn-action" onclick="closeConfirmModal()">Cancel</button>
                         <button id="btn-confirm-yes" class="btn-action btn-danger">Confirm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Load Detection Modal -->
+            <div id="modal-load" class="modal hidden">
+                <div class="modal-overlay" onclick="closeLoadModal()"></div>
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h3>Load Detection</h3>
+                        <button class="modal-close" onclick="closeLoadModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="load-search">
+                            <input type="text" id="load-search-input" class="form-input" placeholder="Search detections..." oninput="filterLoadList()">
+                        </div>
+                        <div id="load-list" class="load-list">
+                            <!-- Detection items will be populated here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeLoadModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unsaved Changes Modal -->
+            <div id="modal-unsaved" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-content modal-small">
+                    <div class="modal-header">
+                        <h3>Unsaved Changes</h3>
+                        <button class="modal-close" onclick="closeUnsavedModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You have unsaved changes. Do you want to save before leaving?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="discardChanges()">Discard</button>
+                        <button class="btn-action btn-primary" onclick="saveAndContinue()">Save</button>
                     </div>
                 </div>
             </div>

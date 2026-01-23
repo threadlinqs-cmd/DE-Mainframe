@@ -1113,6 +1113,841 @@ function buildCorrelationSearchUrl(detectionName) {
         App.validatePassword();
     };
 
+    // =========================================================================
+    // EDITOR VIEW FUNCTIONS
+    // =========================================================================
+
+    // Detection Template
+    var DETECTION_TEMPLATE = {
+        "schema_version": "1.2", "file_name": "",
+        "Roles": [
+            { "Role": "Requestor", "Name": "", "Title": "" },
+            { "Role": "Business Owner", "Name": "", "Title": "" },
+            { "Role": "Technical Owner", "Name": "", "Title": "" }
+        ],
+        "Description": "", "Assumptions": "", "origin": "custom",
+        "Detection Name": "", "Objective": "", "Severity/Priority": "",
+        "Analyst Next Steps": "", "Blind_Spots_False_Positives": "",
+        "Required_Data_Sources": "", "First Created": null, "Last Modified": null,
+        "Search String": "", "Splunk_App_Context": "", "Search_Duration": "",
+        "Cron Schedule": "", "Schedule Window": "", "Schedule Priority": "",
+        "Trigger Condition": "",
+        "Throttling": { "enabled": 0, "fields": "", "period": "" },
+        "Risk": [{ "risk_object_field": "", "risk_object_type": "user", "risk_score": 0 }],
+        "Notable Title": "", "Notable Description": "", "Security Domain": "",
+        "Drilldown Name (Legacy)": "", "Drilldown Search (Legacy)": "",
+        "Drilldown Earliest Offset (Legacy)": null, "Drilldown Latest Offset (Legacy)": null,
+        "Mitre ID": [], "Proposed Test Plan": ""
+    };
+
+    // Add drilldown fields 1-15
+    for (var i = 1; i <= 15; i++) {
+        DETECTION_TEMPLATE["Drilldown Name " + i] = "";
+        DETECTION_TEMPLATE["Drilldown Search " + i] = "";
+        DETECTION_TEMPLATE["Drilldown Earliest " + i] = null;
+        DETECTION_TEMPLATE["Drilldown Latest " + i] = null;
+    }
+
+    var MANDATORY_FIELDS = [
+        'Detection Name', 'Objective', 'Severity/Priority', 'Analyst Next Steps',
+        'Blind_Spots_False_Positives', 'Required_Data_Sources', 'Search String',
+        'Risk', 'Notable Title'
+    ];
+
+    // Editor State
+    var editorState = {
+        currentDetection: null,
+        hasUnsavedChanges: false,
+        drilldownCount: 0,
+        loadedMacros: []
+    };
+
+    // Initialize Editor
+    function initEditor() {
+        // Set up form field listeners for validation
+        var form = document.getElementById('detection-form');
+        if (form) {
+            form.addEventListener('input', function() {
+                editorState.hasUnsavedChanges = true;
+                validateForm();
+                updateSplParsedPreview();
+            });
+            form.addEventListener('change', function() {
+                editorState.hasUnsavedChanges = true;
+                validateForm();
+            });
+        }
+
+        // SPL field change triggers parsing
+        var splField = document.getElementById('field-search-string');
+        if (splField) {
+            splField.addEventListener('input', debounce(function() {
+                updateSplParsedPreview();
+                autoPopulateDataSources();
+            }, 300));
+        }
+
+        // Detection Name auto-populates Notable Title
+        var nameField = document.getElementById('field-detection-name');
+        if (nameField) {
+            nameField.addEventListener('input', function() {
+                var notableField = document.getElementById('field-notable-title');
+                if (notableField && !notableField.value) {
+                    notableField.value = nameField.value;
+                }
+            });
+        }
+
+        // Initialize form with blank detection
+        createNewDetection();
+    }
+
+    // Debounce helper
+    function debounce(fn, wait) {
+        var timeout;
+        return function() {
+            var args = arguments;
+            var context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                fn.apply(context, args);
+            }, wait);
+        };
+    }
+
+    // Create New Detection
+    window.createNewDetection = function() {
+        editorState.currentDetection = JSON.parse(JSON.stringify(DETECTION_TEMPLATE));
+        editorState.currentDetection['First Created'] = new Date().toISOString();
+        editorState.hasUnsavedChanges = false;
+        editorState.drilldownCount = 0;
+        loadDetectionIntoForm(editorState.currentDetection);
+        validateForm();
+        updateSplParsedPreview();
+    };
+
+    // Load Detection into Form
+    function loadDetectionIntoForm(d) {
+        // Basic fields
+        document.getElementById('field-detection-name').value = d['Detection Name'] || '';
+        document.getElementById('field-objective').value = d['Objective'] || '';
+        document.getElementById('field-description').value = d['Description'] || '';
+        document.getElementById('field-severity').value = (d['Severity/Priority'] || '').toLowerCase();
+        document.getElementById('field-domain').value = (d['Security Domain'] || '').toLowerCase();
+        document.getElementById('field-origin').value = d['origin'] || 'custom';
+
+        // MITRE IDs
+        var mitreVal = '';
+        if (Array.isArray(d['Mitre ID'])) {
+            mitreVal = d['Mitre ID'].join(', ');
+        } else if (d['Mitre ID']) {
+            mitreVal = d['Mitre ID'];
+        }
+        document.getElementById('field-mitre').value = mitreVal;
+
+        // Roles
+        if (d['Roles'] && Array.isArray(d['Roles'])) {
+            d['Roles'].forEach(function(r) {
+                if (r.Role === 'Requestor') {
+                    document.getElementById('field-role-requestor-name').value = r.Name || '';
+                    document.getElementById('field-role-requestor-title').value = r.Title || '';
+                } else if (r.Role === 'Business Owner') {
+                    document.getElementById('field-role-business-name').value = r.Name || '';
+                    document.getElementById('field-role-business-title').value = r.Title || '';
+                } else if (r.Role === 'Technical Owner') {
+                    document.getElementById('field-role-technical-name').value = r.Name || '';
+                    document.getElementById('field-role-technical-title').value = r.Title || '';
+                }
+            });
+        }
+
+        // Search Configuration
+        document.getElementById('field-search-string').value = d['Search String'] || '';
+        document.getElementById('field-datasources').value = d['Required_Data_Sources'] || '';
+        document.getElementById('field-assumptions').value = d['Assumptions'] || '';
+
+        // Risk
+        loadRiskEntries(d);
+
+        // Notable Event
+        document.getElementById('field-notable-title').value = d['Notable Title'] || '';
+        document.getElementById('field-notable-desc').value = d['Notable Description'] || '';
+        document.getElementById('field-analyst-steps').value = d['Analyst Next Steps'] || '';
+        document.getElementById('field-blind-spots').value = d['Blind_Spots_False_Positives'] || '';
+
+        // Scheduling
+        document.getElementById('field-cron').value = d['Cron Schedule'] || '';
+        document.getElementById('field-schedule-window').value = d['Schedule Window'] || '';
+        document.getElementById('field-schedule-priority').value = d['Schedule Priority'] || '';
+        document.getElementById('field-trigger').value = d['Trigger Condition'] || '';
+
+        // Throttling
+        var throttle = d['Throttling'] || {};
+        document.getElementById('field-throttle-enabled').value = throttle.enabled || '0';
+        document.getElementById('field-throttle-fields').value = throttle.fields || '';
+        document.getElementById('field-throttle-period').value = throttle.period || '';
+
+        // Drilldowns
+        loadDrilldowns(d);
+
+        // Test Plan
+        document.getElementById('field-test-plan').value = d['Proposed Test Plan'] || '';
+
+        // Update JSON view
+        updateJsonView();
+    }
+
+    // Load Risk Entries
+    function loadRiskEntries(d) {
+        var container = document.getElementById('risk-entries-container');
+        container.innerHTML = '';
+
+        var risks = d['Risk'] || [{ risk_object_field: '', risk_object_type: 'user', risk_score: 0 }];
+        if (!Array.isArray(risks)) {
+            risks = [{
+                risk_object_field: d['Risk Object Field'] || '',
+                risk_object_type: d['Risk Object Type'] || 'user',
+                risk_score: d['Risk Score'] || 0
+            }];
+        }
+
+        risks.forEach(function(risk, index) {
+            addRiskEntryHtml(index, risk);
+        });
+    }
+
+    // Add Risk Entry HTML
+    function addRiskEntryHtml(index, risk) {
+        var container = document.getElementById('risk-entries-container');
+        var div = document.createElement('div');
+        div.className = 'risk-entry';
+        div.setAttribute('data-risk-index', index);
+        div.innerHTML = '<div class="form-row three-col">' +
+            '<div class="form-group">' +
+            '<label>Risk Object Field' + (index === 0 ? ' <span class="required">*</span>' : '') + '</label>' +
+            '<input type="text" class="form-input risk-field" placeholder="e.g., $user$" value="' + escapeAttr(risk.risk_object_field || '') + '">' +
+            '</div>' +
+            '<div class="form-group">' +
+            '<label>Risk Object Type</label>' +
+            '<select class="form-select risk-type">' +
+            '<option value="user"' + (risk.risk_object_type === 'user' ? ' selected' : '') + '>User</option>' +
+            '<option value="system"' + (risk.risk_object_type === 'system' ? ' selected' : '') + '>System</option>' +
+            '<option value="other"' + (risk.risk_object_type === 'other' ? ' selected' : '') + '>Other</option>' +
+            '</select>' +
+            '</div>' +
+            '<div class="form-group">' +
+            '<label>Risk Score' + (index === 0 ? ' <span class="required">*</span>' : '') + '</label>' +
+            '<input type="number" class="form-input risk-score" min="0" max="100" value="' + (risk.risk_score || 0) + '">' +
+            '</div>' +
+            '</div>' +
+            (index > 0 ? '<button type="button" class="btn-remove" onclick="removeRiskEntry(' + index + ')">×</button>' : '');
+        container.appendChild(div);
+    }
+
+    // Add Risk Entry
+    window.addRiskEntry = function() {
+        var container = document.getElementById('risk-entries-container');
+        var index = container.children.length;
+        addRiskEntryHtml(index, { risk_object_field: '', risk_object_type: 'user', risk_score: 0 });
+    };
+
+    // Remove Risk Entry
+    window.removeRiskEntry = function(index) {
+        var container = document.getElementById('risk-entries-container');
+        var entries = container.querySelectorAll('.risk-entry');
+        if (entries[index]) {
+            container.removeChild(entries[index]);
+        }
+    };
+
+    // Load Drilldowns
+    function loadDrilldowns(d) {
+        var container = document.getElementById('drilldowns-container');
+        container.innerHTML = '';
+        editorState.drilldownCount = 0;
+
+        // Check legacy drilldown
+        if (d['Drilldown Name (Legacy)']) {
+            addDrilldownHtml({
+                name: d['Drilldown Name (Legacy)'],
+                search: d['Drilldown Search (Legacy)'] || '',
+                earliest: d['Drilldown Earliest Offset (Legacy)'],
+                latest: d['Drilldown Latest Offset (Legacy)']
+            });
+        }
+
+        // Check numbered drilldowns
+        for (var i = 1; i <= 15; i++) {
+            if (d['Drilldown Name ' + i]) {
+                addDrilldownHtml({
+                    name: d['Drilldown Name ' + i],
+                    search: d['Drilldown Search ' + i] || '',
+                    earliest: d['Drilldown Earliest ' + i],
+                    latest: d['Drilldown Latest ' + i]
+                });
+            }
+        }
+    }
+
+    // Add Drilldown HTML
+    function addDrilldownHtml(dd) {
+        var container = document.getElementById('drilldowns-container');
+        var index = editorState.drilldownCount++;
+        var div = document.createElement('div');
+        div.className = 'drilldown-entry';
+        div.setAttribute('data-drilldown-index', index);
+        div.innerHTML = '<div class="drilldown-header">' +
+            '<span class="drilldown-title">Drilldown ' + (index + 1) + '</span>' +
+            '<button type="button" class="btn-remove" onclick="removeDrilldown(' + index + ')">×</button>' +
+            '</div>' +
+            '<div class="form-row">' +
+            '<div class="form-group full-width">' +
+            '<label>Drilldown Name</label>' +
+            '<input type="text" class="form-input drilldown-name" value="' + escapeAttr(dd.name || '') + '">' +
+            '</div>' +
+            '</div>' +
+            '<div class="form-row">' +
+            '<div class="form-group full-width">' +
+            '<label>Drilldown Search</label>' +
+            '<textarea class="form-textarea drilldown-search code-input" rows="3">' + escapeHtml(dd.search || '') + '</textarea>' +
+            '</div>' +
+            '</div>' +
+            '<div class="form-row two-col">' +
+            '<div class="form-group">' +
+            '<label>Earliest Offset</label>' +
+            '<input type="text" class="form-input drilldown-earliest" value="' + escapeAttr(dd.earliest || '') + '" placeholder="-24h@h">' +
+            '</div>' +
+            '<div class="form-group">' +
+            '<label>Latest Offset</label>' +
+            '<input type="text" class="form-input drilldown-latest" value="' + escapeAttr(dd.latest || '') + '" placeholder="now">' +
+            '</div>' +
+            '</div>';
+        container.appendChild(div);
+    }
+
+    // Add Drilldown
+    window.addDrilldown = function() {
+        addDrilldownHtml({ name: '', search: '', earliest: '', latest: '' });
+    };
+
+    // Remove Drilldown
+    window.removeDrilldown = function(index) {
+        var container = document.getElementById('drilldowns-container');
+        var entries = container.querySelectorAll('.drilldown-entry');
+        for (var i = 0; i < entries.length; i++) {
+            if (parseInt(entries[i].getAttribute('data-drilldown-index')) === index) {
+                container.removeChild(entries[i]);
+                break;
+            }
+        }
+    };
+
+    // Get Form Data
+    function getFormData() {
+        var d = JSON.parse(JSON.stringify(DETECTION_TEMPLATE));
+
+        // Basic fields
+        d['Detection Name'] = document.getElementById('field-detection-name').value.trim();
+        d['Objective'] = document.getElementById('field-objective').value.trim();
+        d['Description'] = document.getElementById('field-description').value.trim();
+        d['Severity/Priority'] = document.getElementById('field-severity').value;
+        d['Security Domain'] = document.getElementById('field-domain').value;
+        d['origin'] = document.getElementById('field-origin').value;
+
+        // MITRE IDs
+        var mitreInput = document.getElementById('field-mitre').value;
+        if (mitreInput) {
+            d['Mitre ID'] = mitreInput.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
+        } else {
+            d['Mitre ID'] = [];
+        }
+
+        // Roles
+        d['Roles'] = [
+            { Role: 'Requestor', Name: document.getElementById('field-role-requestor-name').value.trim(), Title: document.getElementById('field-role-requestor-title').value.trim() },
+            { Role: 'Business Owner', Name: document.getElementById('field-role-business-name').value.trim(), Title: document.getElementById('field-role-business-title').value.trim() },
+            { Role: 'Technical Owner', Name: document.getElementById('field-role-technical-name').value.trim(), Title: document.getElementById('field-role-technical-title').value.trim() }
+        ];
+
+        // Search Configuration
+        d['Search String'] = document.getElementById('field-search-string').value;
+        d['Required_Data_Sources'] = document.getElementById('field-datasources').value.trim();
+        d['Assumptions'] = document.getElementById('field-assumptions').value.trim();
+
+        // Risk
+        var risks = [];
+        var riskEntries = document.querySelectorAll('#risk-entries-container .risk-entry');
+        riskEntries.forEach(function(entry) {
+            var field = entry.querySelector('.risk-field').value.trim();
+            var type = entry.querySelector('.risk-type').value;
+            var score = parseInt(entry.querySelector('.risk-score').value) || 0;
+            if (field || score > 0) {
+                risks.push({ risk_object_field: field, risk_object_type: type, risk_score: score });
+            }
+        });
+        d['Risk'] = risks.length > 0 ? risks : [{ risk_object_field: '', risk_object_type: 'user', risk_score: 0 }];
+
+        // Notable Event
+        d['Notable Title'] = document.getElementById('field-notable-title').value.trim();
+        d['Notable Description'] = document.getElementById('field-notable-desc').value.trim();
+        d['Analyst Next Steps'] = document.getElementById('field-analyst-steps').value.trim();
+        d['Blind_Spots_False_Positives'] = document.getElementById('field-blind-spots').value.trim();
+
+        // Scheduling
+        d['Cron Schedule'] = document.getElementById('field-cron').value.trim();
+        d['Schedule Window'] = document.getElementById('field-schedule-window').value.trim();
+        d['Schedule Priority'] = document.getElementById('field-schedule-priority').value;
+        d['Trigger Condition'] = document.getElementById('field-trigger').value.trim();
+
+        // Throttling
+        d['Throttling'] = {
+            enabled: parseInt(document.getElementById('field-throttle-enabled').value) || 0,
+            fields: document.getElementById('field-throttle-fields').value.trim(),
+            period: document.getElementById('field-throttle-period').value.trim()
+        };
+
+        // Drilldowns
+        var drilldownEntries = document.querySelectorAll('#drilldowns-container .drilldown-entry');
+        var ddIndex = 1;
+        drilldownEntries.forEach(function(entry) {
+            var name = entry.querySelector('.drilldown-name').value.trim();
+            var search = entry.querySelector('.drilldown-search').value;
+            var earliest = entry.querySelector('.drilldown-earliest').value.trim();
+            var latest = entry.querySelector('.drilldown-latest').value.trim();
+            if (name) {
+                d['Drilldown Name ' + ddIndex] = name;
+                d['Drilldown Search ' + ddIndex] = search;
+                d['Drilldown Earliest ' + ddIndex] = earliest || null;
+                d['Drilldown Latest ' + ddIndex] = latest || null;
+                ddIndex++;
+            }
+        });
+
+        // Test Plan
+        d['Proposed Test Plan'] = document.getElementById('field-test-plan').value.trim();
+
+        // Timestamps
+        d['First Created'] = editorState.currentDetection['First Created'] || new Date().toISOString();
+        d['Last Modified'] = new Date().toISOString();
+
+        // File name
+        d['file_name'] = generateFileName(d['Detection Name'], d['Security Domain']);
+
+        return d;
+    }
+
+    // Generate File Name
+    function generateFileName(name, domain) {
+        if (!name) return '';
+        var prefix = '';
+        if (domain) {
+            var domainMap = {
+                'access': 'access', 'endpoint': 'endpoint', 'network': 'network',
+                'threat': 'threat', 'identity': 'identity', 'audit': 'audit',
+                'application': 'application', 'web': 'web'
+            };
+            prefix = domainMap[domain.toLowerCase()] || '';
+        }
+        var cleanName = name.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, '_');
+        var fileName = (prefix ? prefix + '_' : '') + cleanName;
+        return fileName.substring(0, 100) + '.json';
+    }
+
+    // Validate Form
+    function validateForm() {
+        var d = getFormData();
+        var errors = [];
+        var warnings = [];
+
+        // Check mandatory fields
+        if (!d['Detection Name']) errors.push('Detection Name is required');
+        if (!d['Objective']) errors.push('Objective is required');
+        if (!d['Severity/Priority']) errors.push('Severity/Priority is required');
+        if (!d['Analyst Next Steps']) errors.push('Analyst Next Steps is required');
+        if (!d['Blind_Spots_False_Positives']) errors.push('Blind Spots/False Positives is required');
+        if (!d['Required_Data_Sources']) errors.push('Data Sources is required');
+        if (!d['Search String']) errors.push('Search String is required');
+        if (!d['Notable Title']) errors.push('Notable Title is required');
+
+        // Check Risk
+        var hasRisk = d['Risk'] && d['Risk'].length > 0 &&
+                      d['Risk'].some(function(r) { return r.risk_object_field && r.risk_score > 0; });
+        if (!hasRisk) errors.push('At least one Risk entry with field and score is required');
+
+        // Warnings
+        if (!d['Description']) warnings.push('Description is recommended');
+        if (!d['Security Domain']) warnings.push('Security Domain is recommended');
+        if (d['Mitre ID'].length === 0) warnings.push('MITRE ATT&CK IDs are recommended');
+        if (!d['Cron Schedule']) warnings.push('Cron Schedule is recommended');
+
+        // Update UI
+        var errorsEl = document.getElementById('validation-errors');
+        var warningsEl = document.getElementById('validation-warnings');
+        var statusEl = document.getElementById('validation-status');
+        var saveBtn = document.getElementById('btn-editor-save');
+
+        if (errorsEl) {
+            if (errors.length > 0) {
+                errorsEl.innerHTML = errors.map(function(e) {
+                    return '<li class="validation-item error">' + escapeHtml(e) + '</li>';
+                }).join('');
+            } else {
+                errorsEl.innerHTML = '<li class="validation-item success">All required fields complete</li>';
+            }
+        }
+
+        if (warningsEl) {
+            if (warnings.length > 0) {
+                warningsEl.innerHTML = warnings.map(function(w) {
+                    return '<li class="validation-item warning">' + escapeHtml(w) + '</li>';
+                }).join('');
+            } else {
+                warningsEl.innerHTML = '';
+            }
+        }
+
+        if (statusEl) {
+            if (errors.length === 0) {
+                statusEl.textContent = 'Ready';
+                statusEl.classList.add('ready');
+                statusEl.classList.remove('error');
+            } else {
+                statusEl.textContent = errors.length + ' Error' + (errors.length > 1 ? 's' : '');
+                statusEl.classList.add('error');
+                statusEl.classList.remove('ready');
+            }
+        }
+
+        if (saveBtn) {
+            saveBtn.disabled = errors.length > 0;
+        }
+
+        // Check for missing macros
+        checkMissingMacros(d['Search String']);
+
+        return errors.length === 0;
+    }
+
+    // Check Missing Macros
+    function checkMissingMacros(spl) {
+        var macroHeader = document.getElementById('missing-macros-header');
+        var macroList = document.getElementById('missing-macros-list');
+        if (!macroHeader || !macroList) return;
+
+        var parsed = parseSPL(spl);
+        var missingMacros = [];
+
+        // Check if macros are loaded
+        if (parsed.macros.length > 0 && editorState.loadedMacros.length > 0) {
+            parsed.macros.forEach(function(macro) {
+                if (editorState.loadedMacros.indexOf(macro) === -1) {
+                    missingMacros.push(macro);
+                }
+            });
+        } else if (parsed.macros.length > 0) {
+            // If no macros loaded, show all as potentially missing (clickable to macros tab)
+            missingMacros = parsed.macros;
+        }
+
+        if (missingMacros.length > 0) {
+            macroHeader.classList.remove('hidden');
+            macroList.innerHTML = missingMacros.map(function(m) {
+                return '<li class="validation-item warning"><span class="macro-link" onclick="goToMacrosTab(\'' + escapeAttr(m) + '\')">`' + escapeHtml(m) + '`</span> - click to check in Macros tab</li>';
+            }).join('');
+        } else {
+            macroHeader.classList.add('hidden');
+            macroList.innerHTML = '';
+        }
+    }
+
+    // Go to Macros Tab
+    window.goToMacrosTab = function(macroName) {
+        // Navigate to macros view
+        var navItem = document.querySelector('.nav-item[href="#macros"]');
+        if (navItem) {
+            App.handleNavigation(navItem);
+        }
+    };
+
+    // Update SPL Parsed Preview
+    function updateSplParsedPreview() {
+        var spl = document.getElementById('field-search-string').value;
+        var previewEl = document.getElementById('spl-parsed-preview');
+        var contentEl = document.getElementById('spl-parsed-content');
+
+        if (!spl || !previewEl || !contentEl) {
+            if (previewEl) previewEl.classList.add('hidden');
+            return;
+        }
+
+        var parsed = parseSPL(spl);
+        var hasContent = parsed.indexes.length || parsed.sourcetypes.length ||
+                         parsed.macros.length || parsed.lookups.length || parsed.functions.length;
+
+        if (!hasContent) {
+            previewEl.classList.add('hidden');
+            return;
+        }
+
+        previewEl.classList.remove('hidden');
+        var html = '';
+
+        if (parsed.indexes.length) {
+            html += '<div class="spl-tag-group"><span class="spl-tag-label">Indexes</span><div class="spl-tag-items">';
+            parsed.indexes.forEach(function(i) { html += '<span class="spl-tag">' + escapeHtml(i) + '</span>'; });
+            html += '</div></div>';
+        }
+        if (parsed.sourcetypes.length) {
+            html += '<div class="spl-tag-group"><span class="spl-tag-label">Sourcetypes</span><div class="spl-tag-items">';
+            parsed.sourcetypes.forEach(function(s) { html += '<span class="spl-tag">' + escapeHtml(s) + '</span>'; });
+            html += '</div></div>';
+        }
+        if (parsed.macros.length) {
+            html += '<div class="spl-tag-group"><span class="spl-tag-label">Macros</span><div class="spl-tag-items">';
+            parsed.macros.forEach(function(m) { html += '<span class="spl-tag macro">`' + escapeHtml(m) + '`</span>'; });
+            html += '</div></div>';
+        }
+        if (parsed.lookups.length) {
+            html += '<div class="spl-tag-group"><span class="spl-tag-label">Lookups</span><div class="spl-tag-items">';
+            parsed.lookups.forEach(function(l) { html += '<span class="spl-tag">' + escapeHtml(l) + '</span>'; });
+            html += '</div></div>';
+        }
+        if (parsed.functions.length) {
+            html += '<div class="spl-tag-group"><span class="spl-tag-label">Functions</span><div class="spl-tag-items">';
+            parsed.functions.slice(0, 10).forEach(function(f) { html += '<span class="spl-tag">' + escapeHtml(f) + '</span>'; });
+            if (parsed.functions.length > 10) html += '<span class="spl-tag">+' + (parsed.functions.length - 10) + ' more</span>';
+            html += '</div></div>';
+        }
+
+        contentEl.innerHTML = html;
+    }
+
+    // Auto-populate Data Sources
+    function autoPopulateDataSources() {
+        var spl = document.getElementById('field-search-string').value;
+        var dsField = document.getElementById('field-datasources');
+        if (!dsField) return;
+
+        var parsed = parseSPL(spl);
+        var sources = [];
+
+        parsed.indexes.forEach(function(i) {
+            if (sources.indexOf(i) === -1) sources.push(i);
+        });
+        parsed.sourcetypes.forEach(function(s) {
+            if (sources.indexOf(s) === -1) sources.push(s);
+        });
+
+        // Merge with existing manual entries
+        var existing = dsField.value.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
+        sources.forEach(function(s) {
+            if (existing.indexOf(s) === -1) existing.push(s);
+        });
+
+        dsField.value = existing.join(', ');
+    }
+
+    // Toggle Form Section
+    window.toggleFormSection = function(sectionNum) {
+        var section = document.querySelector('.form-section[data-section="' + sectionNum + '"]');
+        if (!section) return;
+
+        var toggle = section.querySelector('.section-toggle');
+        if (section.classList.contains('collapsed')) {
+            section.classList.remove('collapsed');
+            if (toggle) toggle.textContent = '-';
+        } else {
+            section.classList.add('collapsed');
+            if (toggle) toggle.textContent = '+';
+        }
+    };
+
+    // Switch Editor Tab
+    window.switchEditorTab = function(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.editor-tab-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-tab') === tab) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Update tab content
+        document.querySelectorAll('.editor-tab-content').forEach(function(content) {
+            content.classList.remove('active');
+        });
+        document.getElementById('editor-tab-' + tab).classList.add('active');
+
+        // Sync data between tabs
+        if (tab === 'json') {
+            updateJsonView();
+        } else {
+            // If switching to form, JSON changes would need to be applied first
+        }
+    };
+
+    // Update JSON View
+    function updateJsonView() {
+        var d = getFormData();
+        var jsonEditor = document.getElementById('json-editor');
+        if (jsonEditor) {
+            jsonEditor.value = JSON.stringify(d, null, 2);
+        }
+    }
+
+    // Format JSON
+    window.formatJson = function() {
+        var jsonEditor = document.getElementById('json-editor');
+        if (!jsonEditor) return;
+        try {
+            var parsed = JSON.parse(jsonEditor.value);
+            jsonEditor.value = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+        }
+    };
+
+    // Apply JSON to Form
+    window.applyJsonToForm = function() {
+        var jsonEditor = document.getElementById('json-editor');
+        if (!jsonEditor) return;
+        try {
+            var parsed = JSON.parse(jsonEditor.value);
+            editorState.currentDetection = parsed;
+            loadDetectionIntoForm(parsed);
+            validateForm();
+            updateSplParsedPreview();
+            switchEditorTab('form');
+        } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+        }
+    };
+
+    // Open Load Modal
+    window.openLoadModal = function() {
+        var modal = document.getElementById('modal-load');
+        var listEl = document.getElementById('load-list');
+
+        if (!modal || !listEl) return;
+
+        // Populate list
+        var html = '';
+        App.state.detections.forEach(function(d) {
+            var name = d['Detection Name'] || 'Unnamed';
+            var sev = (d['Severity/Priority'] || '').toLowerCase();
+            var modified = d['Last Modified'] ? formatDate(d['Last Modified']) : 'N/A';
+            html += '<div class="load-item" onclick="loadDetectionFromModal(\'' + escapeAttr(name) + '\')">';
+            html += '<span class="load-item-name">' + escapeHtml(name) + '</span>';
+            html += '<div class="load-item-meta">';
+            html += '<span class="severity-badge ' + sev + '">' + (sev || 'N/A') + '</span>';
+            html += '<span>' + modified + '</span>';
+            html += '</div></div>';
+        });
+        listEl.innerHTML = html || '<div class="empty-state">No detections found</div>';
+        modal.classList.remove('hidden');
+        document.getElementById('load-search-input').focus();
+    };
+
+    // Close Load Modal
+    window.closeLoadModal = function() {
+        var modal = document.getElementById('modal-load');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Filter Load List
+    window.filterLoadList = function() {
+        var searchInput = document.getElementById('load-search-input');
+        var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        var items = document.querySelectorAll('#load-list .load-item');
+
+        items.forEach(function(item) {
+            var name = item.querySelector('.load-item-name').textContent.toLowerCase();
+            if (name.indexOf(searchTerm) !== -1) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    };
+
+    // Load Detection from Modal
+    window.loadDetectionFromModal = function(name) {
+        var detection = App.state.detections.find(function(d) {
+            return d['Detection Name'] === name;
+        });
+        if (detection) {
+            editorState.currentDetection = JSON.parse(JSON.stringify(detection));
+            editorState.hasUnsavedChanges = false;
+            loadDetectionIntoForm(editorState.currentDetection);
+            validateForm();
+            updateSplParsedPreview();
+            closeLoadModal();
+        }
+    };
+
+    // Cancel Editor
+    window.cancelEditor = function() {
+        if (editorState.hasUnsavedChanges) {
+            var modal = document.getElementById('modal-unsaved');
+            if (modal) modal.classList.remove('hidden');
+        } else {
+            createNewDetection();
+        }
+    };
+
+    // Close Unsaved Modal
+    window.closeUnsavedModal = function() {
+        var modal = document.getElementById('modal-unsaved');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Discard Changes
+    window.discardChanges = function() {
+        closeUnsavedModal();
+        createNewDetection();
+    };
+
+    // Save and Continue
+    window.saveAndContinue = function() {
+        closeUnsavedModal();
+        saveDetection();
+    };
+
+    // Save Detection
+    window.saveDetection = function() {
+        if (!validateForm()) {
+            alert('Please fix validation errors before saving.');
+            return;
+        }
+
+        var d = getFormData();
+
+        // Show saving status
+        App.updateStatus('saving');
+
+        // In a real implementation, this would save to GitHub
+        // For now, we'll update the local state
+        var existingIndex = App.state.detections.findIndex(function(det) {
+            return det['Detection Name'] === d['Detection Name'];
+        });
+
+        if (existingIndex >= 0) {
+            App.state.detections[existingIndex] = d;
+        } else {
+            App.state.detections.push(d);
+        }
+
+        editorState.currentDetection = d;
+        editorState.hasUnsavedChanges = false;
+
+        // Update UI
+        App.state.filteredDetections = App.state.detections.slice();
+        App.renderLibrary();
+        App.updateStatus('connected');
+
+        alert('Detection saved successfully!\n\nNote: In production, this would sync to GitHub.');
+    };
+
     // Initialize when DOM is ready - check password first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -1121,6 +1956,13 @@ function buildCorrelationSearchUrl(detectionName) {
     } else {
         App.checkPassword();
     }
+
+    // Add editor init to App init
+    var originalInit = App.init;
+    App.init = function() {
+        originalInit.call(this);
+        initEditor();
+    };
 
     // Expose App to global scope for debugging
     window.NewUIApp = App;
