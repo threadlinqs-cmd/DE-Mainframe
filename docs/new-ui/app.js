@@ -41,6 +41,7 @@
             this.cacheElements();
             this.bindEvents();
             this.loadTheme();
+            this.loadFromHash();
             this.updateStatus('disconnected');
             console.log('DE-MainFrame New UI initialized');
         },
@@ -63,6 +64,28 @@
                     e.preventDefault();
                     App.handleNavigation(this);
                 });
+            });
+
+            // Keyboard shortcuts (1-8 for tabs)
+            document.addEventListener('keydown', function(e) {
+                // Ignore if user is typing in an input/textarea
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                // Check for number keys 1-8
+                var key = e.key;
+                if (key >= '1' && key <= '8') {
+                    var navItem = document.querySelector('.nav-item[data-key="' + key + '"]');
+                    if (navItem) {
+                        e.preventDefault();
+                        App.handleNavigation(navItem);
+                    }
+                }
+            });
+
+            // Handle hash changes for bookmarking
+            window.addEventListener('hashchange', function() {
+                App.handleHashChange();
             });
         },
 
@@ -90,15 +113,61 @@
             item.classList.add('active');
 
             // Update content header
-            const title = item.textContent.trim();
-            const contentHeader = document.querySelector('.content-header h2');
+            var title = item.textContent.trim();
+            var contentHeader = document.querySelector('.content-header h2');
             if (contentHeader) {
                 contentHeader.textContent = title;
+            }
+
+            // Update URL hash for bookmarking
+            var href = item.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                history.pushState(null, '', href);
             }
 
             // Close sidebar on mobile
             if (window.innerWidth < 768 && this.state.sidebarOpen) {
                 this.toggleSidebar();
+            }
+        },
+
+        // Handle URL hash changes
+        handleHashChange: function() {
+            var hash = window.location.hash;
+            if (hash) {
+                var navItem = document.querySelector('.nav-item[href="' + hash + '"]');
+                if (navItem && !navItem.classList.contains('active')) {
+                    this.setActiveNav(navItem);
+                }
+            }
+        },
+
+        // Set active nav item without changing hash (used by hashchange)
+        setActiveNav: function(item) {
+            document.querySelectorAll('.nav-item').forEach(function(nav) {
+                nav.classList.remove('active');
+            });
+            item.classList.add('active');
+
+            var title = item.textContent.trim();
+            var contentHeader = document.querySelector('.content-header h2');
+            if (contentHeader) {
+                contentHeader.textContent = title;
+            }
+
+            if (window.innerWidth < 768 && this.state.sidebarOpen) {
+                this.toggleSidebar();
+            }
+        },
+
+        // Load navigation state from URL hash
+        loadFromHash: function() {
+            var hash = window.location.hash;
+            if (hash) {
+                var navItem = document.querySelector('.nav-item[href="' + hash + '"]');
+                if (navItem) {
+                    this.setActiveNav(navItem);
+                }
             }
         },
 
