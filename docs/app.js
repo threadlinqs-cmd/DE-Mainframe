@@ -5514,7 +5514,7 @@ function buildCorrelationSearchUrl(detectionName) {
     window.testGitHubConnection = function() {
         var modal = document.getElementById('modal-settings');
         var isModal = modal && !modal.classList.contains('hidden');
-        var prefix = isModal ? 'modal-' : '';
+        var prefix = isModal ? 'modal-' : 'setting-';
 
         var baseUrl = getInputValue(prefix + 'github-base-url') || 'https://api.github.com';
         var repo = getInputValue(prefix + 'github-repo');
