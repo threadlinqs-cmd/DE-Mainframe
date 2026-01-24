@@ -166,6 +166,26 @@ function buildCorrelationSearchUrl(detectionName) {
                 App.handleHashChange();
             });
 
+            // Sidebar collapse toggle
+            var collapseBtn = document.getElementById('sidebar-collapse-btn');
+            if (collapseBtn) {
+                collapseBtn.addEventListener('click', function() {
+                    var sidebar = document.getElementById('library-sidebar');
+                    if (sidebar) {
+                        sidebar.classList.toggle('collapsed');
+                        // Store preference
+                        var isCollapsed = sidebar.classList.contains('collapsed');
+                        localStorage.setItem('dmf_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                    }
+                });
+                // Restore collapsed state from preference
+                var sidebarCollapsed = localStorage.getItem('dmf_sidebar_collapsed');
+                if (sidebarCollapsed === 'true') {
+                    var sidebar = document.getElementById('library-sidebar');
+                    if (sidebar) sidebar.classList.add('collapsed');
+                }
+            }
+
             // Library search - real-time filtering
             var searchInput = document.getElementById('library-search-input');
             if (searchInput) {

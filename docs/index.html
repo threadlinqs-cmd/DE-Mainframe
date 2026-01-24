@@ -71,10 +71,14 @@
                 <section id="view-library" class="view active">
                     <div class="library-layout">
                         <!-- Sidebar - Filters + Detection List -->
-                        <aside class="library-sidebar">
-                            <div class="library-search">
-                                <input type="text" id="library-search-input" class="search-input" placeholder="Search detections...">
-                            </div>
+                        <aside class="library-sidebar" id="library-sidebar">
+                            <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
+                                <span class="collapse-icon">◀</span>
+                            </button>
+                            <div class="sidebar-content">
+                                <div class="library-search">
+                                    <input type="text" id="library-search-input" class="search-input" placeholder="Search detections...">
+                                </div>
                             <div class="library-filters">
                                 <div class="filter-row">
                                     <select id="filter-severity" class="filter-select">
@@ -123,6 +127,7 @@
                                 <span id="library-count">0 detections</span>
                             </div>
                             <div id="library-list" class="library-list"></div>
+                            </div><!-- End sidebar-content -->
                         </aside>
                         <!-- Main content area - Detection Document -->
                         <div class="library-main">
