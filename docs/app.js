@@ -2037,6 +2037,47 @@ function buildCorrelationSearchUrl(detectionName) {
         showToast('Make your changes and save. Retrofit will be recorded in history.', 'info');
     };
 
+    // Global switchTab function - switches between views
+    window.switchTab = function(viewName) {
+        // Hide all views
+        document.querySelectorAll('.view').forEach(function(view) {
+            view.classList.remove('active');
+        });
+
+        // Show target view
+        var targetView = document.getElementById('view-' + viewName);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+
+        // Update nav items
+        document.querySelectorAll('.nav-item').forEach(function(nav) {
+            nav.classList.remove('active');
+            if (nav.getAttribute('href') === '#' + viewName) {
+                nav.classList.add('active');
+            }
+        });
+
+        // Update URL hash without triggering hashchange
+        history.replaceState(null, '', '#' + viewName);
+
+        // Update content header
+        var contentHeader = document.querySelector('.content-header h2');
+        if (contentHeader) {
+            var titles = {
+                'library': 'Library',
+                'editor': 'Editor',
+                'macros': 'Macros',
+                'revalidation': 'Revalidation',
+                'history': 'History',
+                'resources': 'Resources',
+                'reports': 'Reports',
+                'settings': 'Settings'
+            };
+            contentHeader.textContent = titles[viewName] || viewName;
+        }
+    };
+
     // Render fields multi-select for tune/retrofit modals
     function renderFieldsMultiSelect(containerId, detection) {
         var container = document.getElementById(containerId);
@@ -2369,7 +2410,13 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Update JSON view
         updateJsonView();
+
+        // Store as current detection for editor
+        editorState.currentDetection = JSON.parse(JSON.stringify(d));
     }
+
+    // Make loadDetectionIntoForm globally accessible
+    window.loadDetectionIntoForm = loadDetectionIntoForm;
 
     // Load Risk Entries
     function loadRiskEntries(d) {
