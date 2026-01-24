@@ -28,6 +28,94 @@ const SPLUNK_CONFIG = {
 };
 
 // =============================================================================
+// SPLUNK INTEGRATION FUNCTIONS
+// =============================================================================
+
+// Strip Security Domain prefix and "-Rule" suffix from detection name for dashboard URL
+function stripForRevalidation(detectionName) {
+    if (!detectionName) return '';
+    var name = detectionName;
+
+    // Strip Security Domain prefix (e.g., "Access - ", "Endpoint - ")
+    var domains = ['Access', 'Endpoint', 'Network', 'Threat', 'Identity', 'Audit'];
+    for (var i = 0; i < domains.length; i++) {
+        var prefix = domains[i] + ' - ';
+        if (name.startsWith(prefix)) {
+            name = name.substring(prefix.length);
+            break;
+        }
+    }
+
+    // Strip " - Rule" suffix
+    if (name.endsWith(' - Rule')) {
+        name = name.substring(0, name.length - 7);
+    }
+
+    return name;
+}
+
+// Normalize detection name to ensure proper spacing around separators
+function normalizeDetectionName(detectionName) {
+    if (!detectionName) return '';
+    return detectionName
+        .replace(/ -([^ ])/g, ' - $1')  // " -X" → " - X"
+        .replace(/([^ ])- /g, '$1 - ')  // "X- " → "X - "
+        .replace(/  +/g, ' ');          // collapse multiple spaces
+}
+
+// Return full detection name for correlation search (no stripping, with normalization)
+function stripForCorrelationSearch(detectionName) {
+    return normalizeDetectionName(detectionName);
+}
+
+// Build Splunk Revalidation Dashboard URL (strips domain and "-Rule")
+function buildSplunkDashboardUrl(detectionName) {
+    var strippedName = stripForRevalidation(detectionName);
+    var url = SPLUNK_CONFIG.baseUrl + SPLUNK_CONFIG.dashboardPath;
+    url += '?form.timerange.earliest=' + encodeURIComponent(SPLUNK_CONFIG.defaultTimeEarliest);
+    url += '&form.timerange.latest=' + encodeURIComponent(SPLUNK_CONFIG.defaultTimeLatest);
+    url += '&form.' + SPLUNK_CONFIG.useCaseFieldName + '=' + encodeURIComponent(strippedName);
+    return url;
+}
+
+// Open URL in popup window centered on screen
+function openSplunkPopup(url, title) {
+    var width = SPLUNK_CONFIG.popupWidth;
+    var height = SPLUNK_CONFIG.popupHeight;
+    var left = (screen.width - width) / 2;
+    var top = (screen.height - height) / 2;
+    var features = 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top;
+    features += ',menubar=no,toolbar=no,location=yes,status=yes,resizable=yes,scrollbars=yes';
+    window.open(url, title || 'SplunkDashboard', features);
+}
+
+// Open Splunk Revalidation Dashboard for a specific detection
+function openSplunkDashboard(detectionName) {
+    var url = buildSplunkDashboardUrl(detectionName);
+    openSplunkPopup(url, 'SplunkRevalidation');
+    console.log('Opened Splunk dashboard:', url);
+}
+
+// Open Correlation Search Editor for a specific detection
+function openCorrelationSearch(detectionName) {
+    var url = buildCorrelationSearchUrl(detectionName);
+    openSplunkPopup(url, 'CorrelationSearchEdit');
+    console.log('Opened Correlation Search:', url);
+}
+
+// Open UC Health Dashboard
+function openHealthDashboard() {
+    var url = SPLUNK_CONFIG.baseUrl + '/' + SPLUNK_CONFIG.healthDashboardPath;
+    openSplunkPopup(url, 'UCHealthDashboard');
+}
+
+// Open Splunk Dashboard without a pre-selected detection
+function openSplunkEmpty() {
+    var url = buildSplunkDashboardUrl('');
+    openSplunkPopup(url, 'SplunkRevalidation');
+}
+
+// =============================================================================
 // GITHUB CONFIGURATION - Update these values for your environment
 // =============================================================================
 const GITHUB_CONFIG = {
@@ -514,11 +602,12 @@ function initGitHub() {
     }
 }
 
-// Build Correlation Search Editor URL
+// Build Correlation Search Editor URL (full normalized name)
 function buildCorrelationSearchUrl(detectionName) {
     if (!detectionName) return '#';
+    var fullName = stripForCorrelationSearch(detectionName);
     var url = SPLUNK_CONFIG.baseUrl + SPLUNK_CONFIG.correlationSearchPath;
-    url += '?search=' + encodeURIComponent(detectionName);
+    url += '?search=' + encodeURIComponent(fullName);
     return url;
 }
 
