@@ -1302,7 +1302,8 @@ function buildCorrelationSearchUrl(detectionName) {
             if (d['Analyst Next Steps']) {
                 html += '<div class="doc-section">';
                 html += '<h3 class="doc-section-title">Analyst Guidance</h3>';
-                html += this.createCopyableField('Next Steps', d['Analyst Next Steps'], true);
+                var steps = parseAnalystNextSteps(d['Analyst Next Steps']);
+                html += this.createCopyableField('Next Steps', steps, true);
                 html += '</div>';
             }
 
@@ -1314,7 +1315,14 @@ function buildCorrelationSearchUrl(detectionName) {
 
                 // Parsed metadata
                 var parsed = parseSPL(d['Search String']);
-                if (parsed.indexes.length || parsed.sourcetypes.length || parsed.macros.length || parsed.lookups.length) {
+                var drilldownVars = parseDrilldownVariables(d);
+                var hasParsedData = parsed.indexes.length || parsed.sourcetypes.length || parsed.eventCodes.length ||
+                                    parsed.categories.length || parsed.macros.length || parsed.lookups.length ||
+                                    (drilldownVars.mainSearchFields && drilldownVars.mainSearchFields.length) ||
+                                    (drilldownVars.mainSearchFunctions && drilldownVars.mainSearchFunctions.length) ||
+                                    parsed.byFields.length;
+
+                if (hasParsedData) {
                     html += '<div class="doc-parsed-metadata">';
                     html += '<div class="doc-parsed-title">Parsed from SPL</div>';
                     html += '<div class="doc-tags-grid">';
@@ -1329,9 +1337,19 @@ function buildCorrelationSearchUrl(detectionName) {
                         parsed.sourcetypes.forEach(function(s) { html += '<span class="card-tag">' + escapeHtml(s) + '</span>'; });
                         html += '</div></div>';
                     }
+                    if (parsed.eventCodes.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Event Codes</span><div class="tag-group-items">';
+                        parsed.eventCodes.forEach(function(e) { html += '<span class="card-tag">' + escapeHtml(e) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (parsed.categories.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Categories</span><div class="tag-group-items">';
+                        parsed.categories.forEach(function(c) { html += '<span class="card-tag">' + escapeHtml(c) + '</span>'; });
+                        html += '</div></div>';
+                    }
                     if (parsed.macros.length) {
                         html += '<div class="doc-tag-group"><span class="tag-group-label">Macros</span><div class="tag-group-items">';
-                        parsed.macros.forEach(function(m) { html += '<span class="card-tag macro" onclick="openMacroModal(\'' + escapeAttr(m) + '\')">`' + escapeHtml(m) + '`</span>'; });
+                        parsed.macros.forEach(function(m) { html += renderClickableMacroTag(m); });
                         html += '</div></div>';
                     }
                     if (parsed.lookups.length) {
@@ -1339,9 +1357,19 @@ function buildCorrelationSearchUrl(detectionName) {
                         parsed.lookups.forEach(function(l) { html += '<span class="card-tag">' + escapeHtml(l) + '</span>'; });
                         html += '</div></div>';
                     }
-                    if (parsed.functions.length) {
+                    if (drilldownVars.mainSearchFields && drilldownVars.mainSearchFields.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Fields</span><div class="tag-group-items">';
+                        drilldownVars.mainSearchFields.forEach(function(v) { html += '<span class="card-tag field">' + escapeHtml(v) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (drilldownVars.mainSearchFunctions && drilldownVars.mainSearchFunctions.length) {
                         html += '<div class="doc-tag-group"><span class="tag-group-label">Functions</span><div class="tag-group-items">';
-                        parsed.functions.forEach(function(f) { html += '<span class="card-tag">' + escapeHtml(f) + '</span>'; });
+                        drilldownVars.mainSearchFunctions.forEach(function(v) { html += '<span class="card-tag function">' + escapeHtml(v) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (parsed.byFields && parsed.byFields.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">by</span><div class="tag-group-items">';
+                        parsed.byFields.forEach(function(f) { html += '<span class="card-tag by-field">' + escapeHtml(f) + '</span>'; });
                         html += '</div></div>';
                     }
 
@@ -1383,7 +1411,8 @@ function buildCorrelationSearchUrl(detectionName) {
             }
 
             // Scheduling Section
-            if (d['Cron Schedule'] || d['Trigger Condition']) {
+            var throttle = getThrottling(d);
+            if (d['Cron Schedule'] || d['Trigger Condition'] || throttle.enabled || throttle.fields) {
                 html += '<div class="doc-section">';
                 html += '<h3 class="doc-section-title">Scheduling</h3>';
                 html += '<div class="doc-schedule-grid">';
@@ -1391,49 +1420,107 @@ function buildCorrelationSearchUrl(detectionName) {
                 if (d['Schedule Window']) html += '<div class="doc-schedule-item"><span class="schedule-label">Window</span><span>' + escapeHtml(d['Schedule Window']) + '</span></div>';
                 if (d['Schedule Priority']) html += '<div class="doc-schedule-item"><span class="schedule-label">Priority</span><span>' + escapeHtml(d['Schedule Priority']) + '</span></div>';
                 if (d['Trigger Condition']) html += '<div class="doc-schedule-item full-width"><span class="schedule-label">Trigger</span><code>' + escapeHtml(d['Trigger Condition']) + '</code></div>';
-                html += '</div></div>';
+                html += '</div>';
+
+                if (throttle.enabled || throttle.fields) {
+                    html += '<div class="doc-throttle">Throttling: Fields: <code>' + escapeHtml(throttle.fields || 'N/A') + '</code>, Period: <code>' + escapeHtml(throttle.period || 'N/A') + '</code></div>';
+                }
+                html += '</div>';
             }
 
             // Drilldowns Section (US-007: Filter out empty drilldowns)
             var drilldowns = this.getDrilldowns(d);
-            // Filter out drilldowns with no search content
+            var drilldownVarsData = parseDrilldownVariables(d);
+            // Filter out drilldowns with no name
             var validDrilldowns = drilldowns.filter(function(dd) {
                 return dd.name && dd.name.trim();
             });
+            var self = this;
             if (validDrilldowns.length > 0) {
                 html += '<div class="doc-section">';
-                html += '<h3 class="doc-section-title">Drilldowns</h3>';
-                html += '<div class="doc-drilldowns">';
+                html += '<h3 class="doc-section-title">Drilldowns <span class="section-count">(' + validDrilldowns.length + ')</span></h3>';
                 validDrilldowns.forEach(function(dd) {
                     html += '<div class="doc-drilldown">';
                     html += '<div class="drilldown-header">';
                     html += '<span class="drilldown-name">' + escapeHtml(dd.name) + '</span>';
                     if (dd.earliest || dd.latest) {
-                        html += '<span class="drilldown-time">' + escapeHtml(dd.earliest || '') + ' to ' + escapeHtml(dd.latest || '') + '</span>';
+                        html += '<span class="drilldown-time">' + (dd.earliest || 'earliest') + ' → ' + (dd.latest || 'latest') + '</span>';
                     }
                     html += '</div>';
-                    // Only show search if it has content
+                    // Show search with copy button if it has content
                     if (dd.search && dd.search.trim()) {
-                        html += '<div class="drilldown-search">' + escapeHtml(dd.search) + '</div>';
+                        var ddCopyId = self.state.copyableContent.length;
+                        self.state.copyableContent.push(dd.search);
+                        html += '<div class="drilldown-search-wrap">';
+                        html += '<button class="copy-btn" onclick="copyById(' + ddCopyId + ', this)" title="Copy">📋</button>';
+                        html += '<pre class="drilldown-search">' + escapeHtml(dd.search) + '</pre>';
+                        html += '</div>';
+
+                        // Parse drilldown search for SPL metadata
+                        var ddParsed = parseSPL(dd.search);
+                        var ddHasParsed = ddParsed.indexes.length || ddParsed.sourcetypes.length || ddParsed.eventCodes.length ||
+                                          ddParsed.macros.length || ddParsed.mainSearchFunctions.length || ddParsed.byFields.length;
+                        if (ddHasParsed) {
+                            html += '<div class="doc-parsed-metadata drilldown-parsed">';
+                            html += '<div class="doc-parsed-title">Parsed from SPL</div>';
+                            html += '<div class="doc-tags-grid">';
+                            if (ddParsed.indexes.length) {
+                                html += '<div class="doc-tag-group"><span class="tag-group-label">Indexes</span><div class="tag-group-items">';
+                                ddParsed.indexes.forEach(function(i) { html += '<span class="card-tag datasource">' + escapeHtml(i) + '</span>'; });
+                                html += '</div></div>';
+                            }
+                            if (ddParsed.eventCodes.length) {
+                                html += '<div class="doc-tag-group"><span class="tag-group-label">Event Codes</span><div class="tag-group-items">';
+                                ddParsed.eventCodes.forEach(function(e) { html += '<span class="card-tag">' + escapeHtml(e) + '</span>'; });
+                                html += '</div></div>';
+                            }
+                            if (ddParsed.macros.length) {
+                                html += '<div class="doc-tag-group"><span class="tag-group-label">Macros</span><div class="tag-group-items">';
+                                ddParsed.macros.forEach(function(m) { html += renderClickableMacroTag(m); });
+                                html += '</div></div>';
+                            }
+                            if (ddParsed.mainSearchFunctions.length) {
+                                html += '<div class="doc-tag-group"><span class="tag-group-label">Functions</span><div class="tag-group-items">';
+                                ddParsed.mainSearchFunctions.forEach(function(f) { html += '<span class="card-tag function">' + escapeHtml(f) + '</span>'; });
+                                html += '</div></div>';
+                            }
+                            if (ddParsed.byFields.length) {
+                                html += '<div class="doc-tag-group"><span class="tag-group-label">by</span><div class="tag-group-items">';
+                                ddParsed.byFields.forEach(function(f) { html += '<span class="card-tag by-field">' + escapeHtml(f) + '</span>'; });
+                                html += '</div></div>';
+                            }
+                            html += '</div></div>';
+                        }
+                    }
+                    // Show drilldown variables
+                    if (dd.vars && dd.vars.length) {
+                        html += '<div class="drilldown-vars">';
+                        dd.vars.forEach(function(v) { html += '<span class="card-tag variable">$' + escapeHtml(v) + '$</span>'; });
+                        html += '</div>';
                     }
                     html += '</div>';
                 });
-                html += '</div></div>';
+                html += '</div>';
             }
 
-            // Timestamps Section
-            if (d['First Created'] || d['Last Modified']) {
+            // Proposed Test Plan Section
+            if (d['Proposed Test Plan'] && d['Proposed Test Plan'].trim()) {
                 html += '<div class="doc-section">';
-                html += '<h3 class="doc-section-title">Timestamps</h3>';
-                html += '<div class="doc-timestamps">';
-                if (d['First Created']) {
-                    html += '<div class="doc-timestamp"><span class="timestamp-label">Created</span><span class="timestamp-value">' + formatDate(d['First Created']) + '</span></div>';
-                }
-                if (d['Last Modified']) {
-                    html += '<div class="doc-timestamp"><span class="timestamp-label">Modified</span><span class="timestamp-value">' + formatDate(d['Last Modified']) + '</span></div>';
-                }
-                html += '</div></div>';
+                html += '<h3 class="doc-section-title">Proposed Test Plan</h3>';
+                html += this.createCopyableField('Test Plan', d['Proposed Test Plan'], true);
+                html += '</div>';
             }
+
+            // File Information Section
+            html += '<div class="doc-section doc-footer">';
+            html += '<h3 class="doc-section-title">File Information</h3>';
+            html += '<div class="doc-file-info">';
+            if (d['file_name']) {
+                html += '<div class="file-info-item"><span class="file-label">File:</span> <code>' + escapeHtml(d['file_name']) + '</code></div>';
+            }
+            if (d['First Created']) html += '<div class="file-info-item"><span class="file-label">Created:</span> ' + formatDate(d['First Created']) + '</div>';
+            if (d['Last Modified']) html += '<div class="file-info-item"><span class="file-label">Modified:</span> ' + formatDate(d['Last Modified']) + '</div>';
+            html += '</div></div>';
 
             html += '</div>';
 
@@ -1458,17 +1545,33 @@ function buildCorrelationSearchUrl(detectionName) {
             if (jsonView) jsonView.classList.add('hidden');
         },
 
-        // Get drilldowns from detection
+        // Get drilldowns from detection with variables parsed
         getDrilldowns: function(d) {
             var drilldowns = [];
 
+            // Helper to parse $variable$ from search
+            function parseVarsFromSearch(search) {
+                var found = [];
+                if (!search) return found;
+                var varMatches = search.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)\$/g);
+                if (varMatches) {
+                    varMatches.forEach(function(v) {
+                        var varName = v.replace(/\$/g, '');
+                        if (found.indexOf(varName) === -1) found.push(varName);
+                    });
+                }
+                return found;
+            }
+
             // Legacy drilldown
             if (d['Drilldown Name (Legacy)']) {
+                var legacySearch = d['Drilldown Search (Legacy)'] || '';
                 drilldowns.push({
                     name: d['Drilldown Name (Legacy)'],
-                    search: d['Drilldown Search (Legacy)'] || '',
+                    search: legacySearch,
                     earliest: d['Drilldown Earliest Offset (Legacy)'],
-                    latest: d['Drilldown Latest Offset (Legacy)']
+                    latest: d['Drilldown Latest Offset (Legacy)'],
+                    vars: parseVarsFromSearch(legacySearch)
                 });
             }
 
@@ -1476,11 +1579,13 @@ function buildCorrelationSearchUrl(detectionName) {
             for (var i = 1; i <= 15; i++) {
                 var name = d['Drilldown Name ' + i];
                 if (name) {
+                    var search = d['Drilldown Search ' + i] || '';
                     drilldowns.push({
                         name: name,
-                        search: d['Drilldown Search ' + i] || '',
+                        search: search,
                         earliest: d['Drilldown Earliest ' + i],
-                        latest: d['Drilldown Latest ' + i]
+                        latest: d['Drilldown Latest ' + i],
+                        vars: parseVarsFromSearch(search)
                     });
                 }
             }
@@ -1620,37 +1725,147 @@ function buildCorrelationSearchUrl(detectionName) {
         return [];
     }
 
+    function getThrottling(d) {
+        if (!d) return { enabled: 0, fields: '', period: '' };
+        if (typeof d['Throttling'] === 'object' && d['Throttling'] !== null) {
+            return {
+                enabled: d['Throttling'].enabled || 0,
+                fields: d['Throttling'].fields || '',
+                period: d['Throttling'].period || ''
+            };
+        }
+        // Old string format
+        if (typeof d['Throttling'] === 'string') {
+            return { enabled: d['Throttling'] ? 1 : 0, fields: '', period: '' };
+        }
+        return { enabled: 0, fields: '', period: '' };
+    }
+
+    function parseAnalystNextSteps(text) {
+        if (!text) return '';
+
+        // Check if it's JSON format
+        if (text.trim().startsWith('{')) {
+            try {
+                var parsed = JSON.parse(text);
+                if (parsed.data) text = parsed.data;
+            } catch (e) {}
+        }
+
+        // Replace \n with actual newlines
+        text = text.replace(/\\n/g, '\n');
+
+        return text;
+    }
+
+    function parseDrilldownVariables(detection) {
+        var vars = {
+            mainSearchFields: [],
+            mainSearchFunctions: [],
+            drilldownVars: {},
+            allDrilldownVars: []
+        };
+
+        var mainSearch = detection['Search String'] || '';
+
+        // Parse the main search for fields and functions
+        var parsed = parseSPL(mainSearch);
+        vars.mainSearchFields = parsed.mainSearchFields || [];
+        vars.mainSearchFunctions = parsed.mainSearchFunctions || [];
+
+        // Parse each drilldown for $variable$ usage
+        function parseVarsFromSearch(search) {
+            var found = [];
+            var varMatches = search.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)\$/g);
+            if (varMatches) {
+                varMatches.forEach(function(v) {
+                    var varName = v.replace(/\$/g, '');
+                    if (found.indexOf(varName) === -1) found.push(varName);
+                    if (vars.allDrilldownVars.indexOf(varName) === -1) vars.allDrilldownVars.push(varName);
+                });
+            }
+            return found;
+        }
+
+        // Legacy drilldown
+        if (detection['Drilldown Search (Legacy)']) {
+            vars.drilldownVars['legacy'] = parseVarsFromSearch(detection['Drilldown Search (Legacy)']);
+        }
+
+        // Numbered drilldowns
+        for (var i = 1; i <= 15; i++) {
+            var search = detection['Drilldown Search ' + i];
+            if (search) {
+                vars.drilldownVars['drilldown_' + i] = parseVarsFromSearch(search);
+            }
+        }
+
+        return vars;
+    }
+
     function parseSPL(spl) {
         var result = {
             indexes: [],
             sourcetypes: [],
             eventCodes: [],
+            categories: [],
             macros: [],
             lookups: [],
+            evalFields: [],
+            mainSearchFields: [],
+            mainSearchFunctions: [],
+            byFields: [],
             functions: []
         };
 
         if (!spl) return result;
 
-        // Parse indexes
-        var indexRegex = /index\s*=\s*["']?([^\s"'|]+)/gi;
+        // Parse indexes (handles index=, index==, index IN ())
+        var indexRegex = /index\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
         var match;
         while ((match = indexRegex.exec(spl)) !== null) {
             if (result.indexes.indexOf(match[1]) === -1) {
                 result.indexes.push(match[1]);
             }
         }
+        // Also handle index IN (...)
+        var indexInRegex = /index\s+IN\s*\(([^)]+)\)/gi;
+        while ((match = indexInRegex.exec(spl)) !== null) {
+            var inValues = match[1].split(',');
+            inValues.forEach(function(v) {
+                var val = v.trim().replace(/["']/g, '');
+                if (val && result.indexes.indexOf(val) === -1) {
+                    result.indexes.push(val);
+                }
+            });
+        }
 
         // Parse sourcetypes
-        var sourcetypeRegex = /sourcetype\s*=\s*["']?([^\s"'|]+)/gi;
+        var sourcetypeRegex = /sourcetype\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
         while ((match = sourcetypeRegex.exec(spl)) !== null) {
             if (result.sourcetypes.indexOf(match[1]) === -1) {
                 result.sourcetypes.push(match[1]);
             }
         }
 
-        // Parse macros
-        var macroRegex = /`([^`(]+)(?:\([^)]*\))?`/g;
+        // Parse Event Codes
+        var eventCodeRegex = /EventCode\s*[=!<>]+\s*["']?(\d+)["']?/gi;
+        while ((match = eventCodeRegex.exec(spl)) !== null) {
+            if (result.eventCodes.indexOf(match[1]) === -1) {
+                result.eventCodes.push(match[1]);
+            }
+        }
+
+        // Parse categories (Azure/Defender)
+        var categoryRegex = /category\s*={1,2}\s*["']([^"']+)["']/gi;
+        while ((match = categoryRegex.exec(spl)) !== null) {
+            if (result.categories.indexOf(match[1]) === -1) {
+                result.categories.push(match[1]);
+            }
+        }
+
+        // Parse macros (single backticks, not triple)
+        var macroRegex = /(?<![`])`([^`(]+)(?:\([^)]*\))?`(?![`])/g;
         while ((match = macroRegex.exec(spl)) !== null) {
             if (result.macros.indexOf(match[1]) === -1) {
                 result.macros.push(match[1]);
@@ -1658,21 +1873,71 @@ function buildCorrelationSearchUrl(detectionName) {
         }
 
         // Parse lookups
-        var lookupRegex = /\|\s*(?:lookup|inputlookup|outputlookup)\s+([^\s|]+)/gi;
+        var lookupRegex = /\b(?:lookup|inputlookup|outputlookup)\s+([^\s|,]+)/gi;
         while ((match = lookupRegex.exec(spl)) !== null) {
             if (result.lookups.indexOf(match[1]) === -1) {
                 result.lookups.push(match[1]);
             }
         }
 
-        // Parse functions (commands after pipes)
-        var funcRegex = /\|\s*([a-z_][a-z0-9_]*)/gi;
-        while ((match = funcRegex.exec(spl)) !== null) {
-            var fn = match[1].toLowerCase();
-            if (result.functions.indexOf(fn) === -1 && fn !== 'lookup' && fn !== 'inputlookup' && fn !== 'outputlookup') {
-                result.functions.push(fn);
+        // Parse eval fields
+        var evalRegex = /\beval\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/gi;
+        while ((match = evalRegex.exec(spl)) !== null) {
+            if (result.evalFields.indexOf(match[1]) === -1) {
+                result.evalFields.push(match[1]);
             }
         }
+
+        // Parse by fields
+        var byRegex = /\bby\s+([a-zA-Z_][a-zA-Z0-9_,\s]*)/gi;
+        while ((match = byRegex.exec(spl)) !== null) {
+            var fields = match[1].split(/[,\s]+/);
+            fields.forEach(function(f) {
+                f = f.trim();
+                if (f && result.byFields.indexOf(f) === -1 && f !== 'as' && f !== 'where') {
+                    result.byFields.push(f);
+                }
+            });
+        }
+
+        // Parse functions/commands (commands after pipes)
+        var phases = spl.split(/(?:^|\n)\s*\|\s*/);
+        for (var i = 1; i < phases.length; i++) {
+            var funcMatch = phases[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)/);
+            if (funcMatch) {
+                var fn = funcMatch[1].toLowerCase();
+                if (result.mainSearchFunctions.indexOf(fn) === -1) {
+                    result.mainSearchFunctions.push(fn);
+                }
+            }
+        }
+
+        // Parse main search fields (common field patterns)
+        var fieldPatterns = [
+            /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*[=!<>]/g,  // field=value
+            /\bvalues?\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,  // values(field)
+            /\bcount\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,    // count(field)
+            /\bsum\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,      // sum(field)
+            /\bavg\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi       // avg(field)
+        ];
+
+        var excludeFields = ['index', 'sourcetype', 'source', 'host', 'eventtype', 'tag', 'eventcode', 'category', 'earliest', 'latest', 'span'];
+
+        fieldPatterns.forEach(function(pattern) {
+            var m;
+            while ((m = pattern.exec(spl)) !== null) {
+                var field = m[1];
+                if (field &&
+                    result.mainSearchFields.indexOf(field) === -1 &&
+                    excludeFields.indexOf(field.toLowerCase()) === -1 &&
+                    !/^\d+$/.test(field)) {
+                    result.mainSearchFields.push(field);
+                }
+            }
+        });
+
+        // Legacy functions array for backward compatibility
+        result.functions = result.mainSearchFunctions;
 
         return result;
     }
@@ -1687,16 +1952,45 @@ function buildCorrelationSearchUrl(detectionName) {
 
     window.copyById = function(id, btn) {
         var text = App.state.copyableContent[id] || '';
+        if (!text) {
+            showToast('Nothing to copy', 'warning');
+            return;
+        }
         navigator.clipboard.writeText(text).then(function() {
             var original = btn.innerHTML;
             btn.innerHTML = '✓';
             btn.classList.add('copied');
+            showToast('Copied to clipboard', 'success');
             setTimeout(function() {
                 btn.innerHTML = original;
                 btn.classList.remove('copied');
             }, 1500);
         }).catch(function(err) {
             console.error('Failed to copy:', err);
+            showToast('Failed to copy to clipboard', 'error');
+        });
+    };
+
+    // General copy to clipboard function for arbitrary text
+    window.copyToClipboard = function(text, btn) {
+        if (!text) {
+            showToast('Nothing to copy', 'warning');
+            return;
+        }
+        navigator.clipboard.writeText(text).then(function() {
+            if (btn) {
+                var original = btn.innerHTML;
+                btn.innerHTML = '✓';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.innerHTML = original;
+                    btn.classList.remove('copied');
+                }, 1500);
+            }
+            showToast('Copied to clipboard', 'success');
+        }).catch(function(err) {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy to clipboard', 'error');
         });
     };
 
@@ -1707,25 +2001,36 @@ function buildCorrelationSearchUrl(detectionName) {
 
         if (!modal || !titleEl || !contentEl) return;
 
-        // Look up the macro from macrosState
+        // Use helper functions to look up macro (defined in MACROS VIEW section)
         var macro = null;
-        if (typeof macrosState !== 'undefined' && macrosState.macros) {
-            macro = macrosState.macros.find(function(m) {
-                return m.name === macroName;
-            });
+        var isMissing = true;
+        if (typeof macrosState !== 'undefined' && macrosState.macros && macrosState.macros.length > 0) {
+            macro = getMacroByName(macroName);
+            isMissing = !isMacroRegistered(macroName);
         }
 
-        if (!macro) {
-            titleEl.innerHTML = '<code>`' + escapeHtml(macroName) + '`</code>';
-            contentEl.innerHTML = '<p class="macro-not-found">Macro not found in macros list.</p><p class="macro-hint">This macro is used in the detection\'s search logic but is not defined in the macros configuration.</p>';
+        if (isMissing || !macro) {
+            // Macro is not registered - show warning with option to add
+            titleEl.innerHTML = '<span class="macro-missing-indicator">&#9888;</span> <code>`' + escapeHtml(macroName) + '`</code>';
+            var usageCount = typeof countMacroUsage === 'function' ? countMacroUsage(macroName) : 0;
+            contentEl.innerHTML = '<div class="macro-details-missing">' +
+                '<p class="macro-not-found">This macro is not registered in your macros list.</p>' +
+                '<p class="macro-hint">This may cause validation errors in detections that use this macro.</p>' +
+                (usageCount > 0 ? '<p class="macro-usage-warning">Used in ' + usageCount + ' detection' + (usageCount !== 1 ? 's' : '') + '.</p>' : '') +
+                '<button class="btn-primary" onclick="closeMacroModal(); navigateToMacrosWithName(\'' + escapeAttr(macroName) + '\');">Add This Macro</button>' +
+                '</div>';
         } else {
-            titleEl.innerHTML = '<code>`' + escapeHtml(macroName) + '`</code>';
+            // Macro exists - show details
+            var isDeprecated = macro.deprecated;
+            titleEl.innerHTML = (isDeprecated ? '<span class="macro-deprecated-indicator">&#9888;</span> ' : '') +
+                '<code>`' + escapeHtml(macroName) + '`</code>' +
+                (isDeprecated ? ' <span class="macro-deprecated-badge">deprecated</span>' : '');
 
             var html = '<div class="macro-detail-fields">';
             html += '<div class="macro-detail-field"><label>Definition</label>';
-            html += '<pre class="macro-definition">' + escapeHtml(macro.definition || 'No definition') + '</pre></div>';
+            html += '<pre class="macro-definition">' + escapeHtml(macro.definition || 'No definition provided') + '</pre></div>';
             html += '<div class="macro-detail-field"><label>Description</label>';
-            html += '<p>' + escapeHtml(macro.description || 'No description') + '</p></div>';
+            html += '<p>' + escapeHtml(macro.description || 'No description provided') + '</p></div>';
             if (macro.arguments && macro.arguments.length) {
                 html += '<div class="macro-detail-field"><label>Arguments</label>';
                 var args = Array.isArray(macro.arguments) ? macro.arguments.join(', ') : macro.arguments;
@@ -1735,10 +2040,13 @@ function buildCorrelationSearchUrl(detectionName) {
                 html += '<div class="macro-detail-field"><label>Usage</label>';
                 html += '<span class="macro-usage-count">' + macro.usageCount + ' detection' + (macro.usageCount !== 1 ? 's' : '') + '</span></div>';
             }
-            if (macro.deprecated) {
-                html += '<div class="macro-detail-field"><span class="macro-deprecated-badge">Deprecated</span></div>';
-            }
             html += '</div>';
+
+            // Add action buttons
+            html += '<div class="macro-detail-actions">';
+            html += '<button class="btn-secondary" onclick="closeMacroModal(); goToMacrosTab(\'' + escapeAttr(macroName) + '\');">View in Macros Tab</button>';
+            html += '</div>';
+
             contentEl.innerHTML = html;
         }
 
@@ -1813,11 +2121,15 @@ function buildCorrelationSearchUrl(detectionName) {
 
     window.copyMetadataJson = function() {
         var d = App.state.selectedDetection;
-        if (!d) return;
+        if (!d) {
+            showToast('No detection selected', 'warning');
+            return;
+        }
         navigator.clipboard.writeText(JSON.stringify(d, null, 2)).then(function() {
-            alert('JSON copied to clipboard');
+            showToast('JSON copied to clipboard', 'success');
         }).catch(function(err) {
             console.error('Failed to copy:', err);
+            showToast('Failed to copy JSON to clipboard', 'error');
         });
     };
 
@@ -2261,7 +2573,9 @@ function buildCorrelationSearchUrl(detectionName) {
         currentDetection: null,
         hasUnsavedChanges: false,
         drilldownCount: 0,
-        loadedMacros: []
+        loadedMacros: [],
+        mitreIds: [],
+        dataSources: []
     };
 
     // Initialize Editor
@@ -2289,19 +2603,141 @@ function buildCorrelationSearchUrl(detectionName) {
             }, 300));
         }
 
-        // Detection Name auto-populates Notable Title
+        // Detection Name auto-populates Notable Title and Notable Description
         var nameField = document.getElementById('field-detection-name');
         if (nameField) {
             nameField.addEventListener('input', function() {
-                var notableField = document.getElementById('field-notable-title');
-                if (notableField && !notableField.value) {
-                    notableField.value = nameField.value;
+                autoPopulateNotableFields();
+            });
+        }
+
+        // Clear autopopulated flag when user manually edits Notable fields
+        var notableTitleField = document.getElementById('field-notable-title');
+        if (notableTitleField) {
+            notableTitleField.addEventListener('input', function() {
+                // If user is typing something different than the detection name, mark as manual
+                var detName = document.getElementById('field-detection-name').value;
+                if (this.value !== detName) {
+                    this.dataset.autopopulated = 'false';
+                }
+            });
+        }
+
+        var notableDescField = document.getElementById('field-notable-desc');
+        if (notableDescField) {
+            notableDescField.addEventListener('input', function() {
+                // If user is typing something different than the auto-generated text, mark as manual
+                var detName = document.getElementById('field-detection-name').value;
+                if (this.value !== detName + ' detected on ') {
+                    this.dataset.autopopulated = 'false';
+                }
+            });
+        }
+
+        // MITRE ID input - add tags on Enter key
+        var mitreInput = document.getElementById('mitre-input');
+        if (mitreInput) {
+            mitreInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addMitreTag(e.target.value);
+                    e.target.value = '';
+                }
+            });
+        }
+
+        // Data Sources tag input - allows manual additions alongside auto-populated
+        var datasourceInput = document.getElementById('datasource-input');
+        if (datasourceInput) {
+            datasourceInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addDataSourceTag(e.target.value);
+                    e.target.value = '';
                 }
             });
         }
 
         // Initialize form with blank detection
         createNewDetection();
+    }
+
+    // Auto-populate Notable Title and Notable Description from Detection Name
+    function autoPopulateNotableFields() {
+        var detectionName = document.getElementById('field-detection-name').value;
+        var notableTitleEl = document.getElementById('field-notable-title');
+        var notableDescEl = document.getElementById('field-notable-desc');
+
+        // Only auto-populate if fields are empty or contain auto-generated content
+        if (notableTitleEl && (!notableTitleEl.value || notableTitleEl.dataset.autopopulated === 'true')) {
+            notableTitleEl.value = detectionName;
+            notableTitleEl.dataset.autopopulated = 'true';
+        }
+
+        if (notableDescEl && (!notableDescEl.value || notableDescEl.dataset.autopopulated === 'true')) {
+            notableDescEl.value = detectionName + ' detected on ';
+            notableDescEl.dataset.autopopulated = 'true';
+        }
+    }
+
+    // MITRE TAG MANAGEMENT - Supports sub-techniques (T1003.002)
+    function addMitreTag(value) {
+        var cleaned = value.trim().toUpperCase();
+        if (!cleaned) return;
+        // Regex supports sub-techniques like T1003.002
+        if (!/^T\d{4}(\.\d{3})?$/.test(cleaned)) {
+            showToast('Invalid MITRE format. Use T1234 or T1234.001', 'warning');
+            return;
+        }
+        if (editorState.mitreIds.indexOf(cleaned) === -1) {
+            editorState.mitreIds.push(cleaned);
+            renderMitreTags();
+            editorState.hasUnsavedChanges = true;
+            validateForm();
+        }
+    }
+
+    window.removeMitreTag = function(index) {
+        editorState.mitreIds.splice(index, 1);
+        renderMitreTags();
+        editorState.hasUnsavedChanges = true;
+        validateForm();
+    };
+
+    function renderMitreTags() {
+        var container = document.getElementById('mitre-tags');
+        if (!container) return;
+        var html = '';
+        editorState.mitreIds.forEach(function(id, i) {
+            html += '<span class="mitre-tag">' + escapeHtml(id) + '<span class="tag-remove" onclick="removeMitreTag(' + i + ')">×</span></span>';
+        });
+        container.innerHTML = html;
+    }
+
+    // DATA SOURCE TAG MANAGEMENT
+    function addDataSourceTag(value) {
+        var trimmed = value.trim();
+        if (trimmed && editorState.dataSources.indexOf(trimmed) === -1) {
+            editorState.dataSources.push(trimmed);
+            renderDataSourceTags();
+            editorState.hasUnsavedChanges = true;
+            validateForm();
+        }
+    }
+
+    window.removeDataSourceTag = function(index) {
+        editorState.dataSources.splice(index, 1);
+        renderDataSourceTags();
+        editorState.hasUnsavedChanges = true;
+        validateForm();
+    };
+
+    function renderDataSourceTags() {
+        var container = document.getElementById('datasource-tags');
+        if (!container) return;
+        container.innerHTML = editorState.dataSources.map(function(ds, i) {
+            return '<span class="tag">' + escapeHtml(ds) + '<button type="button" onclick="removeDataSourceTag(' + i + ')">x</button></span>';
+        }).join('');
     }
 
     // Debounce helper
@@ -2336,9 +2772,62 @@ function buildCorrelationSearchUrl(detectionName) {
         editorState.currentDetection['First Created'] = new Date().toISOString();
         editorState.hasUnsavedChanges = false;
         editorState.drilldownCount = 0;
+        editorState.mitreIds = [];
+        editorState.dataSources = [];
         loadDetectionIntoForm(editorState.currentDetection);
         validateForm();
         updateSplParsedPreview();
+    };
+
+    // Clear Form - resets all form fields to blank template
+    window.clearForm = function() {
+        if (editorState.hasUnsavedChanges) {
+            // Show confirmation modal
+            var modal = document.getElementById('modal-clear-confirm');
+            if (modal) modal.classList.remove('hidden');
+        } else {
+            doClearForm();
+        }
+    };
+
+    // Actually clear the form (called after confirmation or if no unsaved changes)
+    function doClearForm() {
+        editorState.currentDetection = JSON.parse(JSON.stringify(DETECTION_TEMPLATE));
+        editorState.currentDetection['First Created'] = new Date().toISOString();
+        editorState.hasUnsavedChanges = false;
+        editorState.drilldownCount = 0;
+        editorState.mitreIds = [];
+        editorState.dataSources = [];
+
+        // Clear containers
+        var drilldownsContainer = document.getElementById('drilldowns-container');
+        if (drilldownsContainer) drilldownsContainer.innerHTML = '';
+
+        var riskContainer = document.getElementById('risk-entries-container');
+        if (riskContainer) riskContainer.innerHTML = '';
+
+        var mitreTagsContainer = document.getElementById('mitre-tags');
+        if (mitreTagsContainer) mitreTagsContainer.innerHTML = '';
+
+        var datasourceTagsContainer = document.getElementById('datasource-tags');
+        if (datasourceTagsContainer) datasourceTagsContainer.innerHTML = '';
+
+        loadDetectionIntoForm(editorState.currentDetection);
+        validateForm();
+        updateSplParsedPreview();
+        showToast('Form cleared', 'info');
+    }
+
+    // Close Clear Confirm Modal
+    window.closeClearConfirmModal = function() {
+        var modal = document.getElementById('modal-clear-confirm');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Confirm Clear Form
+    window.confirmClearForm = function() {
+        closeClearConfirmModal();
+        doClearForm();
     };
 
     // Load Detection into Form
@@ -2351,14 +2840,15 @@ function buildCorrelationSearchUrl(detectionName) {
         document.getElementById('field-domain').value = (d['Security Domain'] || '').toLowerCase();
         document.getElementById('field-origin').value = d['origin'] || 'custom';
 
-        // MITRE IDs
-        var mitreVal = '';
+        // MITRE IDs - populate tag array
+        editorState.mitreIds = [];
         if (Array.isArray(d['Mitre ID'])) {
-            mitreVal = d['Mitre ID'].join(', ');
+            editorState.mitreIds = d['Mitre ID'].slice(); // Clone the array
         } else if (d['Mitre ID']) {
-            mitreVal = d['Mitre ID'];
+            // Handle comma-separated string format
+            editorState.mitreIds = d['Mitre ID'].split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
         }
-        document.getElementById('field-mitre').value = mitreVal;
+        renderMitreTags();
 
         // Roles
         if (d['Roles'] && Array.isArray(d['Roles'])) {
@@ -2378,7 +2868,12 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Search Configuration
         document.getElementById('field-search-string').value = d['Search String'] || '';
-        document.getElementById('field-datasources').value = d['Required_Data_Sources'] || '';
+
+        // Data Sources - populate from comma-separated string into array and render tags
+        var dsString = d['Required_Data_Sources'] || '';
+        editorState.dataSources = dsString.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
+        renderDataSourceTags();
+
         document.getElementById('field-assumptions').value = d['Assumptions'] || '';
 
         // Risk
@@ -2575,13 +3070,8 @@ function buildCorrelationSearchUrl(detectionName) {
         d['Security Domain'] = document.getElementById('field-domain').value;
         d['origin'] = document.getElementById('field-origin').value;
 
-        // MITRE IDs
-        var mitreInput = document.getElementById('field-mitre').value;
-        if (mitreInput) {
-            d['Mitre ID'] = mitreInput.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
-        } else {
-            d['Mitre ID'] = [];
-        }
+        // MITRE IDs - use tag array from editorState
+        d['Mitre ID'] = editorState.mitreIds.slice(); // Clone the array
 
         // Roles
         d['Roles'] = [
@@ -2592,7 +3082,8 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Search Configuration
         d['Search String'] = document.getElementById('field-search-string').value;
-        d['Required_Data_Sources'] = document.getElementById('field-datasources').value.trim();
+        // Data Sources - join the tag array into comma-separated string
+        d['Required_Data_Sources'] = editorState.dataSources.join(', ');
         d['Assumptions'] = document.getElementById('field-assumptions').value.trim();
 
         // Risk
@@ -2686,7 +3177,7 @@ function buildCorrelationSearchUrl(detectionName) {
         if (!d['Severity/Priority']) errors.push('Severity/Priority is required');
         if (!d['Analyst Next Steps']) errors.push('Analyst Next Steps is required');
         if (!d['Blind_Spots_False_Positives']) errors.push('Blind Spots/False Positives is required');
-        if (!d['Required_Data_Sources']) errors.push('Data Sources is required');
+        if (editorState.dataSources.length === 0) errors.push('Data Sources is required');
         if (!d['Search String']) errors.push('Search String is required');
         if (!d['Notable Title']) errors.push('Notable Title is required');
 
@@ -2788,6 +3279,32 @@ function buildCorrelationSearchUrl(detectionName) {
         if (navItem) {
             App.handleNavigation(navItem);
         }
+        // If macro name provided, select it after navigation
+        if (macroName && typeof selectMacro === 'function') {
+            setTimeout(function() {
+                selectMacro(macroName);
+            }, 100);
+        }
+    };
+
+    // Navigate to Macros tab with pre-filled name for adding a new macro
+    window.navigateToMacrosWithName = function(macroName) {
+        // Navigate to macros view
+        var navItem = document.querySelector('.nav-item[href="#macros"]');
+        if (navItem) {
+            App.handleNavigation(navItem);
+        }
+        // Open the "create new macro" form with the name pre-filled
+        setTimeout(function() {
+            if (typeof createNewMacro === 'function') {
+                createNewMacro();
+                // Pre-fill the name
+                var nameInput = document.getElementById('macro-field-name');
+                if (nameInput && macroName) {
+                    nameInput.value = macroName;
+                }
+            }
+        }, 150);
     };
 
     // Update SPL Parsed Preview
@@ -2825,7 +3342,15 @@ function buildCorrelationSearchUrl(detectionName) {
         }
         if (parsed.macros.length) {
             html += '<div class="spl-tag-group"><span class="spl-tag-label">Macros</span><div class="spl-tag-items">';
-            parsed.macros.forEach(function(m) { html += '<span class="spl-tag macro">`' + escapeHtml(m) + '`</span>'; });
+            parsed.macros.forEach(function(m) {
+                var macroMissing = !isMacroRegistered(m);
+                var macroObj = getMacroByName(m);
+                var macroDeprecated = macroObj && macroObj.deprecated;
+                var classes = 'spl-tag macro clickable';
+                if (macroMissing) classes += ' macro-missing';
+                if (macroDeprecated) classes += ' macro-deprecated';
+                html += '<span class="' + classes + '" onclick="openMacroModal(\'' + escapeAttr(m) + '\')" title="Click to view macro details">`' + escapeHtml(m) + '`</span>';
+            });
             html += '</div></div>';
         }
         if (parsed.lookups.length) {
@@ -2843,29 +3368,43 @@ function buildCorrelationSearchUrl(detectionName) {
         contentEl.innerHTML = html;
     }
 
-    // Auto-populate Data Sources
+    // Auto-populate Data Sources from parsed SPL
+    // Appends to existing dataSources without duplicates
     function autoPopulateDataSources() {
         var spl = document.getElementById('field-search-string').value;
-        var dsField = document.getElementById('field-datasources');
-        if (!dsField) return;
-
         var parsed = parseSPL(spl);
-        var sources = [];
 
-        parsed.indexes.forEach(function(i) {
-            if (sources.indexOf(i) === -1) sources.push(i);
-        });
-        parsed.sourcetypes.forEach(function(s) {
-            if (sources.indexOf(s) === -1) sources.push(s);
-        });
+        // Keep existing manual entries, append parsed ones (avoid duplicates)
+        // Using case-insensitive comparison for duplicates
+        var existingLower = editorState.dataSources.map(function(ds) { return ds.toLowerCase(); });
 
-        // Merge with existing manual entries
-        var existing = dsField.value.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
-        sources.forEach(function(s) {
-            if (existing.indexOf(s) === -1) existing.push(s);
+        // Add indexes
+        parsed.indexes.forEach(function(idx) {
+            if (idx && existingLower.indexOf(idx.toLowerCase()) === -1) {
+                editorState.dataSources.push(idx);
+                existingLower.push(idx.toLowerCase());
+            }
         });
 
-        dsField.value = existing.join(', ');
+        // Add sourcetypes
+        parsed.sourcetypes.forEach(function(st) {
+            if (st && existingLower.indexOf(st.toLowerCase()) === -1) {
+                editorState.dataSources.push(st);
+                existingLower.push(st.toLowerCase());
+            }
+        });
+
+        // Add categories (e.g., AdvancedHunting-DeviceNetworkEvents)
+        if (parsed.categories) {
+            parsed.categories.forEach(function(cat) {
+                if (cat && existingLower.indexOf(cat.toLowerCase()) === -1) {
+                    editorState.dataSources.push(cat);
+                    existingLower.push(cat.toLowerCase());
+                }
+            });
+        }
+
+        renderDataSourceTags();
     }
 
     // Toggle Form Section
@@ -3100,6 +3639,25 @@ function buildCorrelationSearchUrl(detectionName) {
         updateSyncStatus('connected', 'Connected');
     };
 
+    // Download current detection as JSON file
+    window.downloadCurrentDetection = function() {
+        var d = getFormData();
+        var filename = d['file_name'] || 'detection.json';
+        downloadFile(filename, JSON.stringify(d, null, 2));
+        showToast('Downloaded: ' + filename, 'success');
+    };
+
+    // Helper function to download a file
+    function downloadFile(filename, content) {
+        var blob = new Blob([content], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     // =========================================================================
     // MACROS VIEW FUNCTIONS
     // =========================================================================
@@ -3181,6 +3739,35 @@ function buildCorrelationSearchUrl(detectionName) {
     // Escape special regex characters
     function escapeRegExp(str) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Get macro object by name (returns null if not found)
+    function getMacroByName(macroName) {
+        if (!macroName) return null;
+        for (var i = 0; i < macrosState.macros.length; i++) {
+            if (macrosState.macros[i].name === macroName) {
+                return macrosState.macros[i];
+            }
+        }
+        return null;
+    }
+
+    // Check if a macro exists in the loaded macros
+    function isMacroRegistered(macroName) {
+        return editorState.loadedMacros.indexOf(macroName) !== -1;
+    }
+
+    // Render a clickable macro tag with appropriate styling (for use in Library view)
+    function renderClickableMacroTag(macroName) {
+        var isMissing = !isMacroRegistered(macroName);
+        var macro = getMacroByName(macroName);
+        var isDeprecated = macro && macro.deprecated;
+
+        var classes = 'card-tag macro clickable';
+        if (isMissing) classes += ' macro-missing';
+        if (isDeprecated) classes += ' macro-deprecated';
+
+        return '<span class="' + classes + '" onclick="openMacroModal(\'' + escapeAttr(macroName) + '\')" title="Click to view macro details">`' + escapeHtml(macroName) + '`</span>';
     }
 
     // Get detections that use a macro

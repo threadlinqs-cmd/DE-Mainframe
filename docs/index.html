@@ -173,6 +173,7 @@
                                 <div class="editor-toolbar-left">
                                     <button id="btn-editor-new" class="btn-action" onclick="createNewDetection()">New</button>
                                     <button id="btn-editor-load" class="btn-action" onclick="openLoadModal()">Load</button>
+                                    <button id="btn-editor-clear" class="btn-action" onclick="clearForm()">Clear</button>
                                 </div>
                                 <div class="editor-toolbar-tabs">
                                     <button class="editor-tab-btn active" data-tab="form" onclick="switchEditorTab('form')">Form</button>
@@ -180,6 +181,7 @@
                                 </div>
                                 <div class="editor-toolbar-right">
                                     <button id="btn-editor-cancel" class="btn-action" onclick="cancelEditor()">Cancel</button>
+                                    <button id="btn-editor-download" class="btn-action" onclick="downloadCurrentDetection()">Download</button>
                                     <button id="btn-editor-save" class="btn-action btn-primary" onclick="saveDetection()" disabled>Save</button>
                                 </div>
                             </div>
@@ -269,8 +271,11 @@
                                             </div>
                                             <div class="form-row">
                                                 <div class="form-group full-width">
-                                                    <label for="field-mitre">MITRE ATT&CK IDs</label>
-                                                    <input type="text" id="field-mitre" name="Mitre ID" class="form-input" placeholder="e.g., T1059, T1059.001 (comma-separated)">
+                                                    <label for="mitre-input">MITRE ATT&CK IDs</label>
+                                                    <div class="tag-input-container" id="mitre-container">
+                                                        <div id="mitre-tags" class="tags-inline"></div>
+                                                        <input type="text" id="mitre-input" class="tag-input" placeholder="T1234 or T1234.001 + Enter">
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -291,9 +296,12 @@
                                             </div>
                                             <div class="form-row">
                                                 <div class="form-group full-width">
-                                                    <label for="field-datasources">Required Data Sources <span class="required">*</span></label>
-                                                    <input type="text" id="field-datasources" name="Required_Data_Sources" class="form-input" placeholder="Auto-populated from SPL or enter manually">
-                                                    <small class="form-hint">Parsed from SPL - editable</small>
+                                                    <label for="datasource-input">Required Data Sources <span class="required">*</span></label>
+                                                    <div class="tag-input-container">
+                                                        <div id="datasource-tags" class="tags"></div>
+                                                        <input type="text" id="datasource-input" class="form-input tag-input" placeholder="Type and press Enter to add...">
+                                                    </div>
+                                                    <small class="form-hint">Auto-populated from SPL. You can also add manually by typing and pressing Enter.</small>
                                                 </div>
                                             </div>
                                             <div class="form-row">
@@ -1179,6 +1187,24 @@
                     <div class="modal-footer">
                         <button class="btn-action" onclick="discardChanges()">Discard</button>
                         <button class="btn-action btn-primary" onclick="saveAndContinue()">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear Form Confirmation Modal -->
+            <div id="modal-clear-confirm" class="modal hidden">
+                <div class="modal-overlay" onclick="closeClearConfirmModal()"></div>
+                <div class="modal-content modal-small">
+                    <div class="modal-header">
+                        <h3>Clear Form</h3>
+                        <button class="modal-close" onclick="closeClearConfirmModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You have unsaved changes. Are you sure you want to clear all form fields?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeClearConfirmModal()">Cancel</button>
+                        <button class="btn-action btn-danger" onclick="confirmClearForm()">Clear Form</button>
                     </div>
                 </div>
             </div>
