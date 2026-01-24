@@ -17,8 +17,502 @@ const TTL_DAYS = 365;
 // Splunk Configuration (same as Classic UI)
 const SPLUNK_CONFIG = {
     baseUrl: 'https://myorg.splunkcloud.com',
-    correlationSearchPath: '/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit'
+    correlationSearchPath: '/en-US/app/SplunkEnterpriseSecuritySuite/correlation_search_edit',
+    dashboardPath: '/en-US/app/SplunkEnterpriseSecuritySuite/enhanced_use_case_revalidation_dashboard_copy',
+    healthDashboardPath: 'Health_dashboard',
+    useCaseFieldName: 'usecase',
+    defaultTimeEarliest: '-90d@d',
+    defaultTimeLatest: 'now',
+    popupWidth: 1400,
+    popupHeight: 900
 };
+
+// =============================================================================
+// GITHUB CONFIGURATION - Update these values for your environment
+// =============================================================================
+const GITHUB_CONFIG = {
+    // GitHub URL (github.com or Enterprise)
+    baseUrl: 'https://github.com',
+    // Repository in 'owner/repo' format
+    repo: 'threadlinqs-cmd/DE-Mainframe',
+    // Branch name
+    branch: 'main',
+    // Personal Access Token (for write operations)
+    token: '',
+    // Base path where all files live
+    basePath: 'docs',
+    // Subfolder names
+    detectionsFolder: 'detections',
+    metadataFolder: 'metadata',
+    distFolder: 'dist'
+};
+
+// Computed paths
+const PATHS = {
+    detections: GITHUB_CONFIG.basePath ? GITHUB_CONFIG.basePath + '/' + GITHUB_CONFIG.detectionsFolder : GITHUB_CONFIG.detectionsFolder,
+    metadata: GITHUB_CONFIG.basePath ? GITHUB_CONFIG.basePath + '/' + GITHUB_CONFIG.metadataFolder : GITHUB_CONFIG.metadataFolder,
+    dist: GITHUB_CONFIG.basePath ? GITHUB_CONFIG.basePath + '/' + GITHUB_CONFIG.distFolder : GITHUB_CONFIG.distFolder
+};
+
+// Security domains for name processing
+const SECURITY_DOMAINS = ['Access', 'Endpoint', 'Network', 'Threat', 'Identity', 'Audit'];
+
+// =============================================================================
+// GITHUB API CLASS
+// =============================================================================
+class GitHubAPI {
+    constructor(config) {
+        this.config = config;
+    }
+
+    getApiUrl() {
+        let base = this.config.baseUrl.replace(/\/+$/, '');
+        if (!base || base === 'https://github.com' || base === 'http://github.com') {
+            return 'https://api.github.com';
+        }
+        base = base.replace(/\/api\/v3\/?$/, '');
+        if (!base.includes('api.github.com')) {
+            return base + '/api/v3';
+        }
+        return base;
+    }
+
+    sanitizePath(path) {
+        if (!path) return '';
+        const urlMatch = path.match(/\/tree\/[^\/]+\/(.+)$/);
+        if (urlMatch) path = urlMatch[1];
+        const blobMatch = path.match(/\/blob\/[^\/]+\/(.+)$/);
+        if (blobMatch) path = blobMatch[1];
+        path = path.replace(/^https?:\/\/[^\/]+\//, '');
+        return path.replace(/^\/+|\/+$/g, '');
+    }
+
+    async request(endpoint, options, suppressErrorLog) {
+        options = options || {};
+        const apiUrl = this.getApiUrl();
+        const url = apiUrl + '/repos/' + this.config.repo + endpoint;
+
+        const headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+
+        const token = this.config.token;
+        if (token && token !== 'YOUR_GITHUB_PAT' && token.length > 10) {
+            headers['Authorization'] = 'token ' + token;
+        }
+
+        const response = await fetch(url, Object.assign({}, options, { headers: headers }));
+
+        if (!response.ok) {
+            const error = await response.json().catch(function() { return {}; });
+            if (!suppressErrorLog) {
+                console.error('GitHub API Error:', response.status, error);
+            }
+            throw new Error((error.message || 'GitHub API error') + ' (HTTP ' + response.status + ')');
+        }
+
+        return response.json();
+    }
+
+    async testConnection() {
+        try {
+            await this.request('');
+            return { success: true, message: 'Connected successfully!' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async listFiles(path) {
+        try {
+            const cleanPath = this.sanitizePath(path);
+            const data = await this.request('/contents/' + cleanPath + '?ref=' + this.config.branch);
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            if (error.message.includes('404')) return [];
+            throw error;
+        }
+    }
+
+    async getFile(path) {
+        try {
+            const cleanPath = this.sanitizePath(path);
+            const data = await this.request('/contents/' + cleanPath + '?ref=' + this.config.branch);
+            const content = atob(data.content.replace(/\n/g, ''));
+            return { content: JSON.parse(content), sha: data.sha };
+        } catch (error) {
+            if (error.message.includes('404')) return null;
+            throw error;
+        }
+    }
+
+    async getFileSha(path) {
+        const cleanPath = this.sanitizePath(path);
+        try {
+            const data = await this.request('/contents/' + cleanPath + '?ref=' + this.config.branch, {}, true);
+            return data && data.sha ? data.sha : null;
+        } catch (error) {
+            if (error.message && (error.message.includes('404') || error.message.includes('Not Found'))) {
+                return null;
+            }
+            throw error;
+        }
+    }
+
+    async createOrUpdateFile(path, content, message, sha) {
+        const cleanPath = this.sanitizePath(path);
+        const body = {
+            message: message,
+            content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+            branch: this.config.branch
+        };
+
+        if (sha) {
+            body.sha = sha;
+        }
+
+        return this.request('/contents/' + cleanPath, {
+            method: 'PUT',
+            body: JSON.stringify(body)
+        });
+    }
+
+    async deleteFile(path, message, sha) {
+        const cleanPath = this.sanitizePath(path);
+        return this.request('/contents/' + cleanPath, {
+            method: 'DELETE',
+            body: JSON.stringify({
+                message: message,
+                sha: sha,
+                branch: this.config.branch
+            })
+        });
+    }
+}
+
+// Global GitHub API instance
+let github = null;
+
+// Dynamic GitHub config (can be overridden by Settings)
+let githubConfig = {
+    baseUrl: GITHUB_CONFIG.baseUrl,
+    repo: GITHUB_CONFIG.repo,
+    branch: GITHUB_CONFIG.branch,
+    token: GITHUB_CONFIG.token,
+    detectionsPath: PATHS.detections,
+    metadataPath: PATHS.metadata,
+    connected: false
+};
+
+// Detection metadata storage
+let detectionMetadata = {};
+
+// Generate file name from detection name and domain (global version)
+function generateFileName(name, domain) {
+    if (!name) return '';
+    var prefix = '';
+    if (domain) {
+        var domainMap = {
+            'access': 'access', 'endpoint': 'endpoint', 'network': 'network',
+            'threat': 'threat', 'identity': 'identity', 'audit': 'audit',
+            'application': 'application', 'web': 'web'
+        };
+        prefix = domainMap[domain.toLowerCase()] || '';
+    }
+    var cleanName = name.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, '_');
+    var fileName = (prefix ? prefix + '_' : '') + cleanName;
+    return fileName.substring(0, 100) + '.json';
+}
+
+// Parse SPL query to extract metadata (global version)
+function parseSPL(spl) {
+    var result = {
+        indexes: [],
+        sourcetypes: [],
+        eventCodes: [],
+        macros: [],
+        lookups: [],
+        functions: []
+    };
+
+    if (!spl) return result;
+
+    // Parse indexes
+    var indexRegex = /index\s*=\s*["']?([^\s"'|]+)/gi;
+    var match;
+    while ((match = indexRegex.exec(spl)) !== null) {
+        if (result.indexes.indexOf(match[1]) === -1) {
+            result.indexes.push(match[1]);
+        }
+    }
+
+    // Parse sourcetypes
+    var sourcetypeRegex = /sourcetype\s*=\s*["']?([^\s"'|]+)/gi;
+    while ((match = sourcetypeRegex.exec(spl)) !== null) {
+        if (result.sourcetypes.indexOf(match[1]) === -1) {
+            result.sourcetypes.push(match[1]);
+        }
+    }
+
+    // Parse macros
+    var macroRegex = /`([^`(]+)(?:\([^)]*\))?`/g;
+    while ((match = macroRegex.exec(spl)) !== null) {
+        if (result.macros.indexOf(match[1]) === -1) {
+            result.macros.push(match[1]);
+        }
+    }
+
+    // Parse lookups
+    var lookupRegex = /\|\s*(?:lookup|inputlookup|outputlookup)\s+([^\s|]+)/gi;
+    while ((match = lookupRegex.exec(spl)) !== null) {
+        if (result.lookups.indexOf(match[1]) === -1) {
+            result.lookups.push(match[1]);
+        }
+    }
+
+    // Parse functions (commands after pipes)
+    var funcRegex = /\|\s*([a-z_][a-z0-9_]*)/gi;
+    while ((match = funcRegex.exec(spl)) !== null) {
+        var fn = match[1].toLowerCase();
+        if (result.functions.indexOf(fn) === -1 && fn !== 'lookup' && fn !== 'inputlookup' && fn !== 'outputlookup') {
+            result.functions.push(fn);
+        }
+    }
+
+    return result;
+}
+
+// =============================================================================
+// GITHUB OPERATION FUNCTIONS
+// =============================================================================
+
+// Generate metadata filename from detection name or detection filename
+function generateMetaFileName(name, detectionFileName) {
+    // If we have the detection's file_name, derive metadata filename from it
+    if (detectionFileName && detectionFileName.endsWith('.json')) {
+        return detectionFileName.replace(/\.json$/, '.meta.json');
+    }
+    // Fallback: generate from name
+    if (!name) return 'unnamed.meta.json';
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '.meta.json';
+}
+
+// Update sync status indicator
+function updateSyncStatus(status, text) {
+    var indicator = document.querySelector('.status-indicator');
+    var statusText = document.querySelector('.status-text');
+
+    if (indicator) {
+        indicator.classList.remove('status-connected', 'status-disconnected', 'status-syncing', 'status-error');
+        indicator.classList.add('status-' + status);
+    }
+    if (statusText) {
+        statusText.textContent = text || status;
+    }
+}
+
+// Save a detection to GitHub
+async function saveDetectionToGitHub(detection) {
+    if (!github) {
+        console.warn('GitHub not configured. Detection saved locally only.');
+        return false;
+    }
+
+    try {
+        updateSyncStatus('syncing', 'Saving...');
+
+        var detectionsPath = githubConfig.detectionsPath || PATHS.detections;
+        var filename = detection.file_name || generateFileName(detection['Detection Name'], detection['Security Domain']);
+        var path = detectionsPath + '/' + filename;
+        var message = 'Update detection: ' + detection['Detection Name'];
+
+        // Check if file exists to get SHA
+        var sha = await github.getFileSha(path);
+
+        var result = await github.createOrUpdateFile(path, detection, message, sha);
+
+        // Store SHA for future updates
+        detection._sha = result.content.sha;
+        detection._path = path;
+        detection.file_name = filename;
+
+        updateSyncStatus('connected', 'Synced');
+        return true;
+    } catch (error) {
+        updateSyncStatus('error', 'Save Error');
+        console.error('Failed to save to GitHub:', error);
+        return false;
+    }
+}
+
+// Save metadata to GitHub
+async function saveMetadataToGitHub(name, metadata, detectionFileName) {
+    if (!github) return false;
+
+    try {
+        var metadataPath = githubConfig.metadataPath || PATHS.metadata;
+        var filename = generateMetaFileName(name, detectionFileName);
+        var path = metadataPath + '/' + filename;
+        var message = 'Update metadata: ' + name;
+
+        var existing = detectionMetadata[name];
+        var sha = existing ? existing._sha : null;
+
+        // If no SHA cached, check if file exists on GitHub
+        if (!sha) {
+            sha = await github.getFileSha(path);
+        }
+
+        var metaContent = Object.assign({ detectionName: name }, metadata);
+        var result = await github.createOrUpdateFile(path, metaContent, message, sha);
+
+        // Store SHA and path for future updates
+        if (!detectionMetadata[name]) detectionMetadata[name] = {};
+        detectionMetadata[name]._sha = result.content.sha;
+        detectionMetadata[name]._path = path;
+
+        return true;
+    } catch (error) {
+        console.error('Failed to save metadata to GitHub:', error);
+        return false;
+    }
+}
+
+// Delete a detection from GitHub
+async function deleteDetectionFromGitHub(detection) {
+    if (!github) return false;
+
+    try {
+        updateSyncStatus('syncing', 'Deleting...');
+
+        // Delete detection file
+        if (detection._sha && detection._path) {
+            await github.deleteFile(detection._path, 'Delete detection: ' + detection['Detection Name'], detection._sha);
+        } else if (detection.file_name) {
+            var detectionsPath = githubConfig.detectionsPath || PATHS.detections;
+            var path = detectionsPath + '/' + detection.file_name;
+            var sha = await github.getFileSha(path);
+            if (sha) {
+                await github.deleteFile(path, 'Delete detection: ' + detection['Detection Name'], sha);
+            }
+        }
+
+        // Delete metadata file
+        var meta = detectionMetadata[detection['Detection Name']];
+        if (meta && meta._sha && meta._path) {
+            await github.deleteFile(meta._path, 'Delete metadata: ' + detection['Detection Name'], meta._sha);
+        }
+
+        updateSyncStatus('connected', 'Synced');
+        return true;
+    } catch (error) {
+        updateSyncStatus('error', 'Delete Error');
+        console.error('Failed to delete from GitHub:', error);
+        return false;
+    }
+}
+
+// Save a file to GitHub (helper for compiled files)
+async function saveFileToGitHub(path, content, message) {
+    if (!github) return false;
+
+    try {
+        var sha = await github.getFileSha(path);
+        await github.createOrUpdateFile(path, content, message, sha);
+        return true;
+    } catch (error) {
+        console.error('Failed to save file:', path, error);
+        throw error;
+    }
+}
+
+// Update compiled files in dist/ folder
+async function updateCompiledFiles(detections) {
+    if (!github) {
+        console.warn('GitHub not configured. Compiled files not updated.');
+        return;
+    }
+
+    console.log('Updating compiled files...');
+
+    try {
+        // Build compiled detections array (remove internal fields)
+        var compiledDetections = detections.map(function(d) {
+            var clean = Object.assign({}, d);
+            clean._sourceFile = clean.file_name || generateFileName(d['Detection Name'], d['Security Domain']);
+            delete clean._sha;
+            delete clean._path;
+            return clean;
+        });
+
+        // Build compiled metadata object
+        var compiledMetadata = {};
+        Object.keys(detectionMetadata).forEach(function(name) {
+            var meta = Object.assign({}, detectionMetadata[name]);
+            delete meta._sha;
+            delete meta._path;
+            compiledMetadata[name] = meta;
+        });
+
+        // Build manifest
+        var manifest = {
+            lastCompiled: new Date().toISOString(),
+            version: '1.2',
+            counts: {
+                detections: compiledDetections.length,
+                metadata: Object.keys(compiledMetadata).length
+            },
+            files: {
+                detections: compiledDetections.map(function(d) { return d._sourceFile; }),
+                metadata: Object.keys(compiledMetadata).map(function(n) { return n.replace(/[^a-zA-Z0-9_-]/g, '_') + '.meta.json'; })
+            }
+        };
+
+        var distPath = PATHS.dist;
+
+        // Save all-detections.json
+        await saveFileToGitHub(distPath + '/all-detections.json', compiledDetections, 'Update compiled detections');
+
+        // Save all-metadata.json
+        await saveFileToGitHub(distPath + '/all-metadata.json', compiledMetadata, 'Update compiled metadata');
+
+        // Save manifest.json
+        await saveFileToGitHub(distPath + '/manifest.json', manifest, 'Update manifest');
+
+        console.log('Compiled files updated successfully');
+    } catch (error) {
+        console.error('Failed to update compiled files:', error);
+        // Don't throw - individual file was saved, compiled files are secondary
+    }
+}
+
+// Parse SPL and save metadata for a detection
+function parseAndSaveMetadata(detection) {
+    var name = detection['Detection Name'];
+    if (!detectionMetadata[name]) detectionMetadata[name] = { history: [], parsed: {} };
+    detectionMetadata[name].parsed = parseSPL(detection['Search String']);
+    detectionMetadata[name].lastParsed = new Date().toISOString();
+    detectionMetadata[name].detectionName = name;
+    return detectionMetadata[name];
+}
+
+// Initialize GitHub API
+function initGitHub() {
+    if (GITHUB_CONFIG.token && GITHUB_CONFIG.token.length > 10) {
+        github = new GitHubAPI({
+            baseUrl: GITHUB_CONFIG.baseUrl,
+            repo: GITHUB_CONFIG.repo,
+            branch: GITHUB_CONFIG.branch,
+            token: GITHUB_CONFIG.token
+        });
+        githubConfig.connected = true;
+        console.log('GitHub API initialized');
+    } else {
+        console.warn('GitHub token not configured. Running in local mode.');
+        githubConfig.connected = false;
+    }
+}
 
 // Build Correlation Search Editor URL
 function buildCorrelationSearchUrl(detectionName) {
@@ -1239,6 +1733,61 @@ function buildCorrelationSearchUrl(detectionName) {
         if (modal) modal.classList.add('hidden');
     };
 
+    // Confirm delete detection
+    window.confirmDeleteDetection = async function() {
+        var d = App.state.selectedDetection;
+        if (!d) {
+            closeConfirmModal();
+            return;
+        }
+
+        closeConfirmModal();
+        updateSyncStatus('syncing', 'Deleting...');
+
+        // Delete from GitHub if connected
+        if (github) {
+            try {
+                await deleteDetectionFromGitHub(d);
+            } catch (error) {
+                console.error('GitHub delete error:', error);
+                showToast('Failed to delete from GitHub: ' + error.message, 'warning');
+            }
+        }
+
+        // Remove from local state
+        var index = App.state.detections.findIndex(function(det) {
+            return det['Detection Name'] === d['Detection Name'];
+        });
+
+        if (index >= 0) {
+            App.state.detections.splice(index, 1);
+        }
+
+        // Remove metadata
+        delete detectionMetadata[d['Detection Name']];
+
+        // Update compiled files
+        if (github) {
+            try {
+                await updateCompiledFiles(App.state.detections);
+            } catch (error) {
+                console.error('Failed to update compiled files:', error);
+            }
+        }
+
+        // Reset selected detection
+        App.state.selectedDetection = null;
+
+        // Update UI
+        App.state.filteredDetections = App.state.detections.slice();
+        App.renderLibrary();
+        document.getElementById('detail-placeholder').classList.remove('hidden');
+        document.getElementById('library-detail-content').classList.add('hidden');
+
+        updateSyncStatus('connected', 'Connected');
+        showToast('Detection deleted successfully', 'success');
+    };
+
     // Global toggle functions for onclick handlers
     window.toggleSidebar = function() {
         App.toggleSidebar();
@@ -2053,24 +2602,27 @@ function buildCorrelationSearchUrl(detectionName) {
     };
 
     // Save Detection
-    window.saveDetection = function() {
+    window.saveDetection = async function() {
         if (!validateForm()) {
-            alert('Please fix validation errors before saving.');
+            showToast('Please fix validation errors before saving.', 'error');
             return;
         }
 
         var d = getFormData();
 
         // Show saving status
-        App.updateStatus('saving');
+        updateSyncStatus('syncing', 'Saving...');
 
-        // In a real implementation, this would save to GitHub
-        // For now, we'll update the local state
+        // Update local state first
         var existingIndex = App.state.detections.findIndex(function(det) {
             return det['Detection Name'] === d['Detection Name'];
         });
 
         if (existingIndex >= 0) {
+            // Preserve internal fields from existing detection
+            var existing = App.state.detections[existingIndex];
+            if (existing._sha) d._sha = existing._sha;
+            if (existing._path) d._path = existing._path;
             App.state.detections[existingIndex] = d;
         } else {
             App.state.detections.push(d);
@@ -2079,12 +2631,36 @@ function buildCorrelationSearchUrl(detectionName) {
         editorState.currentDetection = d;
         editorState.hasUnsavedChanges = false;
 
+        // Parse and generate metadata
+        var metadata = parseAndSaveMetadata(d);
+
+        // Save to GitHub if connected
+        if (github) {
+            try {
+                // Save detection
+                var detectionSaved = await saveDetectionToGitHub(d);
+
+                // Save metadata
+                if (detectionSaved) {
+                    await saveMetadataToGitHub(d['Detection Name'], metadata, d.file_name);
+                }
+
+                // Update compiled files
+                await updateCompiledFiles(App.state.detections);
+
+                showToast('Detection saved to GitHub successfully!', 'success');
+            } catch (error) {
+                console.error('GitHub save error:', error);
+                showToast('Detection saved locally. GitHub sync failed: ' + error.message, 'warning');
+            }
+        } else {
+            showToast('Detection saved locally. Configure GitHub in Settings to sync.', 'info');
+        }
+
         // Update UI
         App.state.filteredDetections = App.state.detections.slice();
         App.renderLibrary();
-        App.updateStatus('connected');
-
-        alert('Detection saved successfully!\n\nNote: In production, this would sync to GitHub.');
+        updateSyncStatus('connected', 'Connected');
     };
 
     // =========================================================================
@@ -4723,6 +5299,9 @@ function buildCorrelationSearchUrl(detectionName) {
     // Add editor init to App init
     var originalInit = App.init;
     App.init = function() {
+        // Initialize GitHub API first (global function)
+        initGitHub();
+
         originalInit.call(this);
         initEditor();
         initMacros();
