@@ -1,0 +1,550 @@
+{
+  "name": "DE-MainFrame Function Parity Analysis",
+  "description": "Analyze the old UI implementation (app.old.js, index.old.html, styles.old.css) and ensure the new UI has all the same functionality. UI can differ but all features must work identically.",
+  "branchName": "ralph/function-parity",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Analyze GitHub Integration in Old UI",
+      "description": "As a developer, I need to understand how the old UI handles GitHub operations so I can ensure the new UI has the same capabilities.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "IMPORTANT: Files are at docs/ relative to DE-MainFrame folder",
+        "Read docs/app.old.js and document GITHUB_CONFIG structure and all GitHub-related functions",
+        "Document: fetchGitHubFile, saveDetectionToGitHub, saveMetadataToGitHub, deleteDetectionFromGitHub",
+        "Document: updateCompiledFiles, saveFileToGitHub, syncWithGitHub, checkForRemoteChanges",
+        "Document: buildApiUrl, loadGitHubConfig, migrateFileNamesToNewConvention",
+        "Note how authentication and error handling work",
+        "Create summary of all GitHub operations that new UI must support"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-002",
+      "title": "Implement GitHub Save/Load Operations in New UI",
+      "description": "As a user, I want to save and load detections from GitHub so my changes persist across sessions.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Port GITHUB_CONFIG structure to new app.js with same options",
+        "Implement fetchGitHubFile function for loading detection data",
+        "Implement saveDetectionToGitHub function for saving detections",
+        "Implement saveMetadataToGitHub function for saving metadata",
+        "Implement deleteDetectionFromGitHub function",
+        "Implement updateCompiledFiles to update dist/ folder files",
+        "Add sync status indicator to header (connected/syncing/error)",
+        "Verify: Load detections from GitHub on app init",
+        "Verify: Save detection updates to GitHub",
+        "Verify: Delete detections from GitHub",
+        "Push changes to git"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-001"]
+    },
+    {
+      "id": "US-003",
+      "title": "Analyze Splunk Integration in Old UI",
+      "description": "As a developer, I need to understand how the old UI integrates with Splunk dashboards and correlation searches.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js and document SPLUNK_CONFIG structure",
+        "Document: buildSplunkDashboardUrl, buildCorrelationSearchUrl, openSplunkPopup",
+        "Document: openSplunkDashboard, openCorrelationSearch, openHealthDashboard, openSplunkEmpty",
+        "Document: stripForRevalidation, stripForCorrelationSearch helper functions",
+        "Note popup window handling and URL parameter encoding",
+        "Create summary of all Splunk operations that new UI must support"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Splunk Integration in New UI",
+      "description": "As a user, I want to open Splunk dashboards and correlation searches directly from the detection view.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Port SPLUNK_CONFIG structure to new app.js",
+        "Implement buildSplunkDashboardUrl with proper URL encoding",
+        "Implement buildCorrelationSearchUrl function",
+        "Implement openSplunkPopup with configurable dimensions",
+        "Implement stripForRevalidation and stripForCorrelationSearch helpers",
+        "Wire up Correlation button in Library detail view",
+        "Verify: Clicking Correlation opens Splunk in popup",
+        "Verify: URL contains correct detection name parameter",
+        "Push changes to git"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-003"]
+    },
+    {
+      "id": "US-005",
+      "title": "Analyze Editor Tab in Old UI",
+      "description": "As a developer, I need to understand the complete Editor tab functionality in the old UI.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js Editor section (~lines 2700-3700)",
+        "Document: initEditor, loadDetectionIntoForm, getFormData, validateForm",
+        "Document: saveDetection flow including GitHub operations",
+        "Document: Drilldown management (addDrilldown, removeDrilldown)",
+        "Document: MITRE tag management (addMitreTag, removeMitreTag)",
+        "Document: Risk entry management functions",
+        "Document: Data source auto-population (autoPopulateDataSources)",
+        "Document: Notable field auto-population (autoPopulateNotableFields)",
+        "Document: Section collapse/expand (toggleSection)",
+        "Document: JSON view and Metadata view tabs",
+        "Create summary of all Editor features"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-006",
+      "title": "Complete Editor Tab Implementation in New UI",
+      "description": "As a user, I want full Editor functionality to create and modify detections with all form features.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Verify all form sections match old UI (Roles, Basic Info, Search, Analyst Response, Notable, Classification, Drilldowns, Test Plan)",
+        "Implement toggleSection for collapsible sections",
+        "Implement addDrilldown and removeDrilldown with proper numbering",
+        "Implement addMitreTag and removeMitreTag with validation",
+        "Implement Risk entry management (add/remove/edit risk entries)",
+        "Implement autoPopulateDataSources from SPL parsing",
+        "Implement autoPopulateNotableFields from Detection Name",
+        "Implement updateAutoFileName from Detection Name + Domain",
+        "Implement renderParsedMetadataSidebar for SPL preview",
+        "Implement JSON view tab with syntax highlighting",
+        "Implement Metadata view tab",
+        "Wire up Save button to GitHub save flow",
+        "Verify: All form fields populate correctly when loading detection",
+        "Verify: All form fields save correctly to detection object",
+        "Push changes to git"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-005", "US-002"]
+    },
+    {
+      "id": "US-007",
+      "title": "Analyze Tune/Retrofit Modals in Old UI",
+      "description": "As a developer, I need to understand how the old UI handles Tune and Retrofit workflows.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js modal functions (~lines 4796-4936)",
+        "Document: openTuneModal, submitTune, tune workflow",
+        "Document: openRetrofitModal, submitRetrofit, retrofit workflow",
+        "Document: Field multi-select (renderFieldsMultiSelect, getSelectedFields)",
+        "Document: Reason dropdown options",
+        "Document: How history entries are created (addToHistory)",
+        "Read docs/index.old.html for modal HTML structure",
+        "Create summary of Tune/Retrofit modal requirements"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Tune/Retrofit Modals in New UI",
+      "description": "As a user, I want to record Tune and Retrofit actions with proper documentation and history tracking.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add Tune modal HTML structure to docs/index.html",
+        "Add Retrofit modal HTML structure to docs/index.html",
+        "Implement openTuneModal with field multi-select",
+        "Implement submitTune with validation and history entry",
+        "Implement openRetrofitModal with field multi-select",
+        "Implement submitRetrofit with validation and history entry",
+        "Wire up Tune button in Library detail view",
+        "Wire up Retrofit button in Library detail view",
+        "Verify: Tune modal shows, fields can be selected, submission works",
+        "Verify: Retrofit modal shows, fields can be selected, submission works",
+        "Verify: History entries are created correctly",
+        "Push changes to git"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-007"]
+    },
+    {
+      "id": "US-009",
+      "title": "Analyze History Tab in Old UI",
+      "description": "As a developer, I need to understand the History tab functionality including timeline and filtering.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js History section (~lines 4072-4340)",
+        "Document: initHistory, renderHistoryDetectionList, selectHistoryDetection",
+        "Document: renderHistoryTimeline with entry grouping",
+        "Document: populateHistoryFilters (analyst, reason, field filters)",
+        "Document: getHistoryCounts for summary statistics",
+        "Document: addToHistory entry structure",
+        "Read docs/index.old.html for History tab HTML structure",
+        "Create summary of History tab requirements"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-010",
+      "title": "Implement History Tab in New UI",
+      "description": "As a user, I want to view the complete history of changes to detections with filtering and timeline view.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add History tab HTML structure to docs/index.html if missing",
+        "Implement initHistory with all event listeners",
+        "Implement renderHistoryDetectionList with search and filters",
+        "Implement selectHistoryDetection to show timeline",
+        "Implement renderHistoryTimeline with date grouping",
+        "Implement populateHistoryFilters for dynamic filter options",
+        "Implement history type tabs (All, Tunes, Retrofits, Revalidations)",
+        "Verify: History detection list renders correctly",
+        "Verify: Timeline shows entries grouped by date",
+        "Verify: Filters work correctly",
+        "Push changes to git"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-009", "US-008"]
+    },
+    {
+      "id": "US-011",
+      "title": "Analyze Reports/Dashboard Tab in Old UI",
+      "description": "As a developer, I need to understand the Reports tab with its charts and statistics.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js Reports/Dashboard section (~lines 1826-1970, 4344-4515)",
+        "Document: renderDashboard with stat cards",
+        "Document: renderSeverityChart, renderRiskChart, renderDomainChart",
+        "Document: renderDataSourcesChart, renderMitreChart",
+        "Document: renderRecentList, renderRecentTunesList, renderRecentRetrofitsList",
+        "Document: renderReports with all sub-charts",
+        "Read docs/index.old.html for Reports tab HTML structure",
+        "Create summary of Reports tab requirements"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-012",
+      "title": "Complete Reports Tab Implementation in New UI",
+      "description": "As a user, I want comprehensive reports and visualizations about my detection library.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Verify Reports tab HTML structure matches old UI",
+        "Implement renderDashboard with overview statistics",
+        "Implement renderSeverityChart (bar or pie chart)",
+        "Implement renderRiskChart (histogram)",
+        "Implement renderDomainChart (security domain distribution)",
+        "Implement renderDataSourcesChart (top data sources)",
+        "Implement renderMitreChart (MITRE coverage)",
+        "Implement renderRecentList (recently modified)",
+        "Implement renderRecentTunesList (recent tunes)",
+        "Implement renderRecentRetrofitsList (recent retrofits)",
+        "Verify: All charts render correctly with data",
+        "Verify: Statistics update when data changes",
+        "Push changes to git"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-011"]
+    },
+    {
+      "id": "US-013",
+      "title": "Analyze Settings Modal in Old UI",
+      "description": "As a developer, I need to understand the Settings modal for GitHub configuration.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js Settings section (~lines 4518-4640)",
+        "Document: initSettings, openSettingsModal",
+        "Document: testGitHubConnection for validation",
+        "Document: getSettingsFromForm, saveSettings",
+        "Document: How settings are stored (localStorage) and applied",
+        "Read docs/index.old.html for Settings modal HTML structure",
+        "Create summary of Settings requirements"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-014",
+      "title": "Implement Settings Modal in New UI",
+      "description": "As a user, I want to configure GitHub connection settings through a modal interface.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add Settings modal HTML structure to docs/index.html",
+        "Add Settings button to header or nav",
+        "Implement openSettingsModal function",
+        "Implement form fields: GitHub URL, Repo, Branch, Token, Paths",
+        "Implement testGitHubConnection with success/error feedback",
+        "Implement saveSettings to localStorage",
+        "Implement loading saved settings on app init",
+        "Verify: Settings modal opens and closes correctly",
+        "Verify: Test Connection validates GitHub access",
+        "Verify: Saved settings persist across sessions",
+        "Push changes to git"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-013", "US-002"]
+    },
+    {
+      "id": "US-015",
+      "title": "Analyze Import/Export Functions in Old UI",
+      "description": "As a developer, I need to understand the import/export functionality.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js Import/Export section (~lines 4680-4790)",
+        "Document: openImportModal, initImportModal, handleFiles",
+        "Document: File processing and validation",
+        "Document: exportAllDetections, downloadFile",
+        "Document: How imported detections are merged/added",
+        "Read docs/index.old.html for Import modal HTML structure",
+        "Create summary of Import/Export requirements"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-016",
+      "title": "Implement Import/Export Functions in New UI",
+      "description": "As a user, I want to import and export detection files for backup and sharing.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add Import modal HTML structure to docs/index.html",
+        "Add Import/Export buttons to appropriate location",
+        "Implement openImportModal function",
+        "Implement handleFiles for JSON file processing",
+        "Implement file validation and duplicate detection",
+        "Implement exportAllDetections to download all detections as JSON",
+        "Implement downloadFile utility function",
+        "Verify: Import modal accepts JSON files",
+        "Verify: Imported detections appear in library",
+        "Verify: Export downloads valid JSON file",
+        "Push changes to git"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-015"]
+    },
+    {
+      "id": "US-017",
+      "title": "Analyze Metadata Modal in Old UI",
+      "description": "As a developer, I need to understand the Metadata modal functionality.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js for metadata modal functions",
+        "Document: openMetadataModal function",
+        "Document: How metadata is displayed (parsed SPL, drilldown vars, TTL, history)",
+        "Document: Metadata refresh and copy functions",
+        "Read docs/index.old.html for Metadata modal HTML structure",
+        "Create summary of Metadata modal requirements"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-018",
+      "title": "Implement Metadata Modal in New UI",
+      "description": "As a user, I want to view detailed metadata for a detection including parsed SPL info.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add Metadata modal HTML structure to docs/index.html",
+        "Implement openMetadataModal function",
+        "Display parsed SPL info (indexes, sourcetypes, macros, lookups, etc.)",
+        "Display drilldown variables",
+        "Display TTL information",
+        "Display history summary if available",
+        "Implement metadata refresh button",
+        "Implement copy metadata button",
+        "Wire up Metadata button in Library detail view",
+        "Verify: Modal displays all metadata correctly",
+        "Push changes to git"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-017"]
+    },
+    {
+      "id": "US-019",
+      "title": "Analyze Config/Parsing Rules Tab in Old UI",
+      "description": "As a developer, I need to understand the Config tab for parsing rules management.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js Config section (~lines 3662-3710)",
+        "Document: initConfig, renderParsingRules",
+        "Document: addParsingRule, deleteParsingRule",
+        "Document: Parsing rule structure (field, value, category, tag)",
+        "Document: loadParsingRules, how rules are stored",
+        "Read docs/index.old.html for Config tab HTML structure",
+        "Create summary of Config tab requirements"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-020",
+      "title": "Implement Config/Parsing Rules Tab in New UI",
+      "description": "As a user, I want to manage custom parsing rules that tag detections based on SPL patterns.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Add Config tab HTML structure to docs/index.html if missing",
+        "Implement initConfig function",
+        "Implement renderParsingRules to display rules list",
+        "Implement addParsingRule with form fields (field, pattern, category, tag)",
+        "Implement deleteParsingRule with confirmation",
+        "Implement rule storage in localStorage",
+        "Verify: Rules list displays correctly",
+        "Verify: New rules can be added",
+        "Verify: Rules can be deleted",
+        "Push changes to git"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-019"]
+    },
+    {
+      "id": "US-021",
+      "title": "Analyze Delete Confirmation Flow in Old UI",
+      "description": "As a developer, I need to understand the delete detection confirmation workflow.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js delete functions (~lines 4936-4963)",
+        "Document: confirmDeleteDetection, showConfirm, executeConfirmAction",
+        "Document: How deletion syncs to GitHub",
+        "Document: How UI updates after deletion",
+        "Create summary of delete workflow requirements"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-022",
+      "title": "Implement Delete Confirmation Flow in New UI",
+      "description": "As a user, I want a confirmation dialog before deleting detections to prevent accidents.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Verify delete confirmation modal exists in docs/index.html",
+        "Implement confirmDeleteDetection function",
+        "Implement showConfirm utility for reusable confirmations",
+        "Implement executeConfirmAction callback handler",
+        "Implement actual deletion including GitHub sync",
+        "Update UI after deletion (remove from list, show placeholder)",
+        "Wire up Delete button in Library detail view",
+        "Verify: Confirmation modal appears before delete",
+        "Verify: Canceling does not delete",
+        "Verify: Confirming deletes and syncs to GitHub",
+        "Push changes to git"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-021", "US-002"]
+    },
+    {
+      "id": "US-023",
+      "title": "Analyze Toast Notification System in Old UI",
+      "description": "As a developer, I need to understand the toast notification implementation.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read files ONE AT A TIME sequentially",
+        "Read docs/app.old.js for showToast function",
+        "Document: Toast types (success, error, warning, info)",
+        "Document: Toast positioning and animation",
+        "Document: Auto-dismiss timing",
+        "Read docs/styles.old.css for toast CSS",
+        "Create summary of toast notification requirements"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "",
+      "dependsOn": []
+    },
+    {
+      "id": "US-024",
+      "title": "Verify Toast Notification System in New UI",
+      "description": "As a user, I want clear feedback notifications for my actions.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Do NOT make parallel tool calls - read/edit files ONE AT A TIME sequentially",
+        "Verify showToast function exists in docs/app.js",
+        "Verify toast types: success, error, warning, info",
+        "Verify toast CSS exists in docs/styles.css",
+        "Verify auto-dismiss after timeout",
+        "Test toast appears for: save success, save error, delete, import, export",
+        "Push any missing implementation to git"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "",
+      "dependsOn": ["US-023"]
+    },
+    {
+      "id": "US-025",
+      "title": "Final Integration Testing - All Features",
+      "description": "As a developer, I need to verify all features work correctly together.",
+      "acceptanceCriteria": [
+        "IMPORTANT: Perform actions ONE AT A TIME sequentially",
+        "Test complete user flow: Load Library -> Select detection -> View content",
+        "Test: Toggle Structured/JSON view",
+        "Test: Use filters and search",
+        "Test: Open Editor -> Load detection -> Modify -> Save",
+        "Test: Create new detection -> Fill form -> Save",
+        "Test: Delete detection with confirmation",
+        "Test: Open Tune modal -> Submit tune",
+        "Test: Open Retrofit modal -> Submit retrofit",
+        "Test: View History tab -> Browse timeline",
+        "Test: View Reports tab -> Check all charts",
+        "Test: Open Settings -> Configure GitHub -> Test connection",
+        "Test: Import/Export detections",
+        "Test: View Metadata modal",
+        "Verify deployment at https://threadlinqs-cmd.github.io/DE-Mainframe/",
+        "Document any remaining issues",
+        "Push final changes to git"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "",
+      "dependsOn": [
+        "US-002", "US-004", "US-006", "US-008", "US-010",
+        "US-012", "US-014", "US-016", "US-018", "US-020",
+        "US-022", "US-024"
+      ]
+    }
+  ],
+  "metadata": {
+    "updatedAt": "2026-01-24T05:00:00.000Z",
+    "workingDirectory": "C:\\Users\\HBK\\Desktop\\Detection MainFrame\\DE-MainFrame\\DE-MainFrame",
+    "projectPath": "docs/",
+    "notes": "CRITICAL: The old UI files are app.old.js, index.old.html, styles.old.css. The new UI files are app.js, index.html, styles.css. All files are in the docs/ folder. The goal is FUNCTION PARITY - the new UI can look different but must have ALL the same features as the old UI. Agents MUST NOT make parallel tool calls."
+  }
+}
