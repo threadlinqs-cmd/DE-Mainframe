@@ -641,6 +641,7 @@ function buildCorrelationSearchUrl(detectionName) {
             detections: [],
             filteredDetections: [],
             selectedDetection: null,
+            selectedFilteredOut: false,  // Track when selected detection is excluded by filters
             copyableContent: []
         },
 
@@ -1147,18 +1148,49 @@ function buildCorrelationSearchUrl(detectionName) {
             });
 
             // Check if selected detection is still in filtered list (US-005)
-            // If not, keep showing the content but remove highlight from list
-            // This matches old UI behavior - selected content remains visible
+            // If not, keep showing the content but add visual indicator
+            var wasFilteredOut = this.state.selectedFilteredOut;
             if (this.state.selectedDetection) {
                 var selectedName = this.state.selectedDetection['Detection Name'];
                 var stillInList = this.state.filteredDetections.some(function(d) {
                     return d['Detection Name'] === selectedName;
                 });
-                // Selection is maintained even if filtered out - content stays visible
-                // The renderLibrary will not show highlight since detection is not in filteredDetections
+                this.state.selectedFilteredOut = !stillInList;
+
+                // Re-render detail panel if filtered-out state changed to show/hide indicator
+                if (wasFilteredOut !== this.state.selectedFilteredOut) {
+                    this.renderDetailPanel(this.state.selectedDetection);
+                }
+            } else {
+                this.state.selectedFilteredOut = false;
             }
 
             this.renderLibrary();
+        },
+
+        // Clear all filters and show all detections
+        clearFilters: function() {
+            // Reset search input
+            var searchInput = document.getElementById('library-search-input');
+            if (searchInput) searchInput.value = '';
+
+            // Reset all filter dropdowns
+            var filterIds = ['filter-severity', 'filter-status', 'filter-domain', 'filter-datasource', 'filter-mitre', 'filter-origin'];
+            filterIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            // Clear the filtered-out state
+            this.state.selectedFilteredOut = false;
+
+            // Re-apply filters (which will now show all detections)
+            this.applyFilters();
+
+            // Re-render detail panel to remove the filtered-out banner
+            if (this.state.selectedDetection) {
+                this.renderDetailPanel(this.state.selectedDetection);
+            }
         },
 
         // Get detection status
@@ -1223,18 +1255,26 @@ function buildCorrelationSearchUrl(detectionName) {
             if (!detection) return;
 
             this.state.selectedDetection = detection;
+            // Reset filtered-out state since user is selecting from visible list
+            this.state.selectedFilteredOut = false;
             this.renderLibrary();
             this.renderDetailPanel(detection);
 
-            // Scroll detail body to top
-            var detailBody = document.querySelector('.library-main');
+            // Scroll content panel to top - both outer container and inner detail body
+            // The detail-body has its own overflow-y: auto so we must scroll it too
+            var libraryMain = document.querySelector('.library-main');
+            if (libraryMain) libraryMain.scrollTop = 0;
+            var detailBody = document.getElementById('library-detail-body');
             if (detailBody) detailBody.scrollTop = 0;
 
-            // Scroll the selected item into view in the list (US-004)
-            var selectedItem = document.querySelector('.library-list-item.selected');
-            if (selectedItem) {
-                selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
+            // Scroll the selected item into view in the list after DOM update
+            // Use requestAnimationFrame to ensure the DOM has been painted
+            requestAnimationFrame(function() {
+                var selectedItem = document.querySelector('.library-list-item.selected');
+                if (selectedItem) {
+                    selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            });
         },
 
         // Render detail panel
@@ -1250,8 +1290,13 @@ function buildCorrelationSearchUrl(detectionName) {
             var ttl = calculateTTL(d['Last Modified']);
             if (ttl.days <= 30) {
                 var ttlClass = getTTLClass(ttl.days);
-                var ttlMsg = ttl.days <= 0 ? '⚠️ TTL EXPIRED - Revalidation required' : '⏰ TTL: ' + ttl.days + ' days remaining';
+                var ttlMsg = ttl.days <= 0 ? 'TTL EXPIRED - Revalidation required' : 'TTL: ' + ttl.days + ' days remaining';
                 html += '<div class="ttl-banner ' + ttlClass + '">' + ttlMsg + '</div>';
+            }
+
+            // Filtered-out notice banner (US-005)
+            if (this.state.selectedFilteredOut) {
+                html += '<div class="filtered-out-banner">This detection is not in the current filtered results. <a href="#" onclick="MainframeApp.clearFilters(); return false;">Clear filters</a> to see it in the list.</div>';
             }
 
             // Header Section
@@ -1431,9 +1476,9 @@ function buildCorrelationSearchUrl(detectionName) {
             // Drilldowns Section (US-007: Filter out empty drilldowns)
             var drilldowns = this.getDrilldowns(d);
             var drilldownVarsData = parseDrilldownVariables(d);
-            // Filter out drilldowns with no name
+            // Filter out drilldowns that don't have both name AND search populated
             var validDrilldowns = drilldowns.filter(function(dd) {
-                return dd.name && dd.name.trim();
+                return dd.name && dd.name.trim() && dd.search && dd.search.trim();
             });
             var self = this;
             if (validDrilldowns.length > 0) {
@@ -1526,10 +1571,10 @@ function buildCorrelationSearchUrl(detectionName) {
 
             document.getElementById('library-detail-body').innerHTML = html;
 
-            // Populate JSON view
+            // Populate JSON view with syntax highlighting
             var jsonView = document.getElementById('detail-json-view');
             if (jsonView) {
-                jsonView.innerHTML = '<pre class="json-display">' + escapeHtml(JSON.stringify(d, null, 2)) + '</pre>';
+                jsonView.innerHTML = '<pre class="json-display">' + syntaxHighlightJSON(JSON.stringify(d, null, 2)) + '</pre>';
             }
 
             // Reset view toggle to structured
@@ -1681,6 +1726,28 @@ function buildCorrelationSearchUrl(detectionName) {
         } catch (e) {
             return dateStr;
         }
+    }
+
+    function syntaxHighlightJSON(json) {
+        // Escape HTML first
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        // Apply syntax highlighting
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+            var cls = 'json-number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'json-key';
+                } else {
+                    cls = 'json-string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
     }
 
     function calculateTTL(lastModified) {
