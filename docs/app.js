@@ -798,13 +798,11 @@ function buildCorrelationSearchUrl(detectionName) {
             });
 
             document.getElementById('btn-detail-tune')?.addEventListener('click', function() {
-                alert('Tune functionality - redirecting to Classic UI');
-                window.location.href = '../';
+                openTuneModal();
             });
 
             document.getElementById('btn-detail-retrofit')?.addEventListener('click', function() {
-                alert('Retrofit functionality - redirecting to Classic UI');
-                window.location.href = '../';
+                openRetrofitModal();
             });
 
             document.getElementById('btn-detail-metadata')?.addEventListener('click', function() {
@@ -1877,6 +1875,286 @@ function buildCorrelationSearchUrl(detectionName) {
         showToast('Detection deleted successfully', 'success');
     };
 
+    // =========================================================================
+    // TUNE/RETROFIT MODAL FUNCTIONS
+    // =========================================================================
+
+    // Pending tune/retrofit data
+    var pendingTune = null;
+    var pendingRetrofit = null;
+
+    // Open Tune Modal
+    window.openTuneModal = function() {
+        var d = App.state.selectedDetection;
+        if (!d) {
+            showToast('Please select a detection first', 'warning');
+            return;
+        }
+
+        // Set detection name
+        var nameEl = document.getElementById('tune-detection-name');
+        if (nameEl) nameEl.textContent = d['Detection Name'];
+
+        // Reset form
+        document.getElementById('tune-jira').value = '';
+        document.getElementById('tune-analyst').value = '';
+        document.getElementById('tune-description').value = '';
+        document.getElementById('tune-reason').value = '';
+
+        // Render fields multi-select
+        renderFieldsMultiSelect('tune-fields-list', d);
+
+        // Show modal
+        document.getElementById('modal-tune').classList.remove('hidden');
+    };
+
+    // Close Tune Modal
+    window.closeTuneModal = function() {
+        document.getElementById('modal-tune').classList.add('hidden');
+        pendingTune = null;
+    };
+
+    // Submit Tune - stores data and opens editor
+    window.submitTune = function() {
+        var d = App.state.selectedDetection;
+        if (!d) return;
+
+        var jira = document.getElementById('tune-jira').value.trim();
+        var analyst = document.getElementById('tune-analyst').value.trim();
+        var description = document.getElementById('tune-description').value.trim();
+        var reason = document.getElementById('tune-reason').value;
+        var fieldsToUpdate = getSelectedFields('tune-fields-list');
+
+        if (!analyst) {
+            showToast('Please enter analyst name', 'warning');
+            return;
+        }
+
+        if (!reason) {
+            showToast('Please select a reason', 'warning');
+            return;
+        }
+
+        // Store pending tune data
+        pendingTune = {
+            detectionName: d['Detection Name'],
+            jira: jira,
+            analyst: analyst,
+            description: description,
+            reason: reason,
+            fieldsToUpdate: fieldsToUpdate,
+            oldData: JSON.stringify(d),
+            timestamp: new Date().toISOString()
+        };
+
+        // Close modal and load into editor
+        document.getElementById('modal-tune').classList.add('hidden');
+
+        // Switch to Editor tab and load detection
+        switchTab('editor');
+        loadDetectionIntoForm(d);
+
+        showToast('Make your changes and save. Tune will be recorded in history.', 'info');
+    };
+
+    // Open Retrofit Modal
+    window.openRetrofitModal = function() {
+        var d = App.state.selectedDetection;
+        if (!d) {
+            showToast('Please select a detection first', 'warning');
+            return;
+        }
+
+        // Set detection name
+        var nameEl = document.getElementById('retrofit-detection-name');
+        if (nameEl) nameEl.textContent = d['Detection Name'];
+
+        // Reset form
+        document.getElementById('retrofit-jira').value = '';
+        document.getElementById('retrofit-analyst').value = '';
+        document.getElementById('retrofit-description').value = '';
+        document.getElementById('retrofit-type').value = '';
+
+        // Render fields multi-select
+        renderFieldsMultiSelect('retrofit-fields-list', d);
+
+        // Show modal
+        document.getElementById('modal-retrofit').classList.remove('hidden');
+    };
+
+    // Close Retrofit Modal
+    window.closeRetrofitModal = function() {
+        document.getElementById('modal-retrofit').classList.add('hidden');
+        pendingRetrofit = null;
+    };
+
+    // Submit Retrofit - stores data and opens editor
+    window.submitRetrofit = function() {
+        var d = App.state.selectedDetection;
+        if (!d) return;
+
+        var jira = document.getElementById('retrofit-jira').value.trim();
+        var analyst = document.getElementById('retrofit-analyst').value.trim();
+        var description = document.getElementById('retrofit-description').value.trim();
+        var retrofitType = document.getElementById('retrofit-type').value;
+        var fieldsToUpdate = getSelectedFields('retrofit-fields-list');
+
+        if (!analyst) {
+            showToast('Please enter analyst name', 'warning');
+            return;
+        }
+
+        if (!retrofitType) {
+            showToast('Please select a retrofit type', 'warning');
+            return;
+        }
+
+        // Store pending retrofit data
+        pendingRetrofit = {
+            detectionName: d['Detection Name'],
+            jira: jira,
+            analyst: analyst,
+            description: description,
+            type: retrofitType,
+            fieldsToUpdate: fieldsToUpdate,
+            oldData: JSON.stringify(d),
+            timestamp: new Date().toISOString()
+        };
+
+        // Close modal and load into editor
+        document.getElementById('modal-retrofit').classList.add('hidden');
+
+        // Switch to Editor tab and load detection
+        switchTab('editor');
+        loadDetectionIntoForm(d);
+
+        showToast('Make your changes and save. Retrofit will be recorded in history.', 'info');
+    };
+
+    // Render fields multi-select for tune/retrofit modals
+    function renderFieldsMultiSelect(containerId, detection) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+
+        var fields = [
+            'Detection Name', 'Description', 'Objective', 'Assumptions',
+            'Severity/Priority', 'Security Domain', 'Search String',
+            'Required_Data_Sources', 'Cron Schedule', 'Trigger Condition',
+            'Throttling', 'Risk', 'Notable Title', 'Notable Description',
+            'Analyst Next Steps', 'Blind_Spots_False_Positives',
+            'Mitre ID', 'Drilldowns', 'Roles', 'Proposed Test Plan'
+        ];
+
+        var html = fields.map(function(field) {
+            var hasValue = detection && hasFieldValue(detection, field);
+            var statusClass = hasValue ? 'has-value' : 'no-value';
+            var statusIcon = hasValue ? '✓' : '○';
+
+            return '<label class="field-checkbox ' + statusClass + '">' +
+                '<input type="checkbox" value="' + escapeAttr(field) + '"> ' +
+                '<span class="field-status">' + statusIcon + '</span> ' +
+                escapeHtml(field) +
+            '</label>';
+        }).join('');
+
+        container.innerHTML = html;
+    }
+
+    // Check if a field has a value
+    function hasFieldValue(d, field) {
+        if (field === 'Drilldowns') {
+            return d['Drilldown Name (Legacy)'] || d['Drilldown Name 1'];
+        }
+        if (field === 'Throttling') {
+            var t = d['Throttling'];
+            return t && (t.enabled || t.fields);
+        }
+        if (field === 'Risk') {
+            return d['Risk'] && d['Risk'].length > 0 && d['Risk'][0].risk_object_field;
+        }
+        if (field === 'Mitre ID') {
+            return d['Mitre ID'] && d['Mitre ID'].length > 0;
+        }
+        if (field === 'Roles') {
+            return d['Roles'] && d['Roles'].some(function(r) { return r.Name && r.Name.trim(); });
+        }
+        var val = d[field];
+        return val && val !== '';
+    }
+
+    // Get selected fields from multi-select
+    function getSelectedFields(containerId) {
+        var container = document.getElementById(containerId);
+        if (!container) return [];
+
+        var checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(function(cb) { return cb.value; });
+    }
+
+    // Add entry to history
+    function addToHistory(detectionName, type, description, oldData, analyst, fieldsChanged) {
+        // Get existing history from localStorage
+        var historyKey = 'de_mainframe_history';
+        var history = JSON.parse(localStorage.getItem(historyKey) || '{}');
+
+        if (!history[detectionName]) {
+            history[detectionName] = [];
+        }
+
+        var entry = {
+            id: Date.now(),
+            type: type,
+            description: description,
+            timestamp: new Date().toISOString(),
+            oldData: oldData,
+            analyst: analyst || 'Unknown',
+            fieldsChanged: fieldsChanged || []
+        };
+
+        history[detectionName].push(entry);
+
+        // Save back to localStorage
+        localStorage.setItem(historyKey, JSON.stringify(history));
+
+        return entry;
+    }
+
+    // Get history for a detection
+    window.getDetectionHistory = function(detectionName) {
+        var historyKey = 'de_mainframe_history';
+        var history = JSON.parse(localStorage.getItem(historyKey) || '{}');
+        return history[detectionName] || [];
+    };
+
+    // Clear pending tune/retrofit after save
+    function clearPendingTuneRetrofit() {
+        if (pendingTune) {
+            addToHistory(
+                pendingTune.detectionName,
+                'tune',
+                pendingTune.description || 'Tuned detection - ' + pendingTune.reason,
+                pendingTune.oldData,
+                pendingTune.analyst,
+                pendingTune.fieldsToUpdate
+            );
+            showToast('Tune recorded in history', 'success');
+            pendingTune = null;
+        }
+
+        if (pendingRetrofit) {
+            addToHistory(
+                pendingRetrofit.detectionName,
+                'retrofit',
+                pendingRetrofit.description || 'Retrofitted detection - ' + pendingRetrofit.type,
+                pendingRetrofit.oldData,
+                pendingRetrofit.analyst,
+                pendingRetrofit.fieldsToUpdate
+            );
+            showToast('Retrofit recorded in history', 'success');
+            pendingRetrofit = null;
+        }
+    }
+
     // Global toggle functions for onclick handlers
     window.toggleSidebar = function() {
         App.toggleSidebar();
@@ -2738,12 +3016,16 @@ function buildCorrelationSearchUrl(detectionName) {
                 await updateCompiledFiles(App.state.detections);
 
                 showToast('Detection saved to GitHub successfully!', 'success');
+                // Record pending tune/retrofit to history
+                clearPendingTuneRetrofit();
             } catch (error) {
                 console.error('GitHub save error:', error);
                 showToast('Detection saved locally. GitHub sync failed: ' + error.message, 'warning');
             }
         } else {
             showToast('Detection saved locally. Configure GitHub in Settings to sync.', 'info');
+            // Record pending tune/retrofit to history
+            clearPendingTuneRetrofit();
         }
 
         // Update UI

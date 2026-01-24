@@ -1142,6 +1142,111 @@
                 </div>
             </div>
 
+            <!-- Tune Modal -->
+            <div id="modal-tune" class="modal hidden">
+                <div class="modal-overlay" onclick="closeTuneModal()"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🔧 Record Tuning</h3>
+                        <button class="modal-close" onclick="closeTuneModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-detection-label">Detection: <strong id="tune-detection-name"></strong></p>
+                        <div class="form-row two-col">
+                            <div class="form-group">
+                                <label>JIRA Issue <span class="required">*</span></label>
+                                <div class="jira-input-wrapper">
+                                    <span class="jira-prefix">MRDP-</span>
+                                    <input type="text" id="tune-jira" maxlength="4" pattern="[0-9]{4}" placeholder="1234" class="form-input jira-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Analyst Name <span class="required">*</span></label>
+                                <input type="text" id="tune-analyst" class="form-input" placeholder="Your name">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>What was tuned? <span class="required">*</span></label>
+                            <textarea id="tune-description" class="form-textarea" rows="3" placeholder="Describe the tuning changes..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Reason</label>
+                            <select id="tune-reason" class="form-select">
+                                <option value="">Select...</option>
+                                <option value="false_positives">Reduce False Positives</option>
+                                <option value="performance">Performance Optimization</option>
+                                <option value="coverage">Expand Coverage</option>
+                                <option value="threshold">Adjust Threshold</option>
+                                <option value="data_source">Data Source Change</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fields to Update</label>
+                            <div class="fields-list" id="tune-fields-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeTuneModal()">Cancel</button>
+                        <button class="btn-action btn-primary" onclick="submitTune()">Continue to Editor</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Retrofit Modal -->
+            <div id="modal-retrofit" class="modal hidden">
+                <div class="modal-overlay" onclick="closeRetrofitModal()"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>⚡ Record Retrofit</h3>
+                        <button class="modal-close" onclick="closeRetrofitModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-detection-label">Detection: <strong id="retrofit-detection-name"></strong></p>
+                        <div class="form-row two-col">
+                            <div class="form-group">
+                                <label>JIRA Issue <span class="required">*</span></label>
+                                <div class="jira-input-wrapper">
+                                    <span class="jira-prefix">MRDP-</span>
+                                    <input type="text" id="retrofit-jira" maxlength="4" pattern="[0-9]{4}" placeholder="1234" class="form-input jira-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Analyst Name <span class="required">*</span></label>
+                                <input type="text" id="retrofit-analyst" class="form-input" placeholder="Your name">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>What was retrofitted? <span class="required">*</span></label>
+                            <textarea id="retrofit-description" class="form-textarea" rows="3" placeholder="Describe the retrofit changes..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="retrofit-type" class="form-select">
+                                <option value="schema">Schema Update</option>
+                                <option value="metadata">Metadata Addition</option>
+                                <option value="mitre">MITRE Mapping</option>
+                                <option value="drilldown">Drilldown Addition</option>
+                                <option value="documentation">Documentation</option>
+                                <option value="revalidation">Annual Revalidation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fields to Update</label>
+                            <div class="fields-list" id="retrofit-fields-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action" onclick="closeRetrofitModal()">Cancel</button>
+                        <button class="btn-action btn-primary" onclick="submitRetrofit()">Continue to Editor</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Add/Edit Resource Modal -->
             <div id="modal-resource" class="modal hidden">
                 <div class="modal-overlay" onclick="closeResourceModal()"></div>
