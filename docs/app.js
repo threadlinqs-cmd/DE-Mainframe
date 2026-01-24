@@ -4022,6 +4022,14 @@ function buildCorrelationSearchUrl(detectionName) {
             return;
         }
 
+        // Create a map of detections for quick lookup
+        var detectionMap = {};
+        App.state.detections.forEach(function(d) {
+            if (d['Detection Name']) {
+                detectionMap[d['Detection Name']] = d;
+            }
+        });
+
         App.state.detections.forEach(function(d) {
             var detectionName = d['Detection Name'] || 'Unnamed';
             var severity = d['Severity/Priority'] || '';
@@ -4080,6 +4088,29 @@ function buildCorrelationSearchUrl(detectionName) {
                     }
                 }
             }
+        });
+
+        // Add entries from localStorage (tune/retrofit history)
+        var localHistory = JSON.parse(localStorage.getItem('de_mainframe_history') || '{}');
+        Object.keys(localHistory).forEach(function(detectionName) {
+            var entries = localHistory[detectionName] || [];
+            var detection = detectionMap[detectionName];
+            var severity = detection ? (detection['Severity/Priority'] || '') : '';
+
+            entries.forEach(function(entry) {
+                var entryType = entry.type === 'tune' ? 'tuned' : (entry.type === 'retrofit' ? 'retrofitted' : entry.type);
+                historyState.entries.push({
+                    detectionName: detectionName,
+                    type: entryType,
+                    date: new Date(entry.timestamp),
+                    timestamp: entry.timestamp,
+                    analyst: entry.analyst || 'Unknown',
+                    severity: severity,
+                    detection: detection,
+                    description: entry.description,
+                    fieldsChanged: entry.fieldsChanged
+                });
+            });
         });
 
         // Sort entries by date (newest first)
@@ -4304,11 +4335,17 @@ function buildCorrelationSearchUrl(detectionName) {
                 html += '<span class="timeline-entry-name">' + escapeHtml(entry.detectionName) + '</span>';
                 html += '<span class="timeline-entry-type ' + entry.type + '">' + typeLabel + '</span>';
                 html += '</div>';
+                if (entry.description) {
+                    html += '<div class="timeline-entry-desc">' + escapeHtml(entry.description) + '</div>';
+                }
                 html += '<div class="timeline-entry-meta">';
                 html += '<span class="timeline-entry-time">' + timeStr + '</span>';
                 html += '<span class="timeline-entry-analyst"><span class="timeline-entry-analyst-icon">👤</span>' + escapeHtml(entry.analyst) + '</span>';
                 if (entry.severity) {
                     html += '<span class="timeline-entry-severity"><span class="severity-badge ' + sevClass + '">' + escapeHtml(entry.severity) + '</span></span>';
+                }
+                if (entry.fieldsChanged && entry.fieldsChanged.length > 0) {
+                    html += '<span class="timeline-entry-fields">Fields: ' + escapeHtml(entry.fieldsChanged.join(', ')) + '</span>';
                 }
                 html += '</div>';
                 html += '</div>';

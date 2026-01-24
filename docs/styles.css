@@ -3422,6 +3422,24 @@ pre code {
     margin-left: auto;
 }
 
+.timeline-entry-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 6px 0;
+    padding: 6px 10px;
+    background: var(--color-bg-tertiary);
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.timeline-entry-fields {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    background: var(--color-bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
 /* Empty State */
 .history-empty-state {
     display: flex;
