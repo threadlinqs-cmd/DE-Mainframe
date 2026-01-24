@@ -132,6 +132,10 @@
                             </div>
                             <div id="library-detail-content" class="library-detail-content hidden">
                                 <div class="detail-header">
+                                    <div class="view-toggle" id="detail-view-toggle">
+                                        <button class="view-toggle-btn active" data-view="structured">Structured</button>
+                                        <button class="view-toggle-btn" data-view="json">JSON</button>
+                                    </div>
                                     <div class="detail-actions">
                                         <button id="btn-detail-correlation" class="btn-action" title="Edit Correlation Search in Splunk">Correlation</button>
                                         <button id="btn-detail-tune" class="btn-action" title="Record Tuning">Tune</button>
@@ -142,6 +146,7 @@
                                     </div>
                                 </div>
                                 <div id="library-detail-body" class="detail-body"></div>
+                                <div id="detail-json-view" class="detail-body hidden"></div>
                             </div>
                         </div>
                     </div>
@@ -1025,17 +1030,14 @@
 
             <!-- Macro Modal -->
             <div id="modal-macro" class="modal hidden">
-                <div class="modal-overlay"></div>
+                <div class="modal-overlay" onclick="closeMacroModal()"></div>
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 id="macro-modal-title">Macro Details</h3>
                         <button class="modal-close" onclick="closeMacroModal()">×</button>
                     </div>
-                    <div class="modal-body">
-                        <div id="macro-modal-content">
-                            <p class="macro-name"><code id="macro-name-display"></code></p>
-                            <p class="macro-hint">This macro is used in the detection's search logic.</p>
-                        </div>
+                    <div class="modal-body" id="macro-modal-content">
+                        <!-- Content injected by JS -->
                     </div>
                     <div class="modal-footer">
                         <button class="btn-action" onclick="closeMacroModal()">Close</button>

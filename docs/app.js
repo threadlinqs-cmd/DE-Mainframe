@@ -222,6 +222,29 @@ function buildCorrelationSearchUrl(detectionName) {
                 if (modal) modal.classList.remove('hidden');
             });
 
+            // View toggle buttons (Structured/JSON)
+            document.querySelectorAll('#detail-view-toggle .view-toggle-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    // Update active state
+                    document.querySelectorAll('#detail-view-toggle .view-toggle-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+
+                    // Toggle visibility
+                    var structuredView = document.getElementById('library-detail-body');
+                    var jsonView = document.getElementById('detail-json-view');
+
+                    if (btn.dataset.view === 'json') {
+                        if (structuredView) structuredView.classList.add('hidden');
+                        if (jsonView) jsonView.classList.remove('hidden');
+                    } else {
+                        if (structuredView) structuredView.classList.remove('hidden');
+                        if (jsonView) jsonView.classList.add('hidden');
+                    }
+                });
+            });
+
             // Modal overlays
             document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
                 overlay.addEventListener('click', function() {
@@ -583,6 +606,10 @@ function buildCorrelationSearchUrl(detectionName) {
             this.state.selectedDetection = detection;
             this.renderLibrary();
             this.renderDetailPanel(detection);
+
+            // Scroll detail body to top
+            var detailBody = document.querySelector('.library-main');
+            if (detailBody) detailBody.scrollTop = 0;
         },
 
         // Render detail panel
@@ -779,6 +806,24 @@ function buildCorrelationSearchUrl(detectionName) {
             html += '</div>';
 
             document.getElementById('library-detail-body').innerHTML = html;
+
+            // Populate JSON view
+            var jsonView = document.getElementById('detail-json-view');
+            if (jsonView) {
+                jsonView.innerHTML = '<pre class="json-display">' + escapeHtml(JSON.stringify(d, null, 2)) + '</pre>';
+            }
+
+            // Reset view toggle to structured
+            var toggleBtns = document.querySelectorAll('#detail-view-toggle .view-toggle-btn');
+            toggleBtns.forEach(function(btn) {
+                if (btn.dataset.view === 'structured') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            document.getElementById('library-detail-body').classList.remove('hidden');
+            if (jsonView) jsonView.classList.add('hidden');
         },
 
         // Get drilldowns from detection
@@ -1025,11 +1070,47 @@ function buildCorrelationSearchUrl(detectionName) {
 
     window.openMacroModal = function(macroName) {
         var modal = document.getElementById('modal-macro');
-        var nameDisplay = document.getElementById('macro-name-display');
-        if (modal && nameDisplay) {
-            nameDisplay.textContent = '`' + macroName + '`';
-            modal.classList.remove('hidden');
+        var titleEl = document.getElementById('macro-modal-title');
+        var contentEl = document.getElementById('macro-modal-content');
+
+        if (!modal || !titleEl || !contentEl) return;
+
+        // Look up the macro from macrosState
+        var macro = null;
+        if (typeof macrosState !== 'undefined' && macrosState.macros) {
+            macro = macrosState.macros.find(function(m) {
+                return m.name === macroName;
+            });
         }
+
+        if (!macro) {
+            titleEl.innerHTML = '<code>`' + escapeHtml(macroName) + '`</code>';
+            contentEl.innerHTML = '<p class="macro-not-found">Macro not found in macros list.</p><p class="macro-hint">This macro is used in the detection\'s search logic but is not defined in the macros configuration.</p>';
+        } else {
+            titleEl.innerHTML = '<code>`' + escapeHtml(macroName) + '`</code>';
+
+            var html = '<div class="macro-detail-fields">';
+            html += '<div class="macro-detail-field"><label>Definition</label>';
+            html += '<pre class="macro-definition">' + escapeHtml(macro.definition || 'No definition') + '</pre></div>';
+            html += '<div class="macro-detail-field"><label>Description</label>';
+            html += '<p>' + escapeHtml(macro.description || 'No description') + '</p></div>';
+            if (macro.arguments && macro.arguments.length) {
+                html += '<div class="macro-detail-field"><label>Arguments</label>';
+                var args = Array.isArray(macro.arguments) ? macro.arguments.join(', ') : macro.arguments;
+                html += '<code>' + escapeHtml(args) + '</code></div>';
+            }
+            if (macro.usageCount !== undefined) {
+                html += '<div class="macro-detail-field"><label>Usage</label>';
+                html += '<span class="macro-usage-count">' + macro.usageCount + ' detection' + (macro.usageCount !== 1 ? 's' : '') + '</span></div>';
+            }
+            if (macro.deprecated) {
+                html += '<div class="macro-detail-field"><span class="macro-deprecated-badge">Deprecated</span></div>';
+            }
+            html += '</div>';
+            contentEl.innerHTML = html;
+        }
+
+        modal.classList.remove('hidden');
     };
 
     window.closeMacroModal = function() {
