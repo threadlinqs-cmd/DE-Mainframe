@@ -810,8 +810,14 @@ function buildCorrelationSearchUrl(detectionName) {
             });
 
             document.getElementById('btn-detail-edit')?.addEventListener('click', function() {
-                alert('Edit functionality - redirecting to Classic UI');
-                window.location.href = '../';
+                var d = self.state.selectedDetection;
+                if (!d) {
+                    showToast('Please select a detection first', 'warning');
+                    return;
+                }
+                // Switch to Editor tab and load detection
+                switchTab('editor');
+                loadDetectionIntoForm(d);
             });
 
             document.getElementById('btn-detail-delete')?.addEventListener('click', function() {
@@ -3960,8 +3966,8 @@ function buildCorrelationSearchUrl(detectionName) {
         );
     };
 
-    // Simple toast notification
-    function showToast(message, type) {
+    // Simple toast notification (global)
+    window.showToast = function showToast(message, type) {
         // Create toast element if it doesn't exist
         var toast = document.getElementById('toast-notification');
         if (!toast) {
