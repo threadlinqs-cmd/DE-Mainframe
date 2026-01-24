@@ -2276,6 +2276,19 @@ function buildCorrelationSearchUrl(detectionName) {
         };
     }
 
+    // Format date/time helper
+    function formatDateTime(dateStr) {
+        if (!dateStr) return 'N/A';
+        var date = new Date(dateStr);
+        // Use absolute timestamp format: DD/MM/YYYY HH:MM
+        var day = String(date.getDate()).padStart(2, '0');
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var year = date.getFullYear();
+        var hours = String(date.getHours()).padStart(2, '0');
+        var minutes = String(date.getMinutes()).padStart(2, '0');
+        return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes;
+    }
+
     // Create New Detection
     window.createNewDetection = function() {
         editorState.currentDetection = JSON.parse(JSON.stringify(DETECTION_TEMPLATE));
@@ -5366,14 +5379,19 @@ function buildCorrelationSearchUrl(detectionName) {
 
         var html = '';
         rules.forEach(function(rule) {
+            if (!rule) return; // Skip invalid rules
+            var ruleName = rule.name || 'Unnamed';
+            var rulePattern = rule.pattern || rule.value || '';
+            var ruleField = rule.field || '';
+            var displayPattern = rulePattern.length > 30 ? rulePattern.substring(0, 30) + '...' : rulePattern;
             html += '<tr>';
-            html += '<td>' + escapeHtml(rule.name) + '</td>';
-            html += '<td><code>' + escapeHtml(rule.pattern.substring(0, 30) + (rule.pattern.length > 30 ? '...' : '')) + '</code></td>';
-            html += '<td>' + escapeHtml(rule.field) + '</td>';
-            html += '<td><input type="checkbox" ' + (rule.enabled ? 'checked' : '') + ' onchange="toggleParsingRule(\'' + rule.id + '\', this.checked)"></td>';
+            html += '<td>' + escapeHtml(ruleName) + '</td>';
+            html += '<td><code>' + escapeHtml(displayPattern) + '</code></td>';
+            html += '<td>' + escapeHtml(ruleField) + '</td>';
+            html += '<td><input type="checkbox" ' + (rule.enabled ? 'checked' : '') + ' onchange="toggleParsingRule(\'' + (rule.id || '') + '\', this.checked)"></td>';
             html += '<td class="rule-actions">';
-            html += '<button class="btn-icon" onclick="editParsingRule(\'' + rule.id + '\')" title="Edit">&#x270E;</button>';
-            html += '<button class="btn-icon delete" onclick="deleteParsingRule(\'' + rule.id + '\')" title="Delete">&#x2715;</button>';
+            html += '<button class="btn-icon" onclick="editParsingRule(\'' + (rule.id || '') + '\')" title="Edit">&#x270E;</button>';
+            html += '<button class="btn-icon delete" onclick="deleteParsingRule(\'' + (rule.id || '') + '\')" title="Delete">&#x2715;</button>';
             html += '</td>';
             html += '</tr>';
         });
