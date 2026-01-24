@@ -3988,6 +3988,104 @@ pre code {
     font-size: 13px;
 }
 
+/* Risk Stats Row */
+.risk-stats-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.risk-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--color-bg-tertiary);
+    border-radius: 8px;
+}
+
+.risk-stat-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+}
+
+.bar-chart-bar.risk-bar {
+    background: var(--color-warning);
+}
+
+/* Recent Activity Row */
+.reports-recent-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.recent-section {
+    min-height: 180px;
+}
+
+.recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.recent-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--color-bg-tertiary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.recent-list-item:hover {
+    background: var(--color-bg-quaternary);
+}
+
+.recent-list-item.tuned {
+    border-left: 3px solid var(--color-warning);
+}
+
+.recent-list-item.retrofitted {
+    border-left: 3px solid var(--color-info);
+}
+
+.recent-list-name {
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+}
+
+.recent-list-date {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+}
+
+.recent-list-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
 /* Reports Responsive */
 @media (max-width: 1200px) {
     .reports-stats-row {
@@ -3999,6 +4097,10 @@ pre code {
     }
 
     .reports-metadata-row {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-recent-row {
         grid-template-columns: 1fr;
     }
 }

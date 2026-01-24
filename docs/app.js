@@ -4792,6 +4792,8 @@ function buildCorrelationSearchUrl(detectionName) {
         renderDatasourceChart(detections);
         renderMitreCoverage(detections);
         renderMetadataStats(detections);
+        renderRiskChart(detections);
+        renderRecentLists(detections);
     }
 
     // Render Stats Cards
@@ -5030,6 +5032,161 @@ function buildCorrelationSearchUrl(detectionName) {
     function updateElementText(id, text) {
         var el = document.getElementById(id);
         if (el) el.textContent = text;
+    }
+
+    // Render Risk Score Distribution Chart
+    function renderRiskChart(detections) {
+        var container = document.getElementById('chart-risk-distribution');
+        if (!container) return;
+
+        // Create buckets for risk scores (0-9, 10-19, ..., 90-100)
+        var buckets = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var labels = ['0-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80-89', '90-100'];
+
+        detections.forEach(function(d) {
+            var risk = getRiskScore(d);
+            var bucket = Math.min(Math.floor(risk / 10), 9);
+            buckets[bucket]++;
+        });
+
+        var maxCount = Math.max.apply(null, buckets.concat([1]));
+        var html = '';
+
+        labels.forEach(function(label, i) {
+            var count = buckets[i];
+            var percentage = (count / maxCount) * 100;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label">' + label + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar risk-bar" style="width: ' + percentage + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html || '<div class="chart-empty">No risk data</div>';
+
+        // Update risk statistics
+        var riskSum = 0;
+        var maxRisk = 0;
+        var minRisk = 100;
+        detections.forEach(function(d) {
+            var risk = getRiskScore(d);
+            riskSum += risk;
+            if (risk > maxRisk) maxRisk = risk;
+            if (risk < minRisk && risk > 0) minRisk = risk;
+        });
+        var avgRisk = detections.length ? Math.round(riskSum / detections.length) : 0;
+
+        updateElementText('risk-stat-avg', avgRisk);
+        updateElementText('risk-stat-max', maxRisk);
+        updateElementText('risk-stat-min', minRisk < 100 ? minRisk : 0);
+    }
+
+    // Render Recent Activity Lists
+    function renderRecentLists(detections) {
+        renderRecentModifications(detections);
+        renderRecentTunes();
+        renderRecentRetrofits();
+    }
+
+    // Render Recent Modifications
+    function renderRecentModifications(detections) {
+        var container = document.getElementById('list-recent-modifications');
+        if (!container) return;
+
+        var sorted = detections.filter(function(d) {
+            return d['Last Modified'];
+        }).sort(function(a, b) {
+            return new Date(b['Last Modified']) - new Date(a['Last Modified']);
+        }).slice(0, 5);
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="recent-list-empty">No recent modifications</div>';
+            return;
+        }
+
+        var html = '';
+        sorted.forEach(function(d) {
+            var detectionName = d['Detection Name'] || 'Unnamed';
+            html += '<div class="recent-list-item" onclick="viewDetectionFromHistory(\'' + escapeAttr(detectionName) + '\')">';
+            html += '<span class="recent-list-name">' + escapeHtml(detectionName) + '</span>';
+            html += '<span class="recent-list-date">' + formatDateTime(d['Last Modified']) + '</span>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Recent Tunes
+    function renderRecentTunes() {
+        var container = document.getElementById('list-recent-tunes');
+        if (!container) return;
+
+        var localHistory = JSON.parse(localStorage.getItem('de_mainframe_history') || '{}');
+        var tunes = [];
+
+        Object.keys(localHistory).forEach(function(name) {
+            (localHistory[name] || []).filter(function(h) {
+                return h.type === 'tune';
+            }).forEach(function(h) {
+                tunes.push({ name: name, timestamp: h.timestamp, analyst: h.analyst });
+            });
+        });
+
+        tunes.sort(function(a, b) {
+            return new Date(b.timestamp) - new Date(a.timestamp);
+        });
+
+        if (tunes.length === 0) {
+            container.innerHTML = '<div class="recent-list-empty">No recent tunes</div>';
+            return;
+        }
+
+        var html = '';
+        tunes.slice(0, 5).forEach(function(t) {
+            html += '<div class="recent-list-item tuned" onclick="viewDetectionFromHistory(\'' + escapeAttr(t.name) + '\')">';
+            html += '<span class="recent-list-name">' + escapeHtml(t.name) + '</span>';
+            html += '<span class="recent-list-date">' + formatDateTime(t.timestamp) + '</span>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Recent Retrofits
+    function renderRecentRetrofits() {
+        var container = document.getElementById('list-recent-retrofits');
+        if (!container) return;
+
+        var localHistory = JSON.parse(localStorage.getItem('de_mainframe_history') || '{}');
+        var retrofits = [];
+
+        Object.keys(localHistory).forEach(function(name) {
+            (localHistory[name] || []).filter(function(h) {
+                return h.type === 'retrofit';
+            }).forEach(function(h) {
+                retrofits.push({ name: name, timestamp: h.timestamp, analyst: h.analyst });
+            });
+        });
+
+        retrofits.sort(function(a, b) {
+            return new Date(b.timestamp) - new Date(a.timestamp);
+        });
+
+        if (retrofits.length === 0) {
+            container.innerHTML = '<div class="recent-list-empty">No recent retrofits</div>';
+            return;
+        }
+
+        var html = '';
+        retrofits.slice(0, 5).forEach(function(r) {
+            html += '<div class="recent-list-item retrofitted" onclick="viewDetectionFromHistory(\'' + escapeAttr(r.name) + '\')">';
+            html += '<span class="recent-list-name">' + escapeHtml(r.name) + '</span>';
+            html += '<span class="recent-list-date">' + formatDateTime(r.timestamp) + '</span>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
     }
 
     // =========================================================================
