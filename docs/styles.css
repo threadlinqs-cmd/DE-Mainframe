@@ -28,6 +28,10 @@
     --color-status-connected: #4a4a4a;
     --color-status-disconnected: #999999;
 
+    /* Accent color - for interactive highlights */
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+
     /* Code block - only place with accent color */
     --color-code-bg: #282c34;
     --color-code-text: #abb2bf;
@@ -65,6 +69,10 @@
     /* Status colors - muted */
     --color-status-connected: #b0b0b0;
     --color-status-disconnected: #666666;
+
+    /* Accent color - for interactive highlights */
+    --color-accent: #3b82f6;
+    --color-accent-hover: #2563eb;
 
     /* Code block - same in both themes */
     --color-code-bg: #282c34;
@@ -759,6 +767,10 @@ pre code {
     opacity: 0.5;
 }
 
+.detail-placeholder.hidden {
+    display: none;
+}
+
 /* Detail Content */
 .library-detail-content {
     height: 100%;
@@ -782,8 +794,25 @@ pre code {
 
 .detail-actions {
     display: flex;
-    gap: 8px;
+    gap: 16px;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Action Groups (US-008) */
+.action-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.action-group.view-actions {
+    padding-right: 12px;
+    border-right: 1px solid var(--color-border);
+}
+
+.action-group.edit-actions {
+    /* Edit actions on the right */
 }
 
 /* View Toggle (Structured/JSON) */

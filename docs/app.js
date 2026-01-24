@@ -539,6 +539,18 @@ function buildCorrelationSearchUrl(detectionName) {
                 return true;
             });
 
+            // Check if selected detection is still in filtered list (US-005)
+            // If not, keep showing the content but remove highlight from list
+            // This matches old UI behavior - selected content remains visible
+            if (this.state.selectedDetection) {
+                var selectedName = this.state.selectedDetection['Detection Name'];
+                var stillInList = this.state.filteredDetections.some(function(d) {
+                    return d['Detection Name'] === selectedName;
+                });
+                // Selection is maintained even if filtered out - content stays visible
+                // The renderLibrary will not show highlight since detection is not in filteredDetections
+            }
+
             this.renderLibrary();
         },
 
@@ -584,7 +596,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
                 html += '<div class="library-list-item' + (isSelected ? ' selected' : '') + '" onclick="selectDetection(\'' + escapeAttr(name) + '\')">';
                 html += '<div class="library-list-item-header">';
-                html += '<span class="library-list-item-name">' + escapeHtml(name) + '</span>';
+                html += '<span class="library-list-item-name" title="' + escapeAttr(name) + '">' + escapeHtml(name) + '</span>';
                 html += '<span class="severity-badge ' + sev + '">' + (sev || 'N/A') + '</span>';
                 html += '</div>';
                 html += '<div class="library-list-item-meta">';
@@ -610,6 +622,12 @@ function buildCorrelationSearchUrl(detectionName) {
             // Scroll detail body to top
             var detailBody = document.querySelector('.library-main');
             if (detailBody) detailBody.scrollTop = 0;
+
+            // Scroll the selected item into view in the list (US-004)
+            var selectedItem = document.querySelector('.library-list-item.selected');
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
         },
 
         // Render detail panel
@@ -769,13 +787,17 @@ function buildCorrelationSearchUrl(detectionName) {
                 html += '</div></div>';
             }
 
-            // Drilldowns Section
+            // Drilldowns Section (US-007: Filter out empty drilldowns)
             var drilldowns = this.getDrilldowns(d);
-            if (drilldowns.length > 0) {
+            // Filter out drilldowns with no search content
+            var validDrilldowns = drilldowns.filter(function(dd) {
+                return dd.name && dd.name.trim();
+            });
+            if (validDrilldowns.length > 0) {
                 html += '<div class="doc-section">';
                 html += '<h3 class="doc-section-title">Drilldowns</h3>';
                 html += '<div class="doc-drilldowns">';
-                drilldowns.forEach(function(dd) {
+                validDrilldowns.forEach(function(dd) {
                     html += '<div class="doc-drilldown">';
                     html += '<div class="drilldown-header">';
                     html += '<span class="drilldown-name">' + escapeHtml(dd.name) + '</span>';
@@ -783,7 +805,10 @@ function buildCorrelationSearchUrl(detectionName) {
                         html += '<span class="drilldown-time">' + escapeHtml(dd.earliest || '') + ' to ' + escapeHtml(dd.latest || '') + '</span>';
                     }
                     html += '</div>';
-                    html += '<div class="drilldown-search">' + escapeHtml(dd.search) + '</div>';
+                    // Only show search if it has content
+                    if (dd.search && dd.search.trim()) {
+                        html += '<div class="drilldown-search">' + escapeHtml(dd.search) + '</div>';
+                    }
                     html += '</div>';
                 });
                 html += '</div></div>';

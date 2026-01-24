@@ -137,12 +137,18 @@
                                         <button class="view-toggle-btn" data-view="json">JSON</button>
                                     </div>
                                     <div class="detail-actions">
-                                        <button id="btn-detail-correlation" class="btn-action" title="Edit Correlation Search in Splunk">Correlation</button>
-                                        <button id="btn-detail-tune" class="btn-action" title="Record Tuning">Tune</button>
-                                        <button id="btn-detail-retrofit" class="btn-action" title="Record Retrofit">Retrofit</button>
-                                        <button id="btn-detail-metadata" class="btn-action" title="View Metadata">Metadata</button>
-                                        <button id="btn-detail-edit" class="btn-action btn-primary" title="Edit Detection">Edit</button>
-                                        <button id="btn-detail-delete" class="btn-action btn-danger" title="Delete Detection">Delete</button>
+                                        <!-- View Actions Group -->
+                                        <div class="action-group view-actions">
+                                            <button id="btn-detail-correlation" class="btn-action" title="Edit Correlation Search in Splunk">Correlation</button>
+                                            <button id="btn-detail-metadata" class="btn-action" title="View Metadata">Metadata</button>
+                                        </div>
+                                        <!-- Edit Actions Group -->
+                                        <div class="action-group edit-actions">
+                                            <button id="btn-detail-tune" class="btn-action" title="Record Tuning">Tune</button>
+                                            <button id="btn-detail-retrofit" class="btn-action" title="Record Retrofit">Retrofit</button>
+                                            <button id="btn-detail-edit" class="btn-action btn-primary" title="Edit Detection">Edit</button>
+                                            <button id="btn-detail-delete" class="btn-action btn-danger" title="Delete Detection">Delete</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="library-detail-body" class="detail-body"></div>
