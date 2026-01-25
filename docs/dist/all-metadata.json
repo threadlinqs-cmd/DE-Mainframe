@@ -67,9 +67,7 @@
     },
     "lastParsed": "2026-01-22T19:46:22.324Z",
     "needsTune": false,
-    "needsRetrofit": false,
-    "_sha": "7972a70381e9a78dc0efcdba1ca1be3c6eb48598",
-    "_path": "docs/metadata/azure_active_directory_high_risk_sign_in_meta.json"
+    "needsRetrofit": false
   },
   "M365 Copilot Agentic Jailbreak Attack": {
     "detectionName": "M365 Copilot Agentic Jailbreak Attack",
@@ -131,9 +129,7 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-22T19:18:20.501Z",
-    "_sha": "6988011ac8ec34d0cd2fd70a07fddc84cb584cc4",
-    "_path": "docs/metadata/m365_copilot_agentic_jailbreak_attack_meta.json"
+    "lastParsed": "2026-01-22T19:18:20.501Z"
   },
   "M365 Copilot Application Usage Pattern Anomalies": {
     "detectionName": "M365 Copilot Application Usage Pattern Anomalies",
@@ -186,9 +182,7 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-22T19:29:05.330Z",
-    "_sha": "69852d30cf9e69d690178827176ba50f4634bc85",
-    "_path": "docs/metadata/m365_copilot_application_usage_pattern_anomalies_meta.json"
+    "lastParsed": "2026-01-22T19:29:05.330Z"
   },
   "M365 Copilot Failed Authentication Patterns": {
     "detectionName": "M365 Copilot Failed Authentication Patterns",
@@ -239,9 +233,7 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-22T19:29:03.960Z",
-    "_sha": "8218761e90c92ce9b127f73628e1fc522c9ba1b9",
-    "_path": "docs/metadata/m365_copilot_failed_authentication_patterns_meta.json"
+    "lastParsed": "2026-01-22T19:29:03.960Z"
   },
   "ProxyShell ProxyNotShell Behavior Detected": {
     "history": [],
@@ -294,9 +286,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:09.721Z",
-    "detectionName": "ProxyShell ProxyNotShell Behavior Detected",
-    "_sha": "7c9bbd87489d2c3f1c87bfc2c6da0af0a2ce4be0",
-    "_path": "docs/metadata/proxyshell_proxynotshell_behavior_detected_meta.json"
+    "detectionName": "ProxyShell ProxyNotShell Behavior Detected"
   },
   "Spring4Shell Payload URL Request": {
     "history": [],
@@ -346,9 +336,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:10.970Z",
-    "detectionName": "Spring4Shell Payload URL Request",
-    "_sha": "bfce66d5563fce528e0496367fe07efa51ca6d4d",
-    "_path": "docs/metadata/spring4shell_payload_url_request_meta.json"
+    "detectionName": "Spring4Shell Payload URL Request"
   },
   "SQL Injection with Long URLs": {
     "history": [],
@@ -393,9 +381,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:12.415Z",
-    "detectionName": "SQL Injection with Long URLs",
-    "_sha": "011b411a08bc970cc82df846f9cf403b7e9f5480",
-    "_path": "docs/metadata/sql_injection_with_long_urls_meta.json"
+    "detectionName": "SQL Injection with Long URLs"
   },
   "M365 Copilot Impersonation Jailbreak Attack": {
     "history": [],
@@ -447,9 +433,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:13.665Z",
-    "detectionName": "M365 Copilot Impersonation Jailbreak Attack",
-    "_sha": "58e70e2410f1a91838740da72ba77f1a0ee698ee",
-    "_path": "docs/metadata/m365_copilot_impersonation_jailbreak_attack_meta.json"
+    "detectionName": "M365 Copilot Impersonation Jailbreak Attack"
   },
   "M365 Copilot Information Extraction Jailbreak Attack": {
     "history": [],
@@ -512,9 +496,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:14.879Z",
-    "detectionName": "M365 Copilot Information Extraction Jailbreak Attack",
-    "_sha": "83e6ac7527015493b4d48f18954e402d5c6af407",
-    "_path": "docs/metadata/m365_copilot_information_extraction_jailbreak_attack_meta.json"
+    "detectionName": "M365 Copilot Information Extraction Jailbreak Attack"
   },
   "M365 Copilot Jailbreak Attempts": {
     "history": [],
@@ -567,9 +549,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:16.086Z",
-    "detectionName": "M365 Copilot Jailbreak Attempts",
-    "_sha": "30ff3fa59c3591ed38acb642d2abdfc4378e739a",
-    "_path": "docs/metadata/m365_copilot_jailbreak_attempts_meta.json"
+    "detectionName": "M365 Copilot Jailbreak Attempts"
   },
   "M365 Copilot Non Compliant Devices Accessing M365 Copilot": {
     "history": [],
@@ -623,9 +603,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:17.366Z",
-    "detectionName": "M365 Copilot Non Compliant Devices Accessing M365 Copilot",
-    "_sha": "8afd51e8c4ce40f92559c893d488b73a8ac07fa1",
-    "_path": "docs/metadata/m365_copilot_non_compliant_devices_accessing_m365_copilot_meta.json"
+    "detectionName": "M365 Copilot Non Compliant Devices Accessing M365 Copilot"
   },
   "M365 Copilot Session Origin Anomalies": {
     "history": [],
@@ -676,9 +654,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:18.681Z",
-    "detectionName": "M365 Copilot Session Origin Anomalies",
-    "_sha": "74bf602cf0ca8020f3449a9177e95f13fcf920f0",
-    "_path": "docs/metadata/m365_copilot_session_origin_anomalies_meta.json"
+    "detectionName": "M365 Copilot Session Origin Anomalies"
   },
   "Zoom High Video Latency": {
     "history": [],
@@ -731,9 +707,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:19.886Z",
-    "detectionName": "Zoom High Video Latency",
-    "_sha": "059477f2dbbe6741043f8d50675477ace5cd8579",
-    "_path": "docs/metadata/zoom_high_video_latency_meta.json"
+    "detectionName": "Zoom High Video Latency"
   },
   "Zoom Rare Audio Devices": {
     "history": [],
@@ -766,9 +740,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:21.172Z",
-    "detectionName": "Zoom Rare Audio Devices",
-    "_sha": "d9a1a4a2867530f4979b17ff7c111c98596d1c53",
-    "_path": "docs/metadata/zoom_rare_audio_devices_meta.json"
+    "detectionName": "Zoom Rare Audio Devices"
   },
   "Azure AD Admin Consent Bypassed by Service Principal": {
     "history": [],
@@ -844,9 +816,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:23.085Z",
-    "detectionName": "Azure AD Admin Consent Bypassed by Service Principal",
-    "_sha": "883138c156afa5563a655f12f6a8df01145e48d8",
-    "_path": "docs/metadata/azure_ad_admin_consent_bypassed_by_service_principal_meta.json"
+    "detectionName": "Azure AD Admin Consent Bypassed by Service Principal"
   },
   "Azure AD Application Administrator Role Assigned": {
     "history": [],
@@ -909,9 +879,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:24.325Z",
-    "detectionName": "Azure AD Application Administrator Role Assigned",
-    "_sha": "9707358a2d3ad132eb8346f47eaaa86c675f998e",
-    "_path": "docs/metadata/azure_ad_application_administrator_role_assigned_meta.json"
+    "detectionName": "Azure AD Application Administrator Role Assigned"
   },
   "Azure AD Authentication Failed During MFA Challenge": {
     "history": [],
@@ -982,9 +950,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:25.509Z",
-    "detectionName": "Azure AD Authentication Failed During MFA Challenge",
-    "_sha": "15e15c47611020b3ace6ad1b877ce76322be9f54",
-    "_path": "docs/metadata/azure_ad_authentication_failed_during_mfa_challenge_meta.json"
+    "detectionName": "Azure AD Authentication Failed During MFA Challenge"
   },
   "Azure AD AzureHound UserAgent Detected": {
     "history": [],
@@ -1049,9 +1015,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:26.968Z",
-    "detectionName": "Azure AD AzureHound UserAgent Detected",
-    "_sha": "a57fb7f71baea8a0eaaa0de9b3ed90d15d44b3e3",
-    "_path": "docs/metadata/azure_ad_azurehound_useragent_detected_meta.json"
+    "detectionName": "Azure AD AzureHound UserAgent Detected"
   },
   "Azure AD Block User Consent For Risky Apps Disabled": {
     "history": [],
@@ -1115,9 +1079,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:28.165Z",
-    "detectionName": "Azure AD Block User Consent For Risky Apps Disabled",
-    "_sha": "09aace4b893821393fa46560ca9ac91ed0550825",
-    "_path": "docs/metadata/azure_ad_block_user_consent_for_risky_apps_disabled_meta.json"
+    "detectionName": "Azure AD Block User Consent For Risky Apps Disabled"
   },
   "Azure AD Concurrent Sessions From Different Ips": {
     "history": [],
@@ -1176,9 +1138,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:29.303Z",
-    "detectionName": "Azure AD Concurrent Sessions From Different Ips",
-    "_sha": "8f748bd09772b0b381c496b50ee3867c73f211e4",
-    "_path": "docs/metadata/azure_ad_concurrent_sessions_from_different_ips_meta.json"
+    "detectionName": "Azure AD Concurrent Sessions From Different Ips"
   },
   "Azure AD Device Code Authentication": {
     "history": [],
@@ -1241,9 +1201,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:30.582Z",
-    "detectionName": "Azure AD Device Code Authentication",
-    "_sha": "c46e1a09bbb9b9f3c61847cd4c71de195567cc0c",
-    "_path": "docs/metadata/azure_ad_device_code_authentication_meta.json"
+    "detectionName": "Azure AD Device Code Authentication"
   },
   "Azure AD External Guest User Invited": {
     "history": [],
@@ -1308,9 +1266,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:32.354Z",
-    "detectionName": "Azure AD External Guest User Invited",
-    "_sha": "232339604491509163cfedcfa6cafa385e320528",
-    "_path": "docs/metadata/azure_ad_external_guest_user_invited_meta.json"
+    "detectionName": "Azure AD External Guest User Invited"
   },
   "Azure AD FullAccessAsApp Permission Assigned": {
     "history": [],
@@ -1380,9 +1336,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:33.485Z",
-    "detectionName": "Azure AD FullAccessAsApp Permission Assigned",
-    "_sha": "939cef8d202ddd5207e3b1d303c042bdbd973ed4",
-    "_path": "docs/metadata/azure_ad_fullaccessasapp_permission_assigned_meta.json"
+    "detectionName": "Azure AD FullAccessAsApp Permission Assigned"
   },
   "7zip CommandLine To SMB Share Path": {
     "history": [],
@@ -1430,9 +1384,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:34.589Z",
-    "detectionName": "7zip CommandLine To SMB Share Path",
-    "_sha": "00b95d8227440e53a072a2f540e001d41defdb57",
-    "_path": "docs/metadata/7zip_commandline_to_smb_share_path_meta.json"
+    "detectionName": "7zip CommandLine To SMB Share Path"
   },
   "Access LSASS Memory for Dump Creation": {
     "history": [],
@@ -1546,9 +1498,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:35.875Z",
-    "detectionName": "Access LSASS Memory for Dump Creation",
-    "_sha": "6f6f09939cc00336fff0a91e638a58b0cb73e7f1",
-    "_path": "docs/metadata/access_lsass_memory_for_dump_creation_meta.json"
+    "detectionName": "Access LSASS Memory for Dump Creation"
   },
   "Active Setup Registry Autostart": {
     "history": [],
@@ -1605,9 +1555,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:37.321Z",
-    "detectionName": "Active Setup Registry Autostart",
-    "_sha": "0f854f39ad2c38127ffac1bb01d1b06582794e60",
-    "_path": "docs/metadata/active_setup_registry_autostart_meta.json"
+    "detectionName": "Active Setup Registry Autostart"
   },
   "Add DefaultUser And Password In Registry": {
     "history": [],
@@ -1661,9 +1609,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:38.463Z",
-    "detectionName": "Add DefaultUser And Password In Registry",
-    "_sha": "e7df74af2e28eb4d81929463766b6312a962a24d",
-    "_path": "docs/metadata/add_defaultuser_and_password_in_registry_meta.json"
+    "detectionName": "Add DefaultUser And Password In Registry"
   },
   "AdsiSearcher Account Discovery": {
     "history": [],
@@ -1743,9 +1689,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:39.672Z",
-    "detectionName": "AdsiSearcher Account Discovery",
-    "_sha": "2a3890588d14e7a7050b9008b0d97443b371ac60",
-    "_path": "docs/metadata/adsisearcher_account_discovery_meta.json"
+    "detectionName": "AdsiSearcher Account Discovery"
   },
   "Attacker Tools On Endpoint": {
     "history": [],
@@ -1804,9 +1748,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:41.048Z",
-    "detectionName": "Attacker Tools On Endpoint",
-    "_sha": "56e729c61989022387f45a9ff01d501fcedb07c4",
-    "_path": "docs/metadata/attacker_tools_on_endpoint_meta.json"
+    "detectionName": "Attacker Tools On Endpoint"
   },
   "Attempt To Add Certificate To Untrusted Store": {
     "history": [],
@@ -1864,9 +1806,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:42.340Z",
-    "detectionName": "Attempt To Add Certificate To Untrusted Store",
-    "_sha": "db8c61ecd2b9afb695ae14b1134550af417a1ec8",
-    "_path": "docs/metadata/attempt_to_add_certificate_to_untrusted_store_meta.json"
+    "detectionName": "Attempt To Add Certificate To Untrusted Store"
   },
   "Auto Admin Logon Registry Entry": {
     "history": [],
@@ -1920,9 +1860,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:43.514Z",
-    "detectionName": "Auto Admin Logon Registry Entry",
-    "_sha": "e56dd4e44ed165ee23e9e55273cd5f9dc971d39f",
-    "_path": "docs/metadata/auto_admin_logon_registry_entry_meta.json"
+    "detectionName": "Auto Admin Logon Registry Entry"
   },
   "Batch File Write to System32": {
     "history": [],
@@ -1979,9 +1917,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:44.588Z",
-    "detectionName": "Batch File Write to System32",
-    "_sha": "0f13f625dcb1644aaa6652f8e90ed2fc43d6ab0b",
-    "_path": "docs/metadata/batch_file_write_to_system32_meta.json"
+    "detectionName": "Batch File Write to System32"
   },
   "BCDEdit Failure Recovery Modification": {
     "history": [],
@@ -2038,9 +1974,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:45.752Z",
-    "detectionName": "BCDEdit Failure Recovery Modification",
-    "_sha": "4d43e67eabbd13966953c389f1380f4a1e4a641e",
-    "_path": "docs/metadata/bcdedit_failure_recovery_modification_meta.json"
+    "detectionName": "BCDEdit Failure Recovery Modification"
   },
   "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging": {
     "history": [],
@@ -2099,9 +2033,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:46.898Z",
-    "detectionName": "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging",
-    "_sha": "ddaa6ca3d19d68beaeb4b1922812675e0b8cc91a",
-    "_path": "docs/metadata/t1055_003_process_injection_browser_process_injection_to_enable_remote_debugging_meta.json"
+    "detectionName": "T1055.003 – Process Injection - Browser Process Injection to Enable Remote Debugging"
   },
   "Detect Windows DNS SIGRed via Splunk Stream": {
     "history": [],
@@ -2137,9 +2069,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:48.175Z",
-    "detectionName": "Detect Windows DNS SIGRed via Splunk Stream",
-    "_sha": "c197d7e71adf9a24ad083e2a3fd56a9311077409",
-    "_path": "docs/metadata/detect_windows_dns_sigred_via_splunk_stream_meta.json"
+    "detectionName": "Detect Windows DNS SIGRed via Splunk Stream"
   },
   "Detect Windows DNS SIGRed via Zeek": {
     "history": [],
@@ -2182,9 +2112,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:49.297Z",
-    "detectionName": "Detect Windows DNS SIGRed via Zeek",
-    "_sha": "fb1c645083d35410348399690e2097d19d1572af",
-    "_path": "docs/metadata/detect_windows_dns_sigred_via_zeek_meta.json"
+    "detectionName": "Detect Windows DNS SIGRed via Zeek"
   },
   "Windows Abused Web Services": {
     "history": [],
@@ -2273,9 +2201,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:50.439Z",
-    "detectionName": "Windows Abused Web Services",
-    "_sha": "16b6f72e6461652a1693d21a10a5cdd7093827c2",
-    "_path": "docs/metadata/windows_abused_web_services_meta.json"
+    "detectionName": "Windows Abused Web Services"
   },
   "Windows AD Replication Service Traffic": {
     "history": [],
@@ -2317,9 +2243,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:51.548Z",
-    "detectionName": "Windows AD Replication Service Traffic",
-    "_sha": "bce1a30a0e97b75e070a3418491ce505e1fd3c6b",
-    "_path": "docs/metadata/windows_ad_replication_service_traffic_meta.json"
+    "detectionName": "Windows AD Replication Service Traffic"
   },
   "Windows AD Rogue Domain Controller Network Activity": {
     "history": [],
@@ -2360,9 +2284,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:52.771Z",
-    "detectionName": "Windows AD Rogue Domain Controller Network Activity",
-    "_sha": "44c37d9ed649c18a349070a18485ea5b564dfcbc",
-    "_path": "docs/metadata/windows_ad_rogue_domain_controller_network_activity_meta.json"
+    "detectionName": "Windows AD Rogue Domain Controller Network Activity"
   },
   "Windows DNS Query Request by Telegram Bot API": {
     "history": [],
@@ -2451,9 +2373,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:53.947Z",
-    "detectionName": "Windows DNS Query Request by Telegram Bot API",
-    "_sha": "63cd42d5671ea10138cc074f33e3765b9567d713",
-    "_path": "docs/metadata/windows_dns_query_request_by_telegram_bot_api_meta.json"
+    "detectionName": "Windows DNS Query Request by Telegram Bot API"
   },
   "Windows Gather Victim Network Info Through Ip Check Web Services": {
     "history": [],
@@ -2542,9 +2462,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:55.031Z",
-    "detectionName": "Windows Gather Victim Network Info Through Ip Check Web Services",
-    "_sha": "9211a44e4e90934ed21b9279a92ce1071ca3b1a1",
-    "_path": "docs/metadata/windows_gather_victim_network_info_through_ip_check_web_services_meta.json"
+    "detectionName": "Windows Gather Victim Network Info Through Ip Check Web Services"
   },
   "Windows Multi hop Proxy TOR Website Query": {
     "history": [],
@@ -2633,9 +2551,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:56.151Z",
-    "detectionName": "Windows Multi hop Proxy TOR Website Query",
-    "_sha": "a35058b0d3559029d538556d84b0b5380817b011",
-    "_path": "docs/metadata/windows_multi_hop_proxy_tor_website_query_meta.json"
+    "detectionName": "Windows Multi hop Proxy TOR Website Query"
   },
   "Windows Remote Desktop Network Bruteforce Attempt": {
     "history": [],
@@ -2688,9 +2604,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:46:57.441Z",
-    "detectionName": "Windows Remote Desktop Network Bruteforce Attempt",
-    "_sha": "3115505864b10b1ff26cc1a4fe792c4cb57bdc43",
-    "_path": "docs/metadata/windows_remote_desktop_network_bruteforce_attempt_meta.json"
+    "detectionName": "Windows Remote Desktop Network Bruteforce Attempt"
   },
   "Windows Spearphishing Attachment Connect To None MS Office Domain": {
     "history": [],
@@ -2772,9 +2686,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:58.571Z",
-    "detectionName": "Windows Spearphishing Attachment Connect To None MS Office Domain",
-    "_sha": "7f3716feae43165cec9474ca228f5577bcaf21a4",
-    "_path": "docs/metadata/windows_spearphishing_attachment_connect_to_none_ms_office_domain_meta.json"
+    "detectionName": "Windows Spearphishing Attachment Connect To None MS Office Domain"
   },
   "Citrix ADC Exploitation CVE-2023-3519": {
     "history": [],
@@ -2815,9 +2727,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:46:59.668Z",
-    "detectionName": "Citrix ADC Exploitation CVE-2023-3519",
-    "_sha": "56cb7e74e8d54dce7c19d2b30f1933256c68023d",
-    "_path": "docs/metadata/citrix_adc_exploitation_cve_2023_3519_meta.json"
+    "detectionName": "Citrix ADC Exploitation CVE-2023-3519"
   },
   "Detect F5 TMUI RCE CVE-2020-5902": {
     "history": [],
@@ -2848,9 +2758,7 @@
       "allDrilldownVars": []
     },
     "lastParsed": "2026-01-22T19:47:00.892Z",
-    "detectionName": "Detect F5 TMUI RCE CVE-2020-5902",
-    "_sha": "7f133f214eecf3ae808031c25f251eeb7cecdf13",
-    "_path": "docs/metadata/detect_f5_tmui_rce_cve_2020_5902_meta.json"
+    "detectionName": "Detect F5 TMUI RCE CVE-2020-5902"
   },
   "Fortinet Appliance Auth bypass": {
     "history": [],
@@ -2900,9 +2808,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:47:02.295Z",
-    "detectionName": "Fortinet Appliance Auth bypass",
-    "_sha": "6d9c69f1c1c6855fd3eb615ae499c09172ed8fb9",
-    "_path": "docs/metadata/fortinet_appliance_auth_bypass_meta.json"
+    "detectionName": "Fortinet Appliance Auth bypass"
   },
   "Jenkins Arbitrary File Read CVE-2024-23897": {
     "history": [],
@@ -2952,9 +2858,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:47:03.442Z",
-    "detectionName": "Jenkins Arbitrary File Read CVE-2024-23897",
-    "_sha": "f89dd270da92d587b4358b3eee7995691812be58",
-    "_path": "docs/metadata/jenkins_arbitrary_file_read_cve_2024_23897_meta.json"
+    "detectionName": "Jenkins Arbitrary File Read CVE-2024-23897"
   },
   "Web JSP Request via URL": {
     "history": [],
@@ -3004,9 +2908,7 @@
       ]
     },
     "lastParsed": "2026-01-22T19:47:04.638Z",
-    "detectionName": "Web JSP Request via URL",
-    "_sha": "b6363545330cd93dec8818ebcf0cf3bbd973fb51",
-    "_path": "docs/metadata/web_jsp_request_via_url_meta.json"
+    "detectionName": "Web JSP Request via URL"
   },
   "Log4Shell JNDI Payload Injection Attempt": {
     "history": [],
@@ -3080,8 +2982,39 @@
       ]
     },
     "lastParsed": "2026-01-22T19:47:05.890Z",
-    "detectionName": "Log4Shell JNDI Payload Injection Attempt",
-    "_sha": "a3729d9dbfca3f668306edabda653d95766e7691",
-    "_path": "docs/metadata/log4shell_jndi_payload_injection_attempt_meta.json"
+    "detectionName": "Log4Shell JNDI Payload Injection Attempt"
+  },
+  "Test Detection - Claude Automated Test": {
+    "history": [],
+    "parsed": {
+      "indexes": [
+        "main"
+      ],
+      "sourcetypes": [
+        "test_events"
+      ],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [],
+      "lookups": [],
+      "evalFields": [],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "stats",
+        "where"
+      ],
+      "byFields": [
+        "user",
+        "src_ip"
+      ],
+      "functions": [
+        "stats",
+        "where"
+      ],
+      "comments": [],
+      "customTags": []
+    },
+    "lastParsed": "2026-01-25T21:23:41.950Z",
+    "detectionName": "Test Detection - Claude Automated Test"
   }
 }
