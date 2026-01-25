@@ -18,7 +18,7 @@
       "Title": ""
     }
   ],
-  "Description": "This detection monitors user activity patterns to identify suspicious behavior. Tuned to add threshold filter for automated batch processes.",
+  "Description": "",
   "Assumptions": "",
   "origin": "custom",
   "Detection Name": "Test Detection - Claude Automated Test",
@@ -28,7 +28,7 @@
   "Blind_Spots_False_Positives": "Automated processes or batch jobs may trigger false positives. Known service accounts should be whitelisted.",
   "Required_Data_Sources": "main, test_events",
   "First Created": "2026-01-25T21:17:02.842Z",
-  "Last Modified": "2026-01-25T21:28:51.509Z",
+  "Last Modified": "2026-01-25T21:35:58.592Z",
   "Search String": "index=main sourcetype=test_events | stats count by user, src_ip | where count > 10",
   "Splunk_App_Context": "",
   "Search_Duration": "",
@@ -55,7 +55,9 @@
   "Drilldown Search (Legacy)": "",
   "Drilldown Earliest Offset (Legacy)": null,
   "Drilldown Latest Offset (Legacy)": null,
-  "Mitre ID": [],
+  "Mitre ID": [
+    "T1078"
+  ],
   "Proposed Test Plan": "",
   "Drilldown Name 1": "",
   "Drilldown Search 1": "",
@@ -117,6 +119,6 @@
   "Drilldown Search 15": "",
   "Drilldown Earliest 15": null,
   "Drilldown Latest 15": null,
-  "_sha": "3005ac96c34687db122b3aafe5660b9300292467",
+  "_sha": "016da41dbdee0d47cc9b2e4e3877e9c32cf6dda4",
   "_path": "docs/detections/Test_Detection_-_Claude_Automated_Test.json"
 }
