@@ -319,52 +319,132 @@ function parseSPL(spl) {
         indexes: [],
         sourcetypes: [],
         eventCodes: [],
+        categories: [],
         macros: [],
         lookups: [],
-        functions: []
+        evalFields: [],
+        mainSearchFields: [],
+        mainSearchFunctions: [],
+        byFields: [],
+        functions: [],
+        comments: [],
+        customTags: []
     };
 
     if (!spl) return result;
 
-    // Parse indexes
-    var indexRegex = /index\s*=\s*["']?([^\s"'|]+)/gi;
+    // Extract comments FIRST (``` comment ```) - NOT macros!
+    var commentMatches = spl.match(/```[^`]*```/g);
+    if (commentMatches) {
+        commentMatches.forEach(function(m) {
+            var comment = m.replace(/```/g, '').trim();
+            if (comment && result.comments.indexOf(comment) === -1) {
+                result.comments.push(comment);
+            }
+        });
+    }
+
+    // Remove comments from SPL for further parsing to avoid false positives
+    var cleanSpl = spl.replace(/```[^`]*```/g, ' ');
+
+    // Parse indexes (handles index=, index==, index IN ())
+    var indexRegex = /index\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
     var match;
-    while ((match = indexRegex.exec(spl)) !== null) {
+    while ((match = indexRegex.exec(cleanSpl)) !== null) {
         if (result.indexes.indexOf(match[1]) === -1) {
             result.indexes.push(match[1]);
         }
     }
+    // Also handle index IN (...)
+    var indexInRegex = /index\s+IN\s*\(([^)]+)\)/gi;
+    while ((match = indexInRegex.exec(cleanSpl)) !== null) {
+        var inValues = match[1].split(',');
+        inValues.forEach(function(v) {
+            var val = v.trim().replace(/["']/g, '');
+            if (val && result.indexes.indexOf(val) === -1) {
+                result.indexes.push(val);
+            }
+        });
+    }
 
     // Parse sourcetypes
-    var sourcetypeRegex = /sourcetype\s*=\s*["']?([^\s"'|]+)/gi;
-    while ((match = sourcetypeRegex.exec(spl)) !== null) {
+    var sourcetypeRegex = /sourcetype\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
+    while ((match = sourcetypeRegex.exec(cleanSpl)) !== null) {
         if (result.sourcetypes.indexOf(match[1]) === -1) {
             result.sourcetypes.push(match[1]);
         }
     }
 
-    // Parse macros
+    // Parse Event Codes
+    var eventCodeRegex = /EventCode\s*[=!<>]+\s*["']?(\d+)["']?/gi;
+    while ((match = eventCodeRegex.exec(cleanSpl)) !== null) {
+        if (result.eventCodes.indexOf(match[1]) === -1) {
+            result.eventCodes.push(match[1]);
+        }
+    }
+
+    // Parse categories (Azure/Defender) - quoted values
+    var categoryRegex = /category\s*={1,2}\s*["']([^"']+)["']/gi;
+    while ((match = categoryRegex.exec(cleanSpl)) !== null) {
+        if (result.categories.indexOf(match[1]) === -1) {
+            result.categories.push(match[1]);
+        }
+    }
+    // Also handle unquoted category values
+    var categoryUnquotedRegex = /category\s*={1,2}\s*([^\s"'|()]+)/gi;
+    while ((match = categoryUnquotedRegex.exec(cleanSpl)) !== null) {
+        var val = match[1].trim();
+        // Skip if it starts with a quote (already handled above)
+        if (val && !val.startsWith('"') && !val.startsWith("'") && result.categories.indexOf(val) === -1) {
+            result.categories.push(val);
+        }
+    }
+
+    // Parse macros (single backticks) - use cleanSpl to avoid matching triple backticks
     var macroRegex = /`([^`(]+)(?:\([^)]*\))?`/g;
-    while ((match = macroRegex.exec(spl)) !== null) {
+    while ((match = macroRegex.exec(cleanSpl)) !== null) {
         if (result.macros.indexOf(match[1]) === -1) {
             result.macros.push(match[1]);
         }
     }
 
     // Parse lookups
-    var lookupRegex = /\|\s*(?:lookup|inputlookup|outputlookup)\s+([^\s|]+)/gi;
-    while ((match = lookupRegex.exec(spl)) !== null) {
+    var lookupRegex = /\b(?:lookup|inputlookup|outputlookup)\s+([^\s|,]+)/gi;
+    while ((match = lookupRegex.exec(cleanSpl)) !== null) {
         if (result.lookups.indexOf(match[1]) === -1) {
             result.lookups.push(match[1]);
         }
     }
 
+    // Parse eval fields
+    var evalRegex = /\beval\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/gi;
+    while ((match = evalRegex.exec(cleanSpl)) !== null) {
+        if (result.evalFields.indexOf(match[1]) === -1) {
+            result.evalFields.push(match[1]);
+        }
+    }
+
+    // Parse by fields
+    var byRegex = /\bby\s+([a-zA-Z_][a-zA-Z0-9_,\s]*)/gi;
+    while ((match = byRegex.exec(cleanSpl)) !== null) {
+        var fields = match[1].split(/[,\s]+/);
+        fields.forEach(function(f) {
+            f = f.trim();
+            if (f && result.byFields.indexOf(f) === -1 && f !== 'as' && f !== 'where') {
+                result.byFields.push(f);
+            }
+        });
+    }
+
     // Parse functions (commands after pipes)
     var funcRegex = /\|\s*([a-z_][a-z0-9_]*)/gi;
-    while ((match = funcRegex.exec(spl)) !== null) {
+    while ((match = funcRegex.exec(cleanSpl)) !== null) {
         var fn = match[1].toLowerCase();
         if (result.functions.indexOf(fn) === -1 && fn !== 'lookup' && fn !== 'inputlookup' && fn !== 'outputlookup') {
             result.functions.push(fn);
+        }
+        if (result.mainSearchFunctions.indexOf(fn) === -1) {
+            result.mainSearchFunctions.push(fn);
         }
     }
 
@@ -750,7 +830,32 @@ function buildCorrelationSearchUrl(detectionName) {
                 App.handleHashChange();
             });
 
-            // Sidebar collapse toggle
+            // Library sidebar collapse toggle (burger menu)
+            var librarySidebarToggle = document.getElementById('library-sidebar-toggle');
+            if (librarySidebarToggle) {
+                librarySidebarToggle.addEventListener('click', function() {
+                    var sidebar = document.getElementById('library-sidebar');
+                    if (sidebar) {
+                        sidebar.classList.toggle('collapsed');
+                        // Store preference
+                        var isCollapsed = sidebar.classList.contains('collapsed');
+                        localStorage.setItem('dmf_library_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                        // Update button title
+                        librarySidebarToggle.title = isCollapsed ? 'Show filters panel' : 'Hide filters panel';
+                    }
+                });
+                // Restore collapsed state from preference
+                var librarySidebarCollapsed = localStorage.getItem('dmf_library_sidebar_collapsed');
+                if (librarySidebarCollapsed === 'true') {
+                    var sidebar = document.getElementById('library-sidebar');
+                    if (sidebar) {
+                        sidebar.classList.add('collapsed');
+                        librarySidebarToggle.title = 'Show filters panel';
+                    }
+                }
+            }
+
+            // Legacy sidebar collapse toggle (backward compatibility)
             var collapseBtn = document.getElementById('sidebar-collapse-btn');
             if (collapseBtn) {
                 collapseBtn.addEventListener('click', function() {
@@ -759,14 +864,33 @@ function buildCorrelationSearchUrl(detectionName) {
                         sidebar.classList.toggle('collapsed');
                         // Store preference
                         var isCollapsed = sidebar.classList.contains('collapsed');
-                        localStorage.setItem('dmf_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                        localStorage.setItem('dmf_library_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                    }
+                });
+            }
+
+            // Library main (detail panel) collapse toggle
+            var libraryMainToggle = document.getElementById('library-main-toggle');
+            if (libraryMainToggle) {
+                libraryMainToggle.addEventListener('click', function() {
+                    var libraryMain = document.getElementById('library-main');
+                    if (libraryMain) {
+                        libraryMain.classList.toggle('collapsed');
+                        // Store preference
+                        var isCollapsed = libraryMain.classList.contains('collapsed');
+                        localStorage.setItem('dmf_library_main_collapsed', isCollapsed ? 'true' : 'false');
+                        // Update button title
+                        libraryMainToggle.title = isCollapsed ? 'Show detail panel' : 'Hide detail panel';
                     }
                 });
                 // Restore collapsed state from preference
-                var sidebarCollapsed = localStorage.getItem('dmf_sidebar_collapsed');
-                if (sidebarCollapsed === 'true') {
-                    var sidebar = document.getElementById('library-sidebar');
-                    if (sidebar) sidebar.classList.add('collapsed');
+                var libraryMainCollapsed = localStorage.getItem('dmf_library_main_collapsed');
+                if (libraryMainCollapsed === 'true') {
+                    var libraryMain = document.getElementById('library-main');
+                    if (libraryMain) {
+                        libraryMain.classList.add('collapsed');
+                        libraryMainToggle.title = 'Show detail panel';
+                    }
                 }
             }
 
@@ -779,7 +903,7 @@ function buildCorrelationSearchUrl(detectionName) {
             }
 
             // Library filter dropdowns
-            var filterIds = ['filter-severity', 'filter-status', 'filter-domain', 'filter-datasource', 'filter-mitre', 'filter-origin'];
+            var filterIds = ['filter-severity', 'filter-status', 'filter-domain', 'filter-datasource', 'filter-mitre', 'filter-origin', 'filter-sort', 'filter-sourcetype', 'filter-main-search-field', 'filter-search-function', 'filter-drilldown-var'];
             filterIds.forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) {
@@ -1039,21 +1163,51 @@ function buildCorrelationSearchUrl(detectionName) {
         // Populate dynamic filter dropdowns
         populateFilters: function() {
             var datasources = {};
+            var sourcetypes = {};
             var mitreIds = {};
+            var mainSearchFields = {};
+            var mainSearchFunctions = {};
+            var drilldownVars = {};
 
+            var self = this;
             this.state.detections.forEach(function(d) {
                 // Datasources from Required_Data_Sources
                 var ds = d['Required_Data_Sources'] || '';
                 if (ds) {
                     ds.split(/[,;]/).forEach(function(s) {
                         var trimmed = s.trim();
-                        if (trimmed) datasources[trimmed] = true;
+                        if (trimmed) datasources[trimmed] = (datasources[trimmed] || 0) + 1;
                     });
                 }
+
+                // Parse SPL for sourcetypes and other metadata
+                var parsed = self.parseSPLForFilters(d['Search String']);
+
+                // Sourcetypes from parsed SPL
+                parsed.sourcetypes.forEach(function(st) {
+                    sourcetypes[st] = (sourcetypes[st] || 0) + 1;
+                });
+
+                // Main search fields from parsed SPL
+                parsed.mainSearchFields.forEach(function(f) {
+                    mainSearchFields[f] = (mainSearchFields[f] || 0) + 1;
+                });
+
+                // Main search functions from parsed SPL
+                parsed.mainSearchFunctions.forEach(function(f) {
+                    mainSearchFunctions[f] = (mainSearchFunctions[f] || 0) + 1;
+                });
+
+                // Drilldown variables
+                var ddVars = self.parseDrilldownVarsForFilters(d);
+                ddVars.forEach(function(v) {
+                    drilldownVars[v] = (drilldownVars[v] || 0) + 1;
+                });
+
                 // MITRE IDs
                 var mitre = d['Mitre ID'] || [];
                 mitre.forEach(function(m) {
-                    mitreIds[m] = true;
+                    mitreIds[m] = (mitreIds[m] || 0) + 1;
                 });
             });
 
@@ -1062,9 +1216,19 @@ function buildCorrelationSearchUrl(detectionName) {
             if (dsSelect) {
                 var dsHtml = '<option value="">All Datasources</option>';
                 Object.keys(datasources).sort().forEach(function(ds) {
-                    dsHtml += '<option value="' + escapeAttr(ds) + '">' + escapeHtml(ds) + '</option>';
+                    dsHtml += '<option value="' + escapeAttr(ds) + '">' + escapeHtml(ds) + ' (' + datasources[ds] + ')</option>';
                 });
                 dsSelect.innerHTML = dsHtml;
+            }
+
+            // Populate sourcetype filter
+            var stSelect = document.getElementById('filter-sourcetype');
+            if (stSelect) {
+                var stHtml = '<option value="">All Sourcetypes</option>';
+                Object.keys(sourcetypes).sort().forEach(function(st) {
+                    stHtml += '<option value="' + escapeAttr(st) + '">' + escapeHtml(st) + ' (' + sourcetypes[st] + ')</option>';
+                });
+                stSelect.innerHTML = stHtml;
             }
 
             // Populate MITRE filter
@@ -1072,10 +1236,126 @@ function buildCorrelationSearchUrl(detectionName) {
             if (mitreSelect) {
                 var mitreHtml = '<option value="">All MITRE</option>';
                 Object.keys(mitreIds).sort().forEach(function(m) {
-                    mitreHtml += '<option value="' + escapeAttr(m) + '">' + escapeHtml(m) + '</option>';
+                    mitreHtml += '<option value="' + escapeAttr(m) + '">' + escapeHtml(m) + ' (' + mitreIds[m] + ')</option>';
                 });
                 mitreSelect.innerHTML = mitreHtml;
             }
+
+            // Populate main search fields filter
+            var fieldSelect = document.getElementById('filter-main-search-field');
+            if (fieldSelect) {
+                var fieldHtml = '<option value="">Search Fields</option>';
+                Object.keys(mainSearchFields).sort().forEach(function(f) {
+                    fieldHtml += '<option value="' + escapeAttr(f) + '">' + escapeHtml(f) + ' (' + mainSearchFields[f] + ')</option>';
+                });
+                fieldSelect.innerHTML = fieldHtml;
+            }
+
+            // Populate search functions filter
+            var funcSelect = document.getElementById('filter-search-function');
+            if (funcSelect) {
+                var funcHtml = '<option value="">SPL Commands</option>';
+                Object.keys(mainSearchFunctions).sort().forEach(function(f) {
+                    funcHtml += '<option value="' + escapeAttr(f) + '">' + escapeHtml(f) + ' (' + mainSearchFunctions[f] + ')</option>';
+                });
+                funcSelect.innerHTML = funcHtml;
+            }
+
+            // Populate drilldown variables filter
+            var ddVarSelect = document.getElementById('filter-drilldown-var');
+            if (ddVarSelect) {
+                var ddVarHtml = '<option value="">Drilldown Vars</option>';
+                Object.keys(drilldownVars).sort().forEach(function(v) {
+                    ddVarHtml += '<option value="' + escapeAttr(v) + '">$' + escapeHtml(v) + '$ (' + drilldownVars[v] + ')</option>';
+                });
+                ddVarSelect.innerHTML = ddVarHtml;
+            }
+        },
+
+        // Parse SPL for filter population (simplified version)
+        parseSPLForFilters: function(spl) {
+            var result = {
+                sourcetypes: [],
+                mainSearchFields: [],
+                mainSearchFunctions: []
+            };
+
+            if (!spl) return result;
+
+            // Parse sourcetypes
+            var stRegex = /sourcetype\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
+            var match;
+            while ((match = stRegex.exec(spl)) !== null) {
+                if (result.sourcetypes.indexOf(match[1]) === -1) {
+                    result.sourcetypes.push(match[1]);
+                }
+            }
+
+            // Parse functions/commands (after pipes)
+            var phases = spl.split(/(?:^|\n)\s*\|\s*/);
+            for (var i = 1; i < phases.length; i++) {
+                var funcMatch = phases[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)/);
+                if (funcMatch) {
+                    var fn = funcMatch[1].toLowerCase();
+                    if (result.mainSearchFunctions.indexOf(fn) === -1) {
+                        result.mainSearchFunctions.push(fn);
+                    }
+                }
+            }
+
+            // Parse main search fields (common field patterns)
+            var fieldPatterns = [
+                /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*[=!<>]/g,
+                /\bvalues?\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,
+                /\bcount\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,
+                /\bsum\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi,
+                /\bavg\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)/gi
+            ];
+
+            var excludeFields = ['index', 'sourcetype', 'source', 'host', 'eventtype', 'tag', 'eventcode', 'category', 'earliest', 'latest', 'span'];
+
+            fieldPatterns.forEach(function(pattern) {
+                var m;
+                while ((m = pattern.exec(spl)) !== null) {
+                    var field = m[1];
+                    if (field &&
+                        result.mainSearchFields.indexOf(field) === -1 &&
+                        excludeFields.indexOf(field.toLowerCase()) === -1 &&
+                        !/^\d+$/.test(field)) {
+                        result.mainSearchFields.push(field);
+                    }
+                }
+            });
+
+            return result;
+        },
+
+        // Parse drilldown variables for filter population
+        parseDrilldownVarsForFilters: function(d) {
+            var allVars = [];
+
+            function parseVars(search) {
+                if (!search) return;
+                var varMatches = search.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)\$/g);
+                if (varMatches) {
+                    varMatches.forEach(function(v) {
+                        var varName = v.replace(/\$/g, '');
+                        if (allVars.indexOf(varName) === -1) {
+                            allVars.push(varName);
+                        }
+                    });
+                }
+            }
+
+            // Legacy drilldown
+            parseVars(d['Drilldown Search (Legacy)']);
+
+            // Numbered drilldowns
+            for (var i = 1; i <= 15; i++) {
+                parseVars(d['Drilldown Search ' + i]);
+            }
+
+            return allVars;
         },
 
         // Apply filters and search
@@ -1089,6 +1369,11 @@ function buildCorrelationSearchUrl(detectionName) {
             var datasourceFilter = document.getElementById('filter-datasource');
             var mitreFilter = document.getElementById('filter-mitre');
             var originFilter = document.getElementById('filter-origin');
+            var sortFilter = document.getElementById('filter-sort');
+            var sourcetypeFilter = document.getElementById('filter-sourcetype');
+            var mainFieldFilter = document.getElementById('filter-main-search-field');
+            var searchFuncFilter = document.getElementById('filter-search-function');
+            var drilldownVarFilter = document.getElementById('filter-drilldown-var');
 
             var severity = severityFilter ? severityFilter.value.toLowerCase() : '';
             var status = statusFilter ? statusFilter.value : '';
@@ -1096,13 +1381,22 @@ function buildCorrelationSearchUrl(detectionName) {
             var datasource = datasourceFilter ? datasourceFilter.value : '';
             var mitre = mitreFilter ? mitreFilter.value : '';
             var origin = originFilter ? originFilter.value.toLowerCase() : '';
+            var sort = sortFilter ? sortFilter.value : 'name-asc';
+            var sourcetype = sourcetypeFilter ? sourcetypeFilter.value : '';
+            var mainField = mainFieldFilter ? mainFieldFilter.value : '';
+            var searchFunc = searchFuncFilter ? searchFuncFilter.value : '';
+            var drilldownVar = drilldownVarFilter ? drilldownVarFilter.value : '';
 
             var self = this;
             this.state.filteredDetections = this.state.detections.filter(function(d) {
-                // Search term
+                // Search term - enhanced to search Name, Objective, Search String, and MITRE IDs
                 if (searchTerm) {
-                    var name = (d['Detection Name'] || '').toLowerCase();
-                    if (name.indexOf(searchTerm) === -1) return false;
+                    var searchText = [
+                        d['Detection Name'] || '',
+                        d['Objective'] || '',
+                        d['Search String'] || ''
+                    ].concat(d['Mitre ID'] || []).join(' ').toLowerCase();
+                    if (searchText.indexOf(searchTerm) === -1) return false;
                 }
 
                 // Severity
@@ -1135,6 +1429,30 @@ function buildCorrelationSearchUrl(detectionName) {
                     if (dMitre.indexOf(mitre) === -1) return false;
                 }
 
+                // Sourcetype filter
+                if (sourcetype) {
+                    var parsed = self.parseSPLForFilters(d['Search String']);
+                    if (parsed.sourcetypes.indexOf(sourcetype) === -1) return false;
+                }
+
+                // Main search field filter
+                if (mainField) {
+                    var parsedFields = self.parseSPLForFilters(d['Search String']);
+                    if (parsedFields.mainSearchFields.indexOf(mainField) === -1) return false;
+                }
+
+                // Search function filter
+                if (searchFunc) {
+                    var parsedFuncs = self.parseSPLForFilters(d['Search String']);
+                    if (parsedFuncs.mainSearchFunctions.indexOf(searchFunc) === -1) return false;
+                }
+
+                // Drilldown variable filter
+                if (drilldownVar) {
+                    var ddVars = self.parseDrilldownVarsForFilters(d);
+                    if (ddVars.indexOf(drilldownVar) === -1) return false;
+                }
+
                 // Status (check validation)
                 if (status) {
                     var detectionStatus = self.getDetectionStatus(d);
@@ -1146,6 +1464,25 @@ function buildCorrelationSearchUrl(detectionName) {
 
                 return true;
             });
+
+            // Apply sorting
+            if (sort === 'name-asc') {
+                this.state.filteredDetections.sort(function(a, b) {
+                    return (a['Detection Name'] || '').localeCompare(b['Detection Name'] || '');
+                });
+            } else if (sort === 'name-desc') {
+                this.state.filteredDetections.sort(function(a, b) {
+                    return (b['Detection Name'] || '').localeCompare(a['Detection Name'] || '');
+                });
+            } else if (sort === 'modified-desc') {
+                this.state.filteredDetections.sort(function(a, b) {
+                    return new Date(b['Last Modified'] || 0) - new Date(a['Last Modified'] || 0);
+                });
+            } else if (sort === 'risk-desc') {
+                this.state.filteredDetections.sort(function(a, b) {
+                    return getRiskScore(b) - getRiskScore(a);
+                });
+            }
 
             // Check if selected detection is still in filtered list (US-005)
             // If not, keep showing the content but add visual indicator
@@ -1175,11 +1512,15 @@ function buildCorrelationSearchUrl(detectionName) {
             if (searchInput) searchInput.value = '';
 
             // Reset all filter dropdowns
-            var filterIds = ['filter-severity', 'filter-status', 'filter-domain', 'filter-datasource', 'filter-mitre', 'filter-origin'];
+            var filterIds = ['filter-severity', 'filter-status', 'filter-domain', 'filter-datasource', 'filter-mitre', 'filter-origin', 'filter-sourcetype', 'filter-main-search-field', 'filter-search-function', 'filter-drilldown-var'];
             filterIds.forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.value = '';
             });
+
+            // Reset sort to default
+            var sortFilter = document.getElementById('filter-sort');
+            if (sortFilter) sortFilter.value = 'name-asc';
 
             // Clear the filtered-out state
             this.state.selectedFilteredOut = false;
@@ -1365,7 +1706,9 @@ function buildCorrelationSearchUrl(detectionName) {
                                     parsed.categories.length || parsed.macros.length || parsed.lookups.length ||
                                     (drilldownVars.mainSearchFields && drilldownVars.mainSearchFields.length) ||
                                     (drilldownVars.mainSearchFunctions && drilldownVars.mainSearchFunctions.length) ||
-                                    parsed.byFields.length;
+                                    parsed.byFields.length || parsed.evalFields.length ||
+                                    (parsed.comments && parsed.comments.length) ||
+                                    (parsed.customTags && parsed.customTags.length);
 
                 if (hasParsedData) {
                     html += '<div class="doc-parsed-metadata">';
@@ -1415,6 +1758,21 @@ function buildCorrelationSearchUrl(detectionName) {
                     if (parsed.byFields && parsed.byFields.length) {
                         html += '<div class="doc-tag-group"><span class="tag-group-label">by</span><div class="tag-group-items">';
                         parsed.byFields.forEach(function(f) { html += '<span class="card-tag by-field">' + escapeHtml(f) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (parsed.evalFields && parsed.evalFields.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Eval Fields</span><div class="tag-group-items">';
+                        parsed.evalFields.forEach(function(f) { html += '<span class="card-tag eval-field">' + escapeHtml(f) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (parsed.customTags && parsed.customTags.length) {
+                        html += '<div class="doc-tag-group"><span class="tag-group-label">Custom Tags</span><div class="tag-group-items">';
+                        parsed.customTags.forEach(function(t) { html += '<span class="card-tag custom-tag">' + escapeHtml(t.category + ': ' + t.tag) + '</span>'; });
+                        html += '</div></div>';
+                    }
+                    if (parsed.comments && parsed.comments.length) {
+                        html += '<div class="doc-tag-group doc-comments-group"><span class="tag-group-label">Comments</span><div class="tag-group-items">';
+                        parsed.comments.forEach(function(c) { html += '<div class="spl-comment">' + escapeHtml(c) + '</div>'; });
                         html += '</div></div>';
                     }
 
@@ -1882,22 +2240,38 @@ function buildCorrelationSearchUrl(detectionName) {
             mainSearchFields: [],
             mainSearchFunctions: [],
             byFields: [],
-            functions: []
+            functions: [],
+            comments: [],
+            customTags: []
         };
 
         if (!spl) return result;
 
+        // Extract comments FIRST (``` comment ```) - NOT macros!
+        var commentMatches = spl.match(/```[^`]*```/g);
+        if (commentMatches) {
+            commentMatches.forEach(function(m) {
+                var comment = m.replace(/```/g, '').trim();
+                if (comment && result.comments.indexOf(comment) === -1) {
+                    result.comments.push(comment);
+                }
+            });
+        }
+
+        // Remove comments from SPL for further parsing to avoid false positives
+        var cleanSpl = spl.replace(/```[^`]*```/g, ' ');
+
         // Parse indexes (handles index=, index==, index IN ())
         var indexRegex = /index\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
         var match;
-        while ((match = indexRegex.exec(spl)) !== null) {
+        while ((match = indexRegex.exec(cleanSpl)) !== null) {
             if (result.indexes.indexOf(match[1]) === -1) {
                 result.indexes.push(match[1]);
             }
         }
         // Also handle index IN (...)
         var indexInRegex = /index\s+IN\s*\(([^)]+)\)/gi;
-        while ((match = indexInRegex.exec(spl)) !== null) {
+        while ((match = indexInRegex.exec(cleanSpl)) !== null) {
             var inValues = match[1].split(',');
             inValues.forEach(function(v) {
                 var val = v.trim().replace(/["']/g, '');
@@ -1909,7 +2283,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Parse sourcetypes
         var sourcetypeRegex = /sourcetype\s*={1,2}\s*["']?([^\s"'|()]+)["']?/gi;
-        while ((match = sourcetypeRegex.exec(spl)) !== null) {
+        while ((match = sourcetypeRegex.exec(cleanSpl)) !== null) {
             if (result.sourcetypes.indexOf(match[1]) === -1) {
                 result.sourcetypes.push(match[1]);
             }
@@ -1917,23 +2291,32 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Parse Event Codes
         var eventCodeRegex = /EventCode\s*[=!<>]+\s*["']?(\d+)["']?/gi;
-        while ((match = eventCodeRegex.exec(spl)) !== null) {
+        while ((match = eventCodeRegex.exec(cleanSpl)) !== null) {
             if (result.eventCodes.indexOf(match[1]) === -1) {
                 result.eventCodes.push(match[1]);
             }
         }
 
-        // Parse categories (Azure/Defender)
+        // Parse categories (Azure/Defender) - quoted values
         var categoryRegex = /category\s*={1,2}\s*["']([^"']+)["']/gi;
-        while ((match = categoryRegex.exec(spl)) !== null) {
+        while ((match = categoryRegex.exec(cleanSpl)) !== null) {
             if (result.categories.indexOf(match[1]) === -1) {
                 result.categories.push(match[1]);
             }
         }
+        // Also handle unquoted category values
+        var categoryUnquotedRegex = /category\s*={1,2}\s*([^\s"'|()]+)/gi;
+        while ((match = categoryUnquotedRegex.exec(cleanSpl)) !== null) {
+            var val = match[1].trim();
+            // Skip if it starts with a quote (already handled above)
+            if (val && !val.startsWith('"') && !val.startsWith("'") && result.categories.indexOf(val) === -1) {
+                result.categories.push(val);
+            }
+        }
 
-        // Parse macros (single backticks, not triple)
-        var macroRegex = /(?<![`])`([^`(]+)(?:\([^)]*\))?`(?![`])/g;
-        while ((match = macroRegex.exec(spl)) !== null) {
+        // Parse macros (single backticks, not triple) - use cleanSpl to avoid matching triple backticks
+        var macroRegex = /`([^`(]+)(?:\([^)]*\))?`/g;
+        while ((match = macroRegex.exec(cleanSpl)) !== null) {
             if (result.macros.indexOf(match[1]) === -1) {
                 result.macros.push(match[1]);
             }
@@ -1941,7 +2324,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Parse lookups
         var lookupRegex = /\b(?:lookup|inputlookup|outputlookup)\s+([^\s|,]+)/gi;
-        while ((match = lookupRegex.exec(spl)) !== null) {
+        while ((match = lookupRegex.exec(cleanSpl)) !== null) {
             if (result.lookups.indexOf(match[1]) === -1) {
                 result.lookups.push(match[1]);
             }
@@ -1949,7 +2332,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Parse eval fields
         var evalRegex = /\beval\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/gi;
-        while ((match = evalRegex.exec(spl)) !== null) {
+        while ((match = evalRegex.exec(cleanSpl)) !== null) {
             if (result.evalFields.indexOf(match[1]) === -1) {
                 result.evalFields.push(match[1]);
             }
@@ -1957,7 +2340,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Parse by fields
         var byRegex = /\bby\s+([a-zA-Z_][a-zA-Z0-9_,\s]*)/gi;
-        while ((match = byRegex.exec(spl)) !== null) {
+        while ((match = byRegex.exec(cleanSpl)) !== null) {
             var fields = match[1].split(/[,\s]+/);
             fields.forEach(function(f) {
                 f = f.trim();
@@ -1968,7 +2351,7 @@ function buildCorrelationSearchUrl(detectionName) {
         }
 
         // Parse functions/commands (commands after pipes)
-        var phases = spl.split(/(?:^|\n)\s*\|\s*/);
+        var phases = cleanSpl.split(/(?:^|\n)\s*\|\s*/);
         for (var i = 1; i < phases.length; i++) {
             var funcMatch = phases[i].match(/^([a-zA-Z_][a-zA-Z0-9_]*)/);
             if (funcMatch) {
@@ -1992,7 +2375,7 @@ function buildCorrelationSearchUrl(detectionName) {
 
         fieldPatterns.forEach(function(pattern) {
             var m;
-            while ((m = pattern.exec(spl)) !== null) {
+            while ((m = pattern.exec(cleanSpl)) !== null) {
                 var field = m[1];
                 if (field &&
                     result.mainSearchFields.indexOf(field) === -1 &&
@@ -2002,6 +2385,29 @@ function buildCorrelationSearchUrl(detectionName) {
                 }
             }
         });
+
+        // Apply custom tags from parsing rules (if defined in settings)
+        if (typeof settingsState !== 'undefined' && settingsState.parsingRules) {
+            settingsState.parsingRules.forEach(function(rule) {
+                if (!rule.enabled || !rule.pattern || !rule.field) return;
+                try {
+                    var regex = new RegExp(rule.pattern, 'gi');
+                    if (regex.test(cleanSpl)) {
+                        // Check if this rule defines a custom tag
+                        if (rule.tag && rule.category) {
+                            var exists = result.customTags.some(function(t) {
+                                return t.category === rule.category && t.tag === rule.tag;
+                            });
+                            if (!exists) {
+                                result.customTags.push({ category: rule.category, tag: rule.tag });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignore invalid regex patterns
+                }
+            });
+        }
 
         // Legacy functions array for backward compatibility
         result.functions = result.mainSearchFunctions;
@@ -5489,31 +5895,549 @@ function buildCorrelationSearchUrl(detectionName) {
 
     // Reports State
     var reportsState = {
-        initialized: false
+        initialized: false,
+        activeTab: 'overview'
     };
 
     // Initialize Reports View
     function initReports() {
         reportsState.initialized = true;
+        initReportsTabs();
         // Reports will be rendered when data is available
         renderReports();
     }
 
-    // Render Reports View
+    // Initialize Reports Sub-Tabs
+    function initReportsTabs() {
+        document.querySelectorAll('.reports-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                var tabName = tab.dataset.tab;
+                if (!tabName) return;
+
+                // Update active tab button
+                document.querySelectorAll('.reports-tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                tab.classList.add('active');
+
+                // Update active tab content
+                document.querySelectorAll('.reports-tab-content').forEach(function(c) {
+                    c.classList.add('hidden');
+                    c.classList.remove('active');
+                });
+
+                var content = document.getElementById('reports-' + tabName);
+                if (content) {
+                    content.classList.remove('hidden');
+                    content.classList.add('active');
+                }
+
+                // Store active tab
+                reportsState.activeTab = tabName;
+
+                // Render specific report based on tab
+                var detections = App.state.detections || [];
+                if (tabName === 'overview') {
+                    renderOverviewTab(detections);
+                } else if (tabName === 'coverage') {
+                    renderCoverageTab(detections);
+                } else if (tabName === 'revalidations') {
+                    renderRevalidationReportTab(detections);
+                } else if (tabName === 'metadata') {
+                    renderMetadataReportTab(detections);
+                }
+            });
+        });
+    }
+
+    // Render Reports View (main entry point)
     function renderReports() {
         if (!reportsState.initialized) return;
 
         var detections = App.state.detections || [];
 
-        // Render all report sections
+        // Render all overview report sections (default tab)
+        renderOverviewTab(detections);
+    }
+
+    // Render Overview Tab
+    function renderOverviewTab(detections) {
         renderStatCards(detections);
-        renderRevalidationStatus(detections);
+        renderSeverityChart(detections);
+        renderRiskChart(detections);
         renderDomainChart(detections);
         renderDatasourceChart(detections);
-        renderMitreCoverage(detections);
-        renderMetadataStats(detections);
-        renderRiskChart(detections);
+        renderMitreChart(detections);
         renderRecentLists(detections);
+    }
+
+    // Render Coverage Tab
+    function renderCoverageTab(detections) {
+        // Summary stats
+        var total = detections.length;
+        var withMitre = detections.filter(function(d) {
+            var mitre = d['Mitre ID'];
+            return mitre && (Array.isArray(mitre) ? mitre.length > 0 : String(mitre).trim() !== '');
+        }).length;
+        var withDrilldowns = detections.filter(function(d) {
+            return d['Drilldown Name (Legacy)'] || d['Drilldown Name 1'];
+        }).length;
+
+        var totalRisk = 0;
+        detections.forEach(function(d) {
+            var risk = getRiskScore(d);
+            if (risk) totalRisk += risk;
+        });
+        var avgRisk = total > 0 ? Math.round(totalRisk / total) : 0;
+
+        updateElementText('report-coverage-mitre', total > 0 ? Math.round(withMitre / total * 100) + '%' : '0%');
+        updateElementText('report-coverage-drilldowns', total > 0 ? Math.round(withDrilldowns / total * 100) + '%' : '0%');
+        updateElementText('report-avg-risk', avgRisk);
+        updateElementText('report-total', total);
+
+        // Charts
+        renderBarChartFromCounts('report-datasources', getDatasourceCounts(detections), 15);
+        renderBarChartFromCounts('report-platforms', getPlatformCounts(detections), 10);
+        renderBarChartFromCounts('report-domains', getDomainCounts(detections), 10);
+        renderBarChartFromCounts('report-origins', getOriginCounts(detections), 10);
+        renderBarChartFromCounts('report-severity', getSeverityCounts(detections), 10);
+        renderQualityMetricsChart(detections);
+        renderMitreHeatmap(detections);
+        renderSearchFieldsChart(detections);
+        renderSearchFunctionsChart(detections);
+    }
+
+    // Render Revalidation Report Tab
+    function renderRevalidationReportTab(detections) {
+        var total = detections.length;
+        var valid = 0, needTune = 0, needRetrofit = 0;
+        var fieldMissing = {};
+        var ttlExpired = 0, ttlCritical = 0, ttlWarning = 0, ttlOk = 0;
+
+        // Build field missing counts
+        var allFields = (App.MANDATORY_FIELDS || []).concat(App.KEY_FIELDS || []);
+        allFields.forEach(function(f) { fieldMissing[f] = 0; });
+
+        detections.forEach(function(d) {
+            var status = App.getDetectionStatus(d);
+            if (status === 'valid') valid++;
+            else if (status === 'needs-tune') needTune++;
+            else if (status === 'needs-retrofit') needRetrofit++;
+
+            // Count missing fields
+            allFields.forEach(function(f) {
+                if (!App.hasValue(d, f)) {
+                    fieldMissing[f]++;
+                }
+            });
+
+            // TTL calculation
+            var ttl = calculateTTL(d['Last Modified']);
+            if (ttl.days <= 0) ttlExpired++;
+            else if (ttl.days <= 30) ttlCritical++;
+            else if (ttl.days <= 90) ttlWarning++;
+            else ttlOk++;
+        });
+
+        // Update summary stats
+        updateElementText('reval-report-total', total);
+        updateElementText('reval-report-valid', valid);
+        updateElementText('reval-report-tune', needTune);
+        updateElementText('reval-report-retrofit', needRetrofit);
+
+        // Missing fields chart
+        renderMissingFieldsChart(fieldMissing, total);
+
+        // TTL status
+        renderTTLStatus(ttlExpired, ttlCritical, ttlWarning, ttlOk);
+
+        // History stats
+        var historyStats = getHistoryStats();
+        updateElementText('reval-report-history-total', historyStats.totalEntries);
+        updateElementText('reval-report-tunes', historyStats.totalTunes);
+        updateElementText('reval-report-retrofits', historyStats.totalRetrofits);
+        updateElementText('reval-report-analysts', historyStats.uniqueAnalysts);
+
+        // Activity charts
+        renderBarChartFromCounts('reval-report-analyst-chart', historyStats.byAnalyst, 10);
+        renderBarChartFromCounts('reval-report-reason-chart', historyStats.byReason, 10);
+
+        // Activity timeline
+        renderActivityTimeline(historyStats.recentActivity);
+    }
+
+    // Render Metadata Report Tab
+    function renderMetadataReportTab(detections) {
+        var metadata = App.state.metadata || {};
+
+        var indexes = {};
+        var sourcetypes = {};
+        var mainSearchFields = {};
+        var mainSearchFunctions = {};
+        var macros = {};
+        var lookups = {};
+        var detectionsWithMeta = 0;
+
+        Object.keys(metadata).forEach(function(name) {
+            var meta = metadata[name];
+            if (meta && meta.parsed) {
+                detectionsWithMeta++;
+
+                if (meta.parsed.indexes) {
+                    meta.parsed.indexes.forEach(function(i) {
+                        indexes[i] = (indexes[i] || 0) + 1;
+                    });
+                }
+                if (meta.parsed.sourcetypes) {
+                    meta.parsed.sourcetypes.forEach(function(s) {
+                        sourcetypes[s] = (sourcetypes[s] || 0) + 1;
+                    });
+                }
+                if (meta.parsed.mainSearchFields) {
+                    meta.parsed.mainSearchFields.forEach(function(f) {
+                        mainSearchFields[f] = (mainSearchFields[f] || 0) + 1;
+                    });
+                }
+                if (meta.parsed.mainSearchFunctions) {
+                    meta.parsed.mainSearchFunctions.forEach(function(f) {
+                        mainSearchFunctions[f] = (mainSearchFunctions[f] || 0) + 1;
+                    });
+                }
+                if (meta.parsed.macros) {
+                    meta.parsed.macros.forEach(function(m) {
+                        macros[m] = (macros[m] || 0) + 1;
+                    });
+                }
+                if (meta.parsed.lookups) {
+                    meta.parsed.lookups.forEach(function(l) {
+                        lookups[l] = (lookups[l] || 0) + 1;
+                    });
+                }
+            }
+        });
+
+        // Update summary stats
+        updateElementText('meta-report-detections', detectionsWithMeta);
+        updateElementText('meta-report-indexes', Object.keys(indexes).length);
+        updateElementText('meta-report-sourcetypes', Object.keys(sourcetypes).length);
+        updateElementText('meta-report-functions', Object.keys(mainSearchFunctions).length);
+
+        // Render charts
+        renderBarChartFromCounts('meta-report-index-chart', indexes, 15);
+        renderBarChartFromCounts('meta-report-sourcetype-chart', sourcetypes, 15);
+        renderBarChartFromCounts('meta-report-fields-chart', mainSearchFields, 15);
+        renderBarChartFromCounts('meta-report-func-chart', mainSearchFunctions, 15);
+        renderBarChartFromCounts('meta-report-macros-chart', macros, 15);
+        renderBarChartFromCounts('meta-report-lookups-chart', lookups, 15);
+    }
+
+    // Helper: Render bar chart from counts object
+    function renderBarChartFromCounts(containerId, counts, limit) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+
+        var sorted = Object.keys(counts).sort(function(a, b) {
+            return counts[b] - counts[a];
+        }).slice(0, limit || 15);
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No data available</div>';
+            return;
+        }
+
+        var maxCount = Math.max.apply(null, sorted.map(function(k) { return counts[k]; }));
+        var html = '';
+
+        sorted.forEach(function(key) {
+            var count = counts[key];
+            var percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label" title="' + escapeAttr(key) + '">' + escapeHtml(key) + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar" style="width: ' + percentage + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Helper: Get domain counts
+    function getDomainCounts(detections) {
+        var counts = {};
+        detections.forEach(function(d) {
+            var domain = d['Security Domain'] || 'Unknown';
+            counts[domain] = (counts[domain] || 0) + 1;
+        });
+        return counts;
+    }
+
+    // Helper: Get datasource counts
+    function getDatasourceCounts(detections) {
+        var counts = {};
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+            parsed.indexes.forEach(function(idx) {
+                counts[idx] = (counts[idx] || 0) + 1;
+            });
+            parsed.sourcetypes.forEach(function(st) {
+                counts[st] = (counts[st] || 0) + 1;
+            });
+        });
+        return counts;
+    }
+
+    // Helper: Get platform counts (based on index patterns)
+    function getPlatformCounts(detections) {
+        var counts = {};
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+            // Simple platform detection
+            parsed.indexes.forEach(function(idx) {
+                var lower = idx.toLowerCase();
+                if (lower.indexOf('win') !== -1 || lower.indexOf('sysmon') !== -1 || lower.indexOf('winevent') !== -1) {
+                    counts['Windows'] = (counts['Windows'] || 0) + 1;
+                } else if (lower.indexOf('linux') !== -1 || lower.indexOf('syslog') !== -1) {
+                    counts['Linux'] = (counts['Linux'] || 0) + 1;
+                } else if (lower.indexOf('azure') !== -1 || lower.indexOf('o365') !== -1 || lower.indexOf('ms_') !== -1) {
+                    counts['Cloud/Azure'] = (counts['Cloud/Azure'] || 0) + 1;
+                } else if (lower.indexOf('aws') !== -1) {
+                    counts['AWS'] = (counts['AWS'] || 0) + 1;
+                } else if (lower.indexOf('gcp') !== -1) {
+                    counts['GCP'] = (counts['GCP'] || 0) + 1;
+                } else if (lower.indexOf('network') !== -1 || lower.indexOf('firewall') !== -1) {
+                    counts['Network'] = (counts['Network'] || 0) + 1;
+                } else {
+                    counts['Other'] = (counts['Other'] || 0) + 1;
+                }
+            });
+        });
+        return counts;
+    }
+
+    // Helper: Get origin counts
+    function getOriginCounts(detections) {
+        var counts = {};
+        detections.forEach(function(d) {
+            var origin = d.origin || 'custom';
+            counts[origin] = (counts[origin] || 0) + 1;
+        });
+        return counts;
+    }
+
+    // Helper: Get severity counts
+    function getSeverityCounts(detections) {
+        var counts = { critical: 0, high: 0, medium: 0, low: 0, informational: 0 };
+        detections.forEach(function(d) {
+            var sev = (d['Severity/Priority'] || '').toLowerCase();
+            if (sev === 'critical') counts.critical++;
+            else if (sev === 'high') counts.high++;
+            else if (sev === 'medium') counts.medium++;
+            else if (sev === 'low') counts.low++;
+            else if (sev === 'informational' || sev === 'info') counts.informational++;
+        });
+        return counts;
+    }
+
+    // Helper: Render missing fields chart
+    function renderMissingFieldsChart(fieldMissing, total) {
+        var container = document.getElementById('reval-report-fields');
+        if (!container) return;
+
+        var sorted = Object.keys(fieldMissing).filter(function(f) {
+            return fieldMissing[f] > 0;
+        }).sort(function(a, b) {
+            return fieldMissing[b] - fieldMissing[a];
+        });
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="chart-empty">All fields complete</div>';
+            return;
+        }
+
+        var html = '<div class="field-missing-chart">';
+        sorted.forEach(function(f) {
+            var count = fieldMissing[f];
+            var pct = total > 0 ? (count / total * 100).toFixed(1) : 0;
+            var label = App.FIELD_LABELS && App.FIELD_LABELS[f] ? App.FIELD_LABELS[f] : f;
+            html += '<div class="field-bar-row">';
+            html += '<span class="field-name">' + escapeHtml(label) + '</span>';
+            html += '<div class="field-bar"><div class="field-bar-fill" style="width:' + pct + '%"></div></div>';
+            html += '<span class="field-count">' + count + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Helper: Render TTL status
+    function renderTTLStatus(expired, critical, warning, ok) {
+        var container = document.getElementById('reval-report-ttl');
+        if (!container) return;
+
+        var html = '<div class="ttl-summary-chart">';
+        html += '<div class="ttl-bar-item"><span class="ttl-label ttl-expired">Expired</span><span class="ttl-count">' + expired + '</span></div>';
+        html += '<div class="ttl-bar-item"><span class="ttl-label ttl-critical">Critical (&le;30d)</span><span class="ttl-count">' + critical + '</span></div>';
+        html += '<div class="ttl-bar-item"><span class="ttl-label ttl-warning">Warning (&le;90d)</span><span class="ttl-count">' + warning + '</span></div>';
+        html += '<div class="ttl-bar-item"><span class="ttl-label ttl-ok">OK</span><span class="ttl-count">' + ok + '</span></div>';
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Helper: Get history stats
+    function getHistoryStats() {
+        var metadata = App.state.metadata || {};
+        var stats = {
+            totalEntries: 0,
+            totalTunes: 0,
+            totalRetrofits: 0,
+            uniqueAnalysts: 0,
+            byAnalyst: {},
+            byReason: {},
+            recentActivity: []
+        };
+
+        var reasonLabels = {
+            false_positives: 'False Positives',
+            performance: 'Performance',
+            coverage: 'Coverage',
+            threshold: 'Threshold',
+            data_source: 'Data Source',
+            other: 'Other'
+        };
+
+        Object.keys(metadata).forEach(function(name) {
+            var meta = metadata[name];
+            if (meta && meta.history) {
+                meta.history.forEach(function(h) {
+                    stats.totalEntries++;
+                    if (h.type === 'tune') stats.totalTunes++;
+                    if (h.type === 'retrofit') stats.totalRetrofits++;
+                    if (h.analyst) {
+                        stats.byAnalyst[h.analyst] = (stats.byAnalyst[h.analyst] || 0) + 1;
+                    }
+                    if (h.reason) {
+                        var label = reasonLabels[h.reason] || h.reason;
+                        stats.byReason[label] = (stats.byReason[label] || 0) + 1;
+                    }
+                    stats.recentActivity.push({ name: name, entry: h });
+                });
+            }
+        });
+
+        stats.uniqueAnalysts = Object.keys(stats.byAnalyst).length;
+        stats.recentActivity.sort(function(a, b) {
+            return new Date(b.entry.timestamp) - new Date(a.entry.timestamp);
+        });
+
+        return stats;
+    }
+
+    // Helper: Render activity timeline
+    function renderActivityTimeline(activities) {
+        var container = document.getElementById('reval-report-timeline');
+        if (!container) return;
+
+        if (!activities || activities.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No activity</div>';
+            return;
+        }
+
+        var html = '<div class="activity-timeline">';
+        activities.slice(0, 20).forEach(function(item) {
+            var h = item.entry;
+            var icon = h.type === 'tune' ? '&#x1F527;' : h.type === 'retrofit' ? '&#x26A1;' : '&#x1F4DD;';
+            html += '<div class="activity-item ' + (h.type || '') + '">';
+            html += '<span class="activity-icon">' + icon + '</span>';
+            html += '<div class="activity-content">';
+            html += '<span class="activity-detection">' + escapeHtml(item.name) + '</span>';
+            html += '<span class="activity-desc">' + escapeHtml(h.description || 'No description') + '</span>';
+            html += '</div>';
+            html += '<span class="activity-date">' + (h.timestamp ? new Date(h.timestamp).toLocaleDateString() : '') + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Helper: Render quality metrics chart
+    function renderQualityMetricsChart(detections) {
+        var container = document.getElementById('report-quality');
+        if (!container) return;
+
+        var total = detections.length;
+        if (total === 0) {
+            container.innerHTML = '<div class="chart-empty">No data available</div>';
+            return;
+        }
+
+        var metrics = {
+            'Has Description': 0,
+            'Has Objective': 0,
+            'Has MITRE': 0,
+            'Has Drilldowns': 0,
+            'Has Risk Score': 0,
+            'Has Next Steps': 0
+        };
+
+        detections.forEach(function(d) {
+            if (d['Description'] && d['Description'].trim()) metrics['Has Description']++;
+            if (d['Objective'] && d['Objective'].trim()) metrics['Has Objective']++;
+            var mitre = d['Mitre ID'];
+            if (mitre && (Array.isArray(mitre) ? mitre.length > 0 : String(mitre).trim() !== '')) metrics['Has MITRE']++;
+            if (d['Drilldown Name (Legacy)'] || d['Drilldown Name 1']) metrics['Has Drilldowns']++;
+            if (getRiskScore(d) > 0) metrics['Has Risk Score']++;
+            if (d['Analyst Next Steps'] && d['Analyst Next Steps'].trim()) metrics['Has Next Steps']++;
+        });
+
+        var counts = {};
+        Object.keys(metrics).forEach(function(k) {
+            counts[k] = Math.round(metrics[k] / total * 100);
+        });
+
+        renderBarChartFromCounts('report-quality', counts, 10);
+    }
+
+    // Render Severity Chart (for Overview tab)
+    function renderSeverityChart(detections) {
+        var counts = getSeverityCounts(detections);
+        renderBarChartFromCounts('chart-severity', counts, 5);
+    }
+
+    // Render MITRE Chart (for Overview tab)
+    function renderMitreChart(detections) {
+        var container = document.getElementById('chart-mitre');
+        if (!container) return;
+
+        var mitreCounts = {};
+        detections.forEach(function(d) {
+            var mitreIds = d['Mitre ID'] || [];
+            if (!Array.isArray(mitreIds)) {
+                mitreIds = String(mitreIds).split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
+            }
+            mitreIds.forEach(function(id) {
+                // Get just the technique (not sub-technique) for grouping
+                var technique = id.split('.')[0];
+                mitreCounts[technique] = (mitreCounts[technique] || 0) + 1;
+            });
+        });
+
+        renderBarChartFromCounts('chart-mitre', mitreCounts, 15);
+    }
+
+    // Calculate TTL helper
+    function calculateTTL(lastModified) {
+        if (!lastModified) return { days: 999, expired: false };
+        var modified = new Date(lastModified);
+        var now = new Date();
+        var diffDays = Math.floor((now - modified) / (1000 * 60 * 60 * 24));
+        var ttlDays = 365 - diffDays;
+        return {
+            days: ttlDays,
+            expired: ttlDays <= 0
+        };
     }
 
     // Render Stats Cards
@@ -5651,9 +6575,9 @@ function buildCorrelationSearchUrl(detectionName) {
         container.innerHTML = html;
     }
 
-    // Render MITRE ATT&CK Coverage
-    function renderMitreCoverage(detections) {
-        var container = document.getElementById('mitre-coverage-list');
+    // Render MITRE ATT&CK Heatmap
+    function renderMitreHeatmap(detections) {
+        var container = document.getElementById('report-mitre-heatmap');
         var countEl = document.getElementById('mitre-technique-count');
         if (!container) return;
 
@@ -5668,9 +6592,11 @@ function buildCorrelationSearchUrl(detectionName) {
             });
         });
 
-        var sortedMitre = Object.keys(mitreCounts).sort(function(a, b) {
-            // Sort by technique ID
-            return a.localeCompare(b);
+        // Sort by count descending for the heatmap view
+        var sortedMitre = Object.keys(mitreCounts).map(function(id) {
+            return [id, mitreCounts[id]];
+        }).sort(function(a, b) {
+            return b[1] - a[1];
         });
 
         if (countEl) {
@@ -5682,13 +6608,175 @@ function buildCorrelationSearchUrl(detectionName) {
             return;
         }
 
+        var maxCount = sortedMitre[0][1];
         var html = '';
-        sortedMitre.forEach(function(id) {
-            var count = mitreCounts[id];
-            html += '<div class="mitre-technique-tag">';
-            html += '<span class="mitre-technique-id">' + escapeHtml(id) + '</span>';
-            html += '<span class="mitre-technique-count">' + count + '</span>';
+
+        // Show top 30 techniques with opacity-scaled heatmap
+        sortedMitre.slice(0, 30).forEach(function(item) {
+            var id = item[0];
+            var count = item[1];
+            var opacity = 0.25 + (count / maxCount) * 0.75;
+            html += '<div class="mitre-heatmap-cell" style="background: rgba(168, 85, 247, ' + opacity + ');" title="' + escapeAttr(id) + ': ' + count + ' detection(s)">';
+            html += escapeHtml(id);
+            html += '<span class="count">' + count + '</span>';
             html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Quality Metrics Chart
+    function renderQualityMetrics(detections) {
+        var container = document.getElementById('report-quality');
+        if (!container) return;
+
+        var total = detections.length;
+        if (total === 0) {
+            container.innerHTML = '<div class="chart-empty">No detections</div>';
+            return;
+        }
+
+        var withMitre = 0;
+        var withDrilldowns = 0;
+        var withRoles = 0;
+        var withAnalystSteps = 0;
+        var withDescription = 0;
+        var allMandatory = 0;
+
+        detections.forEach(function(d) {
+            // Has MITRE Tags
+            var mitreIds = d['Mitre ID'] || [];
+            if (Array.isArray(mitreIds) && mitreIds.length > 0) withMitre++;
+
+            // Has Drilldowns
+            if (d['Drilldown Name (Legacy)'] || d['Drilldown Name 1']) withDrilldowns++;
+
+            // Has Roles
+            if (d['Roles'] && d['Roles'].some(function(r) { return r.Name && r.Name.trim(); })) withRoles++;
+
+            // Has Analyst Steps
+            if (d['Analyst Next Steps'] && d['Analyst Next Steps'].trim()) withAnalystSteps++;
+
+            // Has Description (different from Objective)
+            if (d['Description'] && d['Description'].trim() && d['Description'] !== d['Objective']) withDescription++;
+
+            // All Mandatory Fields
+            var status = App.getDetectionStatus(d);
+            if (status === 'valid') allMandatory++;
+        });
+
+        var metrics = [
+            { label: 'Has MITRE Tags', count: withMitre },
+            { label: 'Has Drilldowns', count: withDrilldowns },
+            { label: 'Has Roles/Owners', count: withRoles },
+            { label: 'Has Analyst Steps', count: withAnalystSteps },
+            { label: 'Has Description', count: withDescription },
+            { label: 'All Mandatory Fields', count: allMandatory }
+        ];
+
+        var html = '';
+        metrics.forEach(function(m) {
+            var pct = Math.round((m.count / total) * 100);
+            var colorClass = pct >= 80 ? 'quality-success' : pct >= 50 ? 'quality-warning' : 'quality-error';
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label">' + m.label + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar ' + colorClass + '" style="width: ' + pct + '%"></div>';
+            html += '<span class="bar-chart-value">' + pct + '% (' + m.count + ')</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Top Search Fields Chart
+    function renderSearchFieldsChart(detections) {
+        var container = document.getElementById('chart-search-fields');
+        if (!container) return;
+
+        var fieldCounts = {};
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+
+            // Count main search fields
+            (parsed.mainSearchFields || []).forEach(function(f) {
+                fieldCounts[f] = (fieldCounts[f] || 0) + 1;
+            });
+
+            // Also count by fields
+            (parsed.byFields || []).forEach(function(f) {
+                fieldCounts[f] = (fieldCounts[f] || 0) + 1;
+            });
+        });
+
+        var sorted = Object.keys(fieldCounts).map(function(k) {
+            return [k, fieldCounts[k]];
+        }).sort(function(a, b) {
+            return b[1] - a[1];
+        }).slice(0, 15);
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No field data</div>';
+            return;
+        }
+
+        var maxCount = sorted[0][1];
+        var html = '';
+        sorted.forEach(function(item) {
+            var field = item[0];
+            var count = item[1];
+            var pct = (count / maxCount) * 100;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label" title="' + escapeAttr(field) + '">' + escapeHtml(field) + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar fields-bar" style="width: ' + pct + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Render Top SPL Functions Chart
+    function renderSearchFunctionsChart(detections) {
+        var container = document.getElementById('chart-search-functions');
+        if (!container) return;
+
+        var funcCounts = {};
+        detections.forEach(function(d) {
+            var spl = d['Search String'] || '';
+            var parsed = parseSPL(spl);
+
+            // Count SPL functions/commands
+            (parsed.mainSearchFunctions || []).forEach(function(f) {
+                funcCounts[f] = (funcCounts[f] || 0) + 1;
+            });
+        });
+
+        var sorted = Object.keys(funcCounts).map(function(k) {
+            return [k, funcCounts[k]];
+        }).sort(function(a, b) {
+            return b[1] - a[1];
+        }).slice(0, 15);
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="chart-empty">No function data</div>';
+            return;
+        }
+
+        var maxCount = sorted[0][1];
+        var html = '';
+        sorted.forEach(function(item) {
+            var func = item[0];
+            var count = item[1];
+            var pct = (count / maxCount) * 100;
+            html += '<div class="bar-chart-row">';
+            html += '<div class="bar-chart-label" title="' + escapeAttr(func) + '">' + escapeHtml(func) + '</div>';
+            html += '<div class="bar-chart-bar-container">';
+            html += '<div class="bar-chart-bar functions-bar" style="width: ' + pct + '%"></div>';
+            html += '<span class="bar-chart-value">' + count + '</span>';
+            html += '</div></div>';
         });
 
         container.innerHTML = html;

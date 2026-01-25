@@ -72,8 +72,12 @@
                     <div class="library-layout">
                         <!-- Sidebar - Filters + Detection List -->
                         <aside class="library-sidebar" id="library-sidebar">
-                            <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar">
-                                <span class="collapse-icon">◀</span>
+                            <button class="library-sidebar-toggle" id="library-sidebar-toggle" title="Toggle filters panel">
+                                <span class="toggle-icon">
+                                    <span class="burger-line"></span>
+                                    <span class="burger-line"></span>
+                                    <span class="burger-line"></span>
+                                </span>
                             </button>
                             <div class="sidebar-content">
                                 <div class="library-search">
@@ -122,6 +126,30 @@
                                         <option value="sigma">Sigma</option>
                                     </select>
                                 </div>
+                                <div class="filter-row">
+                                    <select id="filter-sourcetype" class="filter-select">
+                                        <option value="">All Sourcetypes</option>
+                                    </select>
+                                    <select id="filter-main-search-field" class="filter-select">
+                                        <option value="">Search Fields</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <select id="filter-search-function" class="filter-select">
+                                        <option value="">SPL Commands</option>
+                                    </select>
+                                    <select id="filter-drilldown-var" class="filter-select">
+                                        <option value="">Drilldown Vars</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row">
+                                    <select id="filter-sort" class="filter-select">
+                                        <option value="name-asc">Name (A-Z)</option>
+                                        <option value="name-desc">Name (Z-A)</option>
+                                        <option value="modified-desc">Modified (Newest)</option>
+                                        <option value="risk-desc">Risk (Highest)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="library-list-header">
                                 <span id="library-count">0 detections</span>
@@ -130,7 +158,10 @@
                             </div><!-- End sidebar-content -->
                         </aside>
                         <!-- Main content area - Detection Document -->
-                        <div class="library-main">
+                        <div class="library-main" id="library-main">
+                            <button class="library-main-toggle" id="library-main-toggle" title="Toggle detail panel">
+                                <span class="toggle-arrow">&#x25C0;</span>
+                            </button>
                             <div id="detail-placeholder" class="detail-placeholder">
                                 <span class="placeholder-icon">📋</span>
                                 <p>Select a detection from the sidebar to view documentation</p>
@@ -811,141 +842,313 @@
                 </section>
                 <!-- Reports View -->
                 <section id="view-reports" class="view">
-                    <div class="reports-layout">
-                        <!-- Stats Cards Row -->
-                        <div class="reports-stats-row">
-                            <div class="stat-card stat-total">
-                                <div class="stat-value" id="stat-total-detections">0</div>
-                                <div class="stat-label">Total Detections</div>
-                            </div>
-                            <div class="stat-card stat-critical">
-                                <div class="stat-value" id="stat-critical">0</div>
-                                <div class="stat-label">Critical</div>
-                            </div>
-                            <div class="stat-card stat-high">
-                                <div class="stat-value" id="stat-high">0</div>
-                                <div class="stat-label">High</div>
-                            </div>
-                            <div class="stat-card stat-medium">
-                                <div class="stat-value" id="stat-medium">0</div>
-                                <div class="stat-label">Medium</div>
-                            </div>
-                            <div class="stat-card stat-low">
-                                <div class="stat-value" id="stat-low">0</div>
-                                <div class="stat-label">Low</div>
-                            </div>
-                            <div class="stat-card stat-info">
-                                <div class="stat-value" id="stat-info">0</div>
-                                <div class="stat-label">Info</div>
+                    <div class="reports-container">
+                        <!-- Sub-Tab Navigation -->
+                        <div class="reports-tabs">
+                            <button class="reports-tab active" data-tab="overview">Overview</button>
+                            <button class="reports-tab" data-tab="coverage">Detection Coverage</button>
+                            <button class="reports-tab" data-tab="revalidations">Revalidations</button>
+                            <button class="reports-tab" data-tab="metadata">Detection Metadata</button>
+                        </div>
+
+                        <!-- Overview Tab -->
+                        <div id="reports-overview" class="reports-tab-content active">
+                            <div class="reports-layout">
+                                <!-- Stats Cards Row -->
+                                <div class="reports-stats-row">
+                                    <div class="stat-card stat-total">
+                                        <div class="stat-value" id="stat-total-detections">0</div>
+                                        <div class="stat-label">Total Detections</div>
+                                    </div>
+                                    <div class="stat-card stat-critical">
+                                        <div class="stat-value" id="stat-critical">0</div>
+                                        <div class="stat-label">Critical</div>
+                                    </div>
+                                    <div class="stat-card stat-high">
+                                        <div class="stat-value" id="stat-high">0</div>
+                                        <div class="stat-label">High</div>
+                                    </div>
+                                    <div class="stat-card stat-medium">
+                                        <div class="stat-value" id="stat-medium">0</div>
+                                        <div class="stat-label">Medium</div>
+                                    </div>
+                                    <div class="stat-card stat-low">
+                                        <div class="stat-value" id="stat-low">0</div>
+                                        <div class="stat-label">Low</div>
+                                    </div>
+                                    <div class="stat-card stat-info">
+                                        <div class="stat-value" id="stat-info">0</div>
+                                        <div class="stat-label">Info</div>
+                                    </div>
+                                </div>
+
+                                <!-- Charts Row -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Severity Distribution</h3>
+                                        <div id="chart-severity" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Risk Score Distribution</h3>
+                                        <div id="chart-risk" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Security Domains</h3>
+                                        <div id="chart-by-domain" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Data Sources and MITRE Row -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Data Sources</h3>
+                                        <div id="chart-by-datasource" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">MITRE Techniques</h3>
+                                        <div id="chart-mitre" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Recent Activity Row -->
+                                <div class="reports-recent-row">
+                                    <div class="reports-section recent-section">
+                                        <h3 class="reports-section-title">Recently Modified</h3>
+                                        <div id="list-recent-modifications" class="recent-list"></div>
+                                    </div>
+                                    <div class="reports-section recent-section tune">
+                                        <h3 class="reports-section-title">Recent Tunes</h3>
+                                        <div id="list-recent-tunes" class="recent-list"></div>
+                                    </div>
+                                    <div class="reports-section recent-section retrofit">
+                                        <h3 class="reports-section-title">Recent Retrofits</h3>
+                                        <div id="list-recent-retrofits" class="recent-list"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Revalidation Status Summary -->
-                        <div class="reports-section">
-                            <h3 class="reports-section-title">Revalidation Status</h3>
-                            <div class="reval-status-cards">
-                                <div class="reval-status-card reval-valid">
-                                    <div class="reval-status-value" id="reval-stat-valid">0</div>
-                                    <div class="reval-status-label">Valid</div>
+                        <!-- Coverage Tab -->
+                        <div id="reports-coverage" class="reports-tab-content hidden">
+                            <div class="reports-layout">
+                                <h2 class="reports-tab-title">Detection Coverage Report</h2>
+
+                                <!-- Coverage Summary Stats -->
+                                <div class="reports-summary">
+                                    <div class="report-stat">
+                                        <div id="report-coverage-mitre" class="report-stat-value">0%</div>
+                                        <div class="report-stat-label">MITRE Coverage</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="report-coverage-drilldowns" class="report-stat-value">0%</div>
+                                        <div class="report-stat-label">Has Drilldowns</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="report-avg-risk" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Avg Risk Score</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="report-total" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Total Detections</div>
+                                    </div>
                                 </div>
-                                <div class="reval-status-card reval-incomplete">
-                                    <div class="reval-status-value" id="reval-stat-incomplete">0</div>
-                                    <div class="reval-status-label">Incomplete</div>
+
+                                <!-- Coverage Charts -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Data Sources</h3>
+                                        <div id="report-datasources" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Platforms</h3>
+                                        <div id="report-platforms" class="bar-chart-container"></div>
+                                    </div>
                                 </div>
-                                <div class="reval-status-card reval-needs-tune">
-                                    <div class="reval-status-value" id="reval-stat-needs-tune">0</div>
-                                    <div class="reval-status-label">Needs Tune</div>
+
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Security Domains</h3>
+                                        <div id="report-domains" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Origins</h3>
+                                        <div id="report-origins" class="bar-chart-container"></div>
+                                    </div>
                                 </div>
-                                <div class="reval-status-card reval-needs-retrofit">
-                                    <div class="reval-status-value" id="reval-stat-needs-retrofit">0</div>
-                                    <div class="reval-status-label">Needs Retrofit</div>
+
+                                <!-- MITRE Heatmap -->
+                                <div class="reports-section full-width">
+                                    <h3 class="reports-section-title">MITRE ATT&CK Coverage</h3>
+                                    <div class="mitre-coverage-header">
+                                        <span id="mitre-technique-count">0 techniques covered</span>
+                                    </div>
+                                    <div id="report-mitre-heatmap" class="mitre-heatmap-container"></div>
+                                </div>
+
+                                <!-- Quality Metrics -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Severity Breakdown</h3>
+                                        <div id="report-severity" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Quality Metrics</h3>
+                                        <div id="report-quality" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Search Fields & Functions -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Top Search Fields</h3>
+                                        <div id="chart-search-fields" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Top SPL Functions</h3>
+                                        <div id="chart-search-functions" class="bar-chart-container"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Charts Row -->
-                        <div class="reports-charts-row">
-                            <!-- Detections by Domain -->
-                            <div class="reports-section chart-section">
-                                <h3 class="reports-section-title">Detections by Domain</h3>
-                                <div id="chart-by-domain" class="bar-chart-container"></div>
-                            </div>
+                        <!-- Revalidations Tab -->
+                        <div id="reports-revalidations" class="reports-tab-content hidden">
+                            <div class="reports-layout">
+                                <h2 class="reports-tab-title">Revalidation Report</h2>
 
-                            <!-- Detections by Data Source -->
-                            <div class="reports-section chart-section">
-                                <h3 class="reports-section-title">Detections by Data Source</h3>
-                                <div id="chart-by-datasource" class="bar-chart-container"></div>
-                            </div>
-                        </div>
-
-                        <!-- MITRE ATT&CK Coverage -->
-                        <div class="reports-section">
-                            <h3 class="reports-section-title">MITRE ATT&CK Coverage</h3>
-                            <div class="mitre-coverage-header">
-                                <span id="mitre-technique-count">0 techniques covered</span>
-                            </div>
-                            <div id="mitre-coverage-list" class="mitre-coverage-list"></div>
-                        </div>
-
-                        <!-- Metadata Statistics Row -->
-                        <div class="reports-metadata-row">
-                            <!-- Most Used Macros -->
-                            <div class="reports-section metadata-section">
-                                <h3 class="reports-section-title">Most Used Macros</h3>
-                                <div id="top-macros-list" class="metadata-list"></div>
-                            </div>
-
-                            <!-- Most Used Lookups -->
-                            <div class="reports-section metadata-section">
-                                <h3 class="reports-section-title">Most Used Lookups</h3>
-                                <div id="top-lookups-list" class="metadata-list"></div>
-                            </div>
-
-                            <!-- Most Used Indexes -->
-                            <div class="reports-section metadata-section">
-                                <h3 class="reports-section-title">Most Used Indexes</h3>
-                                <div id="top-indexes-list" class="metadata-list"></div>
-                            </div>
-                        </div>
-
-                        <!-- Risk Distribution -->
-                        <div class="reports-section">
-                            <h3 class="reports-section-title">Risk Score Distribution</h3>
-                            <div class="risk-stats-row">
-                                <div class="risk-stat">
-                                    <span class="risk-stat-label">Avg Risk</span>
-                                    <span class="risk-stat-value" id="risk-stat-avg">0</span>
+                                <!-- Revalidation Summary Stats -->
+                                <div class="reports-summary">
+                                    <div class="report-stat">
+                                        <div id="reval-report-total" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Total Detections</div>
+                                    </div>
+                                    <div class="report-stat valid">
+                                        <div id="reval-report-valid" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Fully Valid</div>
+                                    </div>
+                                    <div class="report-stat tune">
+                                        <div id="reval-report-tune" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Need Tune</div>
+                                    </div>
+                                    <div class="report-stat retrofit">
+                                        <div id="reval-report-retrofit" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Need Retrofit</div>
+                                    </div>
                                 </div>
-                                <div class="risk-stat">
-                                    <span class="risk-stat-label">Max Risk</span>
-                                    <span class="risk-stat-value" id="risk-stat-max">0</span>
+
+                                <!-- Missing Fields & TTL -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Missing Fields Summary</h3>
+                                        <div id="reval-report-fields" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">TTL Status</h3>
+                                        <div id="reval-report-ttl" class="ttl-status-container"></div>
+                                    </div>
                                 </div>
-                                <div class="risk-stat">
-                                    <span class="risk-stat-label">Min Risk</span>
-                                    <span class="risk-stat-value" id="risk-stat-min">0</span>
+
+                                <!-- History Stats -->
+                                <div class="reports-summary" style="margin-top: 20px;">
+                                    <div class="report-stat">
+                                        <div id="reval-report-history-total" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Total History Entries</div>
+                                    </div>
+                                    <div class="report-stat tune">
+                                        <div id="reval-report-tunes" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Total Tunes</div>
+                                    </div>
+                                    <div class="report-stat retrofit">
+                                        <div id="reval-report-retrofits" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Total Retrofits</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="reval-report-analysts" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Unique Analysts</div>
+                                    </div>
+                                </div>
+
+                                <!-- Activity Charts -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Activity by Analyst</h3>
+                                        <div id="reval-report-analyst-chart" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Activity by Reason</h3>
+                                        <div id="reval-report-reason-chart" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Activity Timeline -->
+                                <div class="reports-section full-width">
+                                    <h3 class="reports-section-title">Recent Activity Timeline</h3>
+                                    <div id="reval-report-timeline" class="activity-timeline-container"></div>
                                 </div>
                             </div>
-                            <div id="chart-risk-distribution" class="bar-chart-container"></div>
                         </div>
 
-                        <!-- Recent Activity Row -->
-                        <div class="reports-recent-row">
-                            <!-- Recent Modifications -->
-                            <div class="reports-section recent-section">
-                                <h3 class="reports-section-title">Recent Modifications</h3>
-                                <div id="list-recent-modifications" class="recent-list"></div>
-                            </div>
+                        <!-- Metadata Tab -->
+                        <div id="reports-metadata" class="reports-tab-content hidden">
+                            <div class="reports-layout">
+                                <h2 class="reports-tab-title">Detection Metadata Report</h2>
+                                <p class="reports-subtitle">Statistics based on parsed values from detection metadata files</p>
 
-                            <!-- Recent Tunes -->
-                            <div class="reports-section recent-section">
-                                <h3 class="reports-section-title">Recent Tunes</h3>
-                                <div id="list-recent-tunes" class="recent-list"></div>
-                            </div>
+                                <!-- Metadata Summary Stats -->
+                                <div class="reports-summary">
+                                    <div class="report-stat">
+                                        <div id="meta-report-detections" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Detections with Metadata</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="meta-report-indexes" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Unique Indexes</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="meta-report-sourcetypes" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Unique Sourcetypes</div>
+                                    </div>
+                                    <div class="report-stat">
+                                        <div id="meta-report-functions" class="report-stat-value">0</div>
+                                        <div class="report-stat-label">Unique Functions</div>
+                                    </div>
+                                </div>
 
-                            <!-- Recent Retrofits -->
-                            <div class="reports-section recent-section">
-                                <h3 class="reports-section-title">Recent Retrofits</h3>
-                                <div id="list-recent-retrofits" class="recent-list"></div>
+                                <!-- Index and Sourcetype Charts -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Top Indexes</h3>
+                                        <div id="meta-report-index-chart" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Top Sourcetypes</h3>
+                                        <div id="meta-report-sourcetype-chart" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Fields and Functions Charts -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Main Search Fields</h3>
+                                        <div id="meta-report-fields-chart" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Search Functions</h3>
+                                        <div id="meta-report-func-chart" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Macros and Lookups Charts -->
+                                <div class="reports-charts-row">
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Macros Used</h3>
+                                        <div id="meta-report-macros-chart" class="bar-chart-container"></div>
+                                    </div>
+                                    <div class="reports-section chart-section">
+                                        <h3 class="reports-section-title">Lookups Used</h3>
+                                        <div id="meta-report-lookups-chart" class="bar-chart-container"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
