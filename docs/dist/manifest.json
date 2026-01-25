@@ -1,9 +1,9 @@
 {
-  "lastCompiled": "2026-01-25T21:35:59.616Z",
+  "lastCompiled": "2026-01-25T21:46:04.756Z",
   "version": "1.2",
   "counts": {
-    "detections": 51,
-    "metadata": 51
+    "detections": 50,
+    "metadata": 50
   },
   "files": {
     "detections": [
@@ -56,8 +56,7 @@
       "web_fortinet_appliance_auth_bypass.json",
       "web_jenkins_arbitrary_file_read_cve_2024_23897.json",
       "web_jsp_request_via_url.json",
-      "web_log4shell_jndi_payload_injection_attempt.json",
-      "Test_Detection_-_Claude_Automated_Test.json"
+      "web_log4shell_jndi_payload_injection_attempt.json"
     ],
     "metadata": [
       "Azure_Active_Directory_High_Risk_Sign-in.meta.json",
@@ -109,8 +108,7 @@
       "Fortinet_Appliance_Auth_bypass.meta.json",
       "Jenkins_Arbitrary_File_Read_CVE-2024-23897.meta.json",
       "Web_JSP_Request_via_URL.meta.json",
-      "Log4Shell_JNDI_Payload_Injection_Attempt.meta.json",
-      "Test_Detection_-_Claude_Automated_Test.meta.json"
+      "Log4Shell_JNDI_Payload_Injection_Attempt.meta.json"
     ]
   }
 }
