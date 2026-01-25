@@ -1353,19 +1353,16 @@
                 </section>
             </main>
 
-            <!-- Macro Modal -->
-            <div id="modal-macro" class="modal hidden">
+            <!-- Macro Details Modal (floating) -->
+            <div id="modal-macro" class="modal macro-details-modal hidden">
                 <div class="modal-overlay" onclick="closeMacroModal()"></div>
-                <div class="modal-content">
+                <div class="modal-content macro-details-content-wrapper">
                     <div class="modal-header">
                         <h3 id="macro-modal-title">Macro Details</h3>
                         <button class="modal-close" onclick="closeMacroModal()">×</button>
                     </div>
                     <div class="modal-body" id="macro-modal-content">
                         <!-- Content injected by JS -->
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-action" onclick="closeMacroModal()">Close</button>
                     </div>
                 </div>
             </div>
@@ -1514,7 +1511,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Fields to Update</label>
+                            <label>Fields to Update <span class="label-hint">(select which fields you plan to modify)</span></label>
                             <div class="fields-list" id="tune-fields-list">
                                 <!-- Populated by JavaScript -->
                             </div>
@@ -1566,7 +1563,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Fields to Update</label>
+                            <label>Fields to Update <span class="label-hint">(select which fields you plan to modify)</span></label>
                             <div class="fields-list" id="retrofit-fields-list">
                                 <!-- Populated by JavaScript -->
                             </div>

@@ -2988,6 +2988,38 @@ function buildCorrelationSearchUrl(detectionName) {
         App.selectDetection(name);
     };
 
+    /**
+     * Navigate to Library tab and show a specific detection
+     * Used from Revalidation and other tabs to jump to a detection in the Library
+     */
+    window.goToLibraryDetection = function(detectionName) {
+        // Switch to Library tab
+        switchTab('library');
+
+        // Find the detection
+        var found = App.state.detections.find(function(d) {
+            return d['Detection Name'] === detectionName;
+        });
+
+        if (found) {
+            // Clear any existing filters and set search to the detection name
+            var searchInput = document.getElementById('library-search-input');
+            if (searchInput) {
+                searchInput.value = detectionName;
+            }
+
+            // Apply filters to show the detection
+            App.applyFilters();
+
+            // Select and show the detection detail after a brief delay for DOM update
+            setTimeout(function() {
+                App.selectDetection(detectionName);
+            }, 100);
+        } else {
+            showToast('Detection not found: ' + detectionName, 'error');
+        }
+    };
+
     window.copyById = function(id, btn) {
         var text = App.state.copyableContent[id] || '';
         if (!text) {
@@ -3436,7 +3468,9 @@ function buildCorrelationSearchUrl(detectionName) {
         if (nameEl) nameEl.textContent = d['Detection Name'];
 
         // Reset form
-        document.getElementById('tune-jira').value = '';
+        var jiraInput = document.getElementById('tune-jira');
+        jiraInput.value = '';
+        jiraInput.classList.remove('input-error');
         document.getElementById('tune-analyst').value = '';
         document.getElementById('tune-description').value = '';
         document.getElementById('tune-reason').value = '';
@@ -3459,11 +3493,20 @@ function buildCorrelationSearchUrl(detectionName) {
         var d = App.state.selectedDetection;
         if (!d) return;
 
-        var jira = document.getElementById('tune-jira').value.trim();
+        var jiraInput = document.getElementById('tune-jira');
+        var jira = jiraInput.value.trim();
         var analyst = document.getElementById('tune-analyst').value.trim();
         var description = document.getElementById('tune-description').value.trim();
         var reason = document.getElementById('tune-reason').value;
         var fieldsToUpdate = getSelectedFields('tune-fields-list');
+
+        // Validate JIRA - must be exactly 4 digits
+        if (!jira || !/^\d{4}$/.test(jira)) {
+            jiraInput.classList.add('input-error');
+            showToast('JIRA Issue must be exactly 4 digits (e.g., 1234)', 'warning');
+            return;
+        }
+        jiraInput.classList.remove('input-error');
 
         if (!analyst) {
             showToast('Please enter analyst name', 'warning');
@@ -3475,10 +3518,10 @@ function buildCorrelationSearchUrl(detectionName) {
             return;
         }
 
-        // Store pending tune data
+        // Store pending tune data with MRDP- prefix
         pendingTune = {
             detectionName: d['Detection Name'],
-            jira: jira,
+            jira: 'MRDP-' + jira,
             analyst: analyst,
             description: description,
             reason: reason,
@@ -3510,7 +3553,9 @@ function buildCorrelationSearchUrl(detectionName) {
         if (nameEl) nameEl.textContent = d['Detection Name'];
 
         // Reset form
-        document.getElementById('retrofit-jira').value = '';
+        var jiraInput = document.getElementById('retrofit-jira');
+        jiraInput.value = '';
+        jiraInput.classList.remove('input-error');
         document.getElementById('retrofit-analyst').value = '';
         document.getElementById('retrofit-description').value = '';
         document.getElementById('retrofit-type').value = '';
@@ -3533,11 +3578,20 @@ function buildCorrelationSearchUrl(detectionName) {
         var d = App.state.selectedDetection;
         if (!d) return;
 
-        var jira = document.getElementById('retrofit-jira').value.trim();
+        var jiraInput = document.getElementById('retrofit-jira');
+        var jira = jiraInput.value.trim();
         var analyst = document.getElementById('retrofit-analyst').value.trim();
         var description = document.getElementById('retrofit-description').value.trim();
         var retrofitType = document.getElementById('retrofit-type').value;
         var fieldsToUpdate = getSelectedFields('retrofit-fields-list');
+
+        // Validate JIRA - must be exactly 4 digits
+        if (!jira || !/^\d{4}$/.test(jira)) {
+            jiraInput.classList.add('input-error');
+            showToast('JIRA Issue must be exactly 4 digits (e.g., 1234)', 'warning');
+            return;
+        }
+        jiraInput.classList.remove('input-error');
 
         if (!analyst) {
             showToast('Please enter analyst name', 'warning');
@@ -3549,10 +3603,10 @@ function buildCorrelationSearchUrl(detectionName) {
             return;
         }
 
-        // Store pending retrofit data
+        // Store pending retrofit data with MRDP- prefix
         pendingRetrofit = {
             detectionName: d['Detection Name'],
-            jira: jira,
+            jira: 'MRDP-' + jira,
             analyst: analyst,
             description: description,
             type: retrofitType,
@@ -3632,14 +3686,35 @@ function buildCorrelationSearchUrl(detectionName) {
             var statusIcon = hasValue ? '✓' : '○';
 
             return '<label class="field-checkbox ' + statusClass + '">' +
-                '<input type="checkbox" value="' + escapeAttr(field) + '"> ' +
+                '<input type="checkbox" value="' + escapeAttr(field) + '" onchange="updateFieldsSelectedCount(\'' + containerId + '\')"> ' +
                 '<span class="field-status">' + statusIcon + '</span> ' +
                 escapeHtml(field) +
             '</label>';
         }).join('');
 
+        // Add selected count display
+        html += '<div class="fields-selected-count" id="' + containerId + '-count">Click to select fields you will update</div>';
+
         container.innerHTML = html;
     }
+
+    // Update the selected fields count display
+    window.updateFieldsSelectedCount = function(containerId) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+
+        var count = container.querySelectorAll('input[type="checkbox"]:checked').length;
+        var countEl = document.getElementById(containerId + '-count');
+        if (countEl) {
+            if (count === 0) {
+                countEl.textContent = 'Click to select fields you will update';
+                countEl.style.color = 'var(--color-text-muted)';
+            } else {
+                countEl.textContent = count + ' field' + (count === 1 ? '' : 's') + ' selected';
+                countEl.style.color = 'var(--color-accent)';
+            }
+        }
+    };
 
     // Check if a field has a value
     function hasFieldValue(d, field) {
@@ -4486,7 +4561,7 @@ function buildCorrelationSearchUrl(detectionName) {
         if (missingMacros.length > 0) {
             macroHeader.classList.remove('hidden');
             macroList.innerHTML = missingMacros.map(function(m) {
-                return '<li class="validation-item warning"><span class="macro-link" onclick="goToMacrosTab(\'' + escapeAttr(m) + '\')">`' + escapeHtml(m) + '`</span> - click to check in Macros tab</li>';
+                return '<li class="validation-item warning"><span class="macro-link clickable" onclick="openMacroModal(\'' + escapeAttr(m) + '\')">`' + escapeHtml(m) + '`</span> - click to view details</li>';
             }).join('');
         } else {
             macroHeader.classList.add('hidden');
@@ -5589,7 +5664,7 @@ function buildCorrelationSearchUrl(detectionName) {
             html += '<input type="checkbox" class="reval-item-checkbox" ' + (isChecked ? 'checked' : '') + ' onclick="event.stopPropagation(); toggleRevalidationItem(\'' + escapeAttr(name) + '\', this.checked)">';
             html += '<div class="reval-item-content">';
             html += '<div class="reval-item-header">';
-            html += '<span class="reval-item-name">' + escapeHtml(name) + '</span>';
+            html += '<a href="#" class="reval-item-name reval-item-link" onclick="event.stopPropagation(); goToLibraryDetection(\'' + escapeAttr(name) + '\'); return false;" title="View in Library">' + escapeHtml(name) + '</a>';
             html += '<span class="reval-item-status ' + status + '">' + statusLabel + '</span>';
             html += '</div>';
             html += '<div class="reval-item-meta">';
