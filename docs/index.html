@@ -633,6 +633,14 @@
                 </section>
                 <!-- Revalidation View -->
                 <section id="view-revalidation" class="view">
+                    <!-- Sub-Tab Navigation -->
+                    <div class="reval-tabs">
+                        <button class="reval-tab active" data-tab="workflow">Revalidation Workflow</button>
+                        <button class="reval-tab" data-tab="splunk-launcher">Splunk Launcher</button>
+                    </div>
+
+                    <!-- Revalidation Workflow Tab -->
+                    <div id="reval-tab-workflow" class="reval-tab-content active">
                     <div class="revalidation-layout">
                         <!-- Sidebar - Filters + Detection List -->
                         <aside class="revalidation-sidebar">
@@ -712,6 +720,43 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- End Revalidation Workflow Tab -->
+
+                    <!-- Splunk Launcher Tab -->
+                    <div id="reval-tab-splunk-launcher" class="reval-tab-content hidden">
+                        <div class="splunk-launcher-container">
+                            <div class="splunk-launcher-header">
+                                <h2 class="splunk-launcher-title">Splunk Dashboard Launcher</h2>
+                                <p class="splunk-launcher-subtitle">Launch Splunk dashboards for detections that need revalidation</p>
+                            </div>
+
+                            <!-- Filter Controls -->
+                            <div class="splunk-launcher-filters">
+                                <div class="launcher-filter-group">
+                                    <label for="launcher-status-filter">Status Filter:</label>
+                                    <select id="launcher-status-filter" class="form-input" onchange="filterSplunkLauncher()">
+                                        <option value="all">All Needing Attention</option>
+                                        <option value="needs-tune">Needs Tune</option>
+                                        <option value="needs-retrofit">Needs Retrofit</option>
+                                        <option value="incomplete">Incomplete</option>
+                                        <option value="expired">TTL Expired</option>
+                                    </select>
+                                </div>
+                                <div class="launcher-filter-group">
+                                    <label for="launcher-search">Search:</label>
+                                    <input type="text" id="launcher-search" class="form-input search-input" placeholder="Search detections..." oninput="filterSplunkLauncher()">
+                                </div>
+                                <div class="launcher-count">
+                                    <span id="launcher-detection-count">0 detections</span>
+                                </div>
+                            </div>
+
+                            <!-- Detection List for Splunk Launch -->
+                            <div id="splunk-launcher-list" class="splunk-launcher-list">
+                                <!-- Detection cards with Splunk launch buttons will be rendered here -->
+                            </div>
+                        </div>
+                    </div><!-- End Splunk Launcher Tab -->
                 </section>
                 <!-- History View -->
                 <section id="view-history" class="view">
@@ -766,6 +811,22 @@
                                 </div>
                             </div>
 
+                            <!-- Analyst Filter -->
+                            <div class="history-filter-section">
+                                <div class="filter-section-header">Analyst</div>
+                                <select id="history-analyst-filter" class="form-select" onchange="filterHistory()">
+                                    <option value="">All Analysts</option>
+                                </select>
+                            </div>
+
+                            <!-- Field Changed Filter -->
+                            <div class="history-filter-section">
+                                <div class="filter-section-header">Field Changed</div>
+                                <select id="history-field-filter" class="form-select" onchange="filterHistory()">
+                                    <option value="">All Fields</option>
+                                </select>
+                            </div>
+
                             <!-- Detection Name Search -->
                             <div class="history-filter-section">
                                 <div class="filter-section-header">Detection Search</div>
@@ -774,9 +835,10 @@
                                 </div>
                             </div>
 
-                            <!-- Results Count -->
+                            <!-- Results Count and Clear Filters -->
                             <div class="history-list-header">
                                 <span id="history-count">0 changes</span>
+                                <button class="btn-clear-filters" onclick="clearHistoryFilters()">Clear Filters</button>
                             </div>
                         </aside>
 
@@ -1219,7 +1281,7 @@
                                             <h4>Import Detections</h4>
                                             <p>Import detections from a JSON file</p>
                                         </div>
-                                        <input type="file" id="import-file-input" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                                        <input type="file" id="import-file-input" accept=".json" multiple style="display: none;" onchange="handleImportFile(event)">
                                         <button class="btn-action" onclick="document.getElementById('import-file-input').click()">Import JSON</button>
                                     </div>
 
@@ -1622,7 +1684,7 @@
                                         <h4>Import Detections</h4>
                                         <p>Import detections from a JSON file</p>
                                     </div>
-                                    <input type="file" id="modal-import-file-input" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                                    <input type="file" id="modal-import-file-input" accept=".json" multiple style="display: none;" onchange="handleImportFile(event)">
                                     <button class="btn-action" onclick="document.getElementById('modal-import-file-input').click()">Import JSON</button>
                                 </div>
                                 <div class="data-operation-row">

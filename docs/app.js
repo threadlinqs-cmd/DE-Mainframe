@@ -1203,15 +1203,95 @@ function buildCorrelationSearchUrl(detectionName) {
                 });
             });
 
-            // Keyboard shortcuts (1-8 for tabs)
+            // Keyboard shortcuts
             document.addEventListener('keydown', function(e) {
-                // Ignore if user is typing in an input/textarea
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                var key = e.key;
+                var isCtrlOrCmd = e.ctrlKey || e.metaKey;
+                var isInInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+
+                // Escape - Close any open modal
+                if (key === 'Escape') {
+                    var modals = document.querySelectorAll('.modal:not(.hidden)');
+                    modals.forEach(function(modal) {
+                        // Don't close password modal with Escape
+                        if (modal.id !== 'modal-password') {
+                            modal.classList.add('hidden');
+                        }
+                    });
                     return;
                 }
-                // Check for number keys 1-8
-                var key = e.key;
-                if (key >= '1' && key <= '8') {
+
+                // Ctrl+S - Save detection (when in Editor tab)
+                if (isCtrlOrCmd && key === 's') {
+                    var editorView = document.getElementById('view-editor');
+                    if (editorView && editorView.classList.contains('active')) {
+                        e.preventDefault();
+                        if (typeof saveDetection === 'function') {
+                            saveDetection();
+                        }
+                    }
+                    return;
+                }
+
+                // Ctrl+N - Create new detection
+                if (isCtrlOrCmd && key === 'n') {
+                    e.preventDefault();
+                    // Navigate to Editor tab
+                    var editorNav = document.querySelector('.nav-item[href="#editor"]');
+                    if (editorNav) {
+                        App.handleNavigation(editorNav);
+                    }
+                    // Create new detection
+                    if (typeof createNewDetection === 'function') {
+                        createNewDetection();
+                    }
+                    return;
+                }
+
+                // Ctrl+F - Focus search bar in Library
+                if (isCtrlOrCmd && key === 'f') {
+                    var libraryView = document.getElementById('view-library');
+                    if (libraryView && libraryView.classList.contains('active')) {
+                        e.preventDefault();
+                        var searchInput = document.getElementById('library-search-input');
+                        if (searchInput) {
+                            searchInput.focus();
+                            searchInput.select();
+                        }
+                    }
+                    return;
+                }
+
+                // Ctrl+I - Open import (trigger file input in Settings)
+                if (isCtrlOrCmd && key === 'i') {
+                    e.preventDefault();
+                    var importInput = document.getElementById('modal-import-file-input');
+                    if (importInput) {
+                        importInput.click();
+                    }
+                    return;
+                }
+
+                // Ctrl+E - Export current detection (in Editor) or all detections
+                if (isCtrlOrCmd && key === 'e') {
+                    e.preventDefault();
+                    var editorView = document.getElementById('view-editor');
+                    if (editorView && editorView.classList.contains('active')) {
+                        // Export current detection
+                        if (typeof downloadCurrentDetection === 'function') {
+                            downloadCurrentDetection();
+                        }
+                    } else {
+                        // Export all detections
+                        if (typeof exportAllDetections === 'function') {
+                            exportAllDetections();
+                        }
+                    }
+                    return;
+                }
+
+                // Number keys 1-8 for tabs (only when not in input)
+                if (!isInInput && key >= '1' && key <= '8') {
                     var navItem = document.querySelector('.nav-item[data-key="' + key + '"]');
                     if (navItem) {
                         e.preventDefault();
@@ -5802,6 +5882,202 @@ function buildCorrelationSearchUrl(detectionName) {
         );
     };
 
+    // ========================================
+    // Revalidation Sub-Tabs
+    // ========================================
+
+    // Initialize Revalidation Sub-Tabs
+    function initRevalidationTabs() {
+        document.querySelectorAll('.reval-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                var tabName = tab.dataset.tab;
+                if (!tabName) return;
+
+                // Update active tab button
+                document.querySelectorAll('.reval-tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                tab.classList.add('active');
+
+                // Update active tab content
+                document.querySelectorAll('.reval-tab-content').forEach(function(c) {
+                    c.classList.add('hidden');
+                    c.classList.remove('active');
+                });
+
+                var content = document.getElementById('reval-tab-' + tabName);
+                if (content) {
+                    content.classList.remove('hidden');
+                    content.classList.add('active');
+                }
+
+                // Render Splunk Launcher if switching to that tab
+                if (tabName === 'splunk-launcher') {
+                    renderSplunkLauncher();
+                }
+            });
+        });
+    }
+
+    // Splunk Launcher state
+    var splunkLauncherState = {
+        statusFilter: 'all',
+        searchQuery: '',
+        filteredDetections: []
+    };
+
+    // Filter Splunk Launcher list
+    window.filterSplunkLauncher = function() {
+        var statusFilter = document.getElementById('launcher-status-filter');
+        var searchInput = document.getElementById('launcher-search');
+
+        splunkLauncherState.statusFilter = statusFilter ? statusFilter.value : 'all';
+        splunkLauncherState.searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        renderSplunkLauncher();
+    };
+
+    // Render Splunk Launcher content
+    function renderSplunkLauncher() {
+        var container = document.getElementById('splunk-launcher-list');
+        var countEl = document.getElementById('launcher-detection-count');
+
+        if (!container) return;
+
+        var detections = App.state.detections || [];
+
+        // Filter detections based on status
+        var filtered = detections.filter(function(d) {
+            var status = App.getDetectionStatus(d);
+            var ttl = calculateTTL(d['Last Modified']);
+
+            // Status filter
+            if (splunkLauncherState.statusFilter === 'all') {
+                // Show all that need attention (not valid)
+                if (status === 'valid' && !ttl.expired) return false;
+            } else if (splunkLauncherState.statusFilter === 'needs-tune') {
+                if (status !== 'needs-tune') return false;
+            } else if (splunkLauncherState.statusFilter === 'needs-retrofit') {
+                if (status !== 'needs-retrofit') return false;
+            } else if (splunkLauncherState.statusFilter === 'incomplete') {
+                if (status !== 'incomplete') return false;
+            } else if (splunkLauncherState.statusFilter === 'expired') {
+                if (!ttl.expired) return false;
+            }
+
+            // Search filter
+            if (splunkLauncherState.searchQuery) {
+                var name = (d['Detection Name'] || '').toLowerCase();
+                var objective = (d['Objective'] || '').toLowerCase();
+                if (name.indexOf(splunkLauncherState.searchQuery) === -1 &&
+                    objective.indexOf(splunkLauncherState.searchQuery) === -1) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        // Sort by TTL (most urgent first)
+        filtered.sort(function(a, b) {
+            var ttlA = calculateTTL(a['Last Modified']);
+            var ttlB = calculateTTL(b['Last Modified']);
+            return ttlA.days - ttlB.days;
+        });
+
+        splunkLauncherState.filteredDetections = filtered;
+
+        // Update count
+        if (countEl) {
+            countEl.textContent = filtered.length + ' detection' + (filtered.length !== 1 ? 's' : '');
+        }
+
+        // Render list
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="splunk-launcher-empty">' +
+                '<div class="empty-icon">&#x2714;</div>' +
+                '<p>No detections match the current filters</p>' +
+                '</div>';
+            return;
+        }
+
+        var html = '';
+        filtered.forEach(function(d) {
+            var name = d['Detection Name'] || 'Unnamed';
+            var status = App.getDetectionStatus(d);
+            var ttl = calculateTTL(d['Last Modified']);
+            var ttlClass = getTTLColorClass(ttl.days);
+            var severity = d['Severity/Priority'] || 'N/A';
+            var domain = d['Security Domain'] || 'N/A';
+
+            // Determine display status
+            var displayStatus = status;
+            var displayStatusLabel = getStatusLabel(status);
+            if (ttl.expired && status === 'valid') {
+                displayStatus = 'expired';
+                displayStatusLabel = 'TTL Expired';
+            }
+
+            html += '<div class="launcher-detection-card">';
+            html += '<div class="launcher-card-info">';
+            html += '<div class="launcher-card-name">' + escapeHtml(name) + '</div>';
+            html += '<div class="launcher-card-meta">';
+            html += '<span class="launcher-card-status ' + displayStatus + '">' + displayStatusLabel + '</span>';
+            html += '<span class="launcher-card-ttl ' + ttlClass + '"><span class="ttl-dot"></span>' + getTTLText(ttl) + '</span>';
+            html += '<span>' + escapeHtml(severity) + '</span>';
+            html += '<span>' + escapeHtml(domain) + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="launcher-card-actions">';
+            html += '<button class="btn-launch-correlation" onclick="launchCorrelationSearch(\'' + escapeAttr(name) + '\')" title="Edit Correlation Search">';
+            html += '<span>Correlation</span>';
+            html += '</button>';
+            html += '<button class="btn-launch-splunk" onclick="launchSplunkDashboard(\'' + escapeAttr(name) + '\')" title="Open Revalidation Dashboard">';
+            html += '<span class="splunk-icon">&#x1F4CA;</span>';
+            html += '<span>Launch Dashboard</span>';
+            html += '</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Launch Splunk Dashboard for a specific detection
+    window.launchSplunkDashboard = function(detectionName) {
+        var dashboardUrl = SPLUNK_CONFIG.baseUrl + SPLUNK_CONFIG.dashboardPath +
+            '?form.' + SPLUNK_CONFIG.useCaseFieldName + '=' + encodeURIComponent(detectionName) +
+            '&earliest=' + encodeURIComponent(SPLUNK_CONFIG.defaultTimeEarliest) +
+            '&latest=' + encodeURIComponent(SPLUNK_CONFIG.defaultTimeLatest);
+
+        var width = SPLUNK_CONFIG.popupWidth || 1400;
+        var height = SPLUNK_CONFIG.popupHeight || 900;
+        var left = (screen.width - width) / 2;
+        var top = (screen.height - height) / 2;
+
+        window.open(
+            dashboardUrl,
+            'SplunkDashboard_' + Date.now(),
+            'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',scrollbars=yes,resizable=yes'
+        );
+    };
+
+    // Launch Correlation Search editor for a specific detection
+    window.launchCorrelationSearch = function(detectionName) {
+        var correlationUrl = buildCorrelationSearchUrl(detectionName);
+
+        var width = SPLUNK_CONFIG.popupWidth || 1400;
+        var height = SPLUNK_CONFIG.popupHeight || 900;
+        var left = (screen.width - width) / 2;
+        var top = (screen.height - height) / 2;
+
+        window.open(
+            correlationUrl,
+            'SplunkCorrelation_' + Date.now(),
+            'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',scrollbars=yes,resizable=yes'
+        );
+    };
+
     // Simple toast notification (global)
     window.showToast = function showToast(message, type) {
         // Create toast element if it doesn't exist
@@ -5843,7 +6119,9 @@ function buildCorrelationSearchUrl(detectionName) {
             modified: 0
         },
         dateFrom: null,
-        dateTo: null
+        dateTo: null,
+        analysts: [],
+        fieldsChanged: []
     };
 
     // Initialize History View
@@ -5963,6 +6241,9 @@ function buildCorrelationSearchUrl(detectionName) {
         // Calculate type counts
         calculateHistoryTypeCounts();
 
+        // Populate advanced filter dropdowns
+        populateHistoryFilters();
+
         // Apply filters
         filterHistory();
     }
@@ -6019,6 +6300,66 @@ function buildCorrelationSearchUrl(detectionName) {
         if (tunedEl) tunedEl.textContent = historyState.typeCounts.tuned;
         if (retrofittedEl) retrofittedEl.textContent = historyState.typeCounts.retrofitted;
         if (modifiedEl) modifiedEl.textContent = historyState.typeCounts.modified;
+    }
+
+    // Populate history filter dropdowns (Analyst and Field Changed)
+    function populateHistoryFilters() {
+        var analystSet = new Set();
+        var fieldSet = new Set();
+
+        // Extract unique analysts and fields from all history entries
+        historyState.entries.forEach(function(entry) {
+            if (entry.analyst && entry.analyst !== 'Unknown') {
+                analystSet.add(entry.analyst);
+            }
+            if (entry.fieldsChanged && Array.isArray(entry.fieldsChanged)) {
+                entry.fieldsChanged.forEach(function(field) {
+                    if (field) fieldSet.add(field);
+                });
+            }
+        });
+
+        // Convert to sorted arrays
+        historyState.analysts = Array.from(analystSet).sort(function(a, b) {
+            return a.toLowerCase().localeCompare(b.toLowerCase());
+        });
+        historyState.fieldsChanged = Array.from(fieldSet).sort(function(a, b) {
+            return a.toLowerCase().localeCompare(b.toLowerCase());
+        });
+
+        // Populate Analyst dropdown
+        var analystSelect = document.getElementById('history-analyst-filter');
+        if (analystSelect) {
+            var currentAnalystValue = analystSelect.value;
+            analystSelect.innerHTML = '<option value="">All Analysts</option>';
+            historyState.analysts.forEach(function(analyst) {
+                var option = document.createElement('option');
+                option.value = analyst;
+                option.textContent = analyst;
+                analystSelect.appendChild(option);
+            });
+            // Restore previous selection if still valid
+            if (currentAnalystValue && historyState.analysts.indexOf(currentAnalystValue) !== -1) {
+                analystSelect.value = currentAnalystValue;
+            }
+        }
+
+        // Populate Field Changed dropdown
+        var fieldSelect = document.getElementById('history-field-filter');
+        if (fieldSelect) {
+            var currentFieldValue = fieldSelect.value;
+            fieldSelect.innerHTML = '<option value="">All Fields</option>';
+            historyState.fieldsChanged.forEach(function(field) {
+                var option = document.createElement('option');
+                option.value = field;
+                option.textContent = field;
+                fieldSelect.appendChild(option);
+            });
+            // Restore previous selection if still valid
+            if (currentFieldValue && historyState.fieldsChanged.indexOf(currentFieldValue) !== -1) {
+                fieldSelect.value = currentFieldValue;
+            }
+        }
     }
 
     // Set date preset
@@ -6101,6 +6442,14 @@ function buildCorrelationSearchUrl(detectionName) {
         var dateFrom = fromInput && fromInput.value ? new Date(fromInput.value) : historyState.dateFrom;
         var dateTo = toInput && toInput.value ? new Date(toInput.value) : historyState.dateTo;
 
+        // Get analyst filter
+        var analystSelect = document.getElementById('history-analyst-filter');
+        var analystFilter = analystSelect ? analystSelect.value : '';
+
+        // Get field changed filter
+        var fieldSelect = document.getElementById('history-field-filter');
+        var fieldFilter = fieldSelect ? fieldSelect.value : '';
+
         if (dateFrom) {
             dateFrom.setHours(0, 0, 0, 0);
         }
@@ -6125,10 +6474,49 @@ function buildCorrelationSearchUrl(detectionName) {
             if (dateFrom && entry.date < dateFrom) return false;
             if (dateTo && entry.date > dateTo) return false;
 
+            // Analyst filter
+            if (analystFilter && entry.analyst !== analystFilter) return false;
+
+            // Field changed filter
+            if (fieldFilter) {
+                // Only show entries that have the selected field in their fieldsChanged array
+                if (!entry.fieldsChanged || !Array.isArray(entry.fieldsChanged)) return false;
+                if (entry.fieldsChanged.indexOf(fieldFilter) === -1) return false;
+            }
+
             return true;
         });
 
         renderHistoryTimeline();
+    };
+
+    // Clear all history filters
+    window.clearHistoryFilters = function() {
+        // Reset search input
+        var searchInput = document.getElementById('history-search-input');
+        if (searchInput) searchInput.value = '';
+
+        // Reset all type checkboxes to checked
+        var createdCheckbox = document.getElementById('history-type-created');
+        var tunedCheckbox = document.getElementById('history-type-tuned');
+        var retrofittedCheckbox = document.getElementById('history-type-retrofitted');
+        var modifiedCheckbox = document.getElementById('history-type-modified');
+
+        if (createdCheckbox) createdCheckbox.checked = true;
+        if (tunedCheckbox) tunedCheckbox.checked = true;
+        if (retrofittedCheckbox) retrofittedCheckbox.checked = true;
+        if (modifiedCheckbox) modifiedCheckbox.checked = true;
+
+        // Reset analyst filter
+        var analystSelect = document.getElementById('history-analyst-filter');
+        if (analystSelect) analystSelect.value = '';
+
+        // Reset field filter
+        var fieldSelect = document.getElementById('history-field-filter');
+        if (fieldSelect) fieldSelect.value = '';
+
+        // Reset date range to "All time"
+        setDatePreset('all');
     };
 
     // Render history timeline
@@ -8151,64 +8539,166 @@ function buildCorrelationSearchUrl(detectionName) {
         processNext();
     };
 
-    // Import Detections from JSON File
-    window.handleImportFile = function(event) {
-        var file = event.target.files[0];
-        if (!file) return;
+    // Import Detections from JSON File with GitHub sync
+    window.handleImportFile = async function(event) {
+        var files = event.target.files;
+        if (!files || files.length === 0) return;
 
-        var reader = new FileReader();
-        reader.onload = function(e) {
+        // Collect all detections from all files
+        var allImportedDetections = [];
+        var parseErrors = [];
+
+        // Read all files first
+        var filePromises = [];
+        for (var i = 0; i < files.length; i++) {
+            filePromises.push(new Promise(function(resolve, reject) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        var data = JSON.parse(e.target.result);
+                        // Handle array or single detection
+                        var detections = Array.isArray(data) ? data : [data];
+                        resolve({ file: file.name, detections: detections });
+                    } catch (err) {
+                        resolve({ file: file.name, error: err.message });
+                    }
+                };
+                reader.onerror = function() {
+                    resolve({ file: file.name, error: 'Failed to read file' });
+                };
+                reader.readAsText(file);
+            }));
+        }
+
+        // Wait for all files to be read
+        var results = await Promise.all(filePromises);
+
+        // Process results
+        results.forEach(function(result) {
+            if (result.error) {
+                parseErrors.push(result.file + ': ' + result.error);
+            } else if (result.detections) {
+                allImportedDetections = allImportedDetections.concat(result.detections);
+            }
+        });
+
+        if (allImportedDetections.length === 0) {
+            var errorMsg = parseErrors.length > 0
+                ? 'Failed to parse files: ' + parseErrors.join(', ')
+                : 'No detections found in file(s)';
+            showToast(errorMsg, 'error');
+            event.target.value = '';
+            return;
+        }
+
+        // Show importing toast
+        showToast('Importing ' + allImportedDetections.length + ' detection(s)...', 'info');
+
+        var added = 0;
+        var updated = 0;
+        var failed = 0;
+        var processedDetections = [];
+
+        // Process each detection
+        for (var j = 0; j < allImportedDetections.length; j++) {
+            var d = allImportedDetections[j];
+
+            if (!d['Detection Name']) {
+                failed++;
+                continue;
+            }
+
             try {
-                var data = JSON.parse(e.target.result);
-
-                // Handle array or single detection
-                var importedDetections = Array.isArray(data) ? data : [data];
-
-                if (importedDetections.length === 0) {
-                    showToast('No detections found in file', 'error');
-                    return;
+                // Generate file_name if not present
+                if (!d.file_name) {
+                    d.file_name = generateFileName(d['Detection Name'], d['Security Domain']);
                 }
 
-                // Merge with existing detections
-                var existingNames = {};
-                App.state.detections.forEach(function(d) {
-                    existingNames[d['Detection Name']] = true;
-                });
+                // Set timestamps if not present
+                var now = new Date().toISOString();
+                if (!d['First Created']) {
+                    d['First Created'] = now;
+                }
+                d['Last Modified'] = now;
 
-                var added = 0;
-                var updated = 0;
+                // Parse SPL and generate metadata
+                var parsed = parseSPL(d['Search String'] || '');
+                var metadata = {
+                    parsed: parsed,
+                    lastParsed: now,
+                    detectionName: d['Detection Name']
+                };
 
-                importedDetections.forEach(function(d) {
-                    if (!d['Detection Name']) return;
-
-                    var existingIndex = App.state.detections.findIndex(function(existing) {
-                        return existing['Detection Name'] === d['Detection Name'];
-                    });
-
-                    if (existingIndex >= 0) {
-                        App.state.detections[existingIndex] = d;
-                        updated++;
-                    } else {
-                        App.state.detections.push(d);
-                        added++;
+                // Auto-populate Required_Data_Sources if empty
+                if (!d['Required_Data_Sources'] || d['Required_Data_Sources'] === '') {
+                    var sources = [];
+                    if (parsed.indexes) sources = sources.concat(parsed.indexes);
+                    if (parsed.sourcetypes) sources = sources.concat(parsed.sourcetypes);
+                    if (parsed.categories) sources = sources.concat(parsed.categories);
+                    if (sources.length > 0) {
+                        d['Required_Data_Sources'] = sources.join(', ');
                     }
+                }
+
+                // Check if detection already exists
+                var existingIndex = App.state.detections.findIndex(function(existing) {
+                    return existing['Detection Name'] === d['Detection Name'];
                 });
 
-                App.state.filteredDetections = App.state.detections.slice();
-                App.renderLibrary();
-                App.populateFilters();
+                // Save to GitHub if connected
+                if (github) {
+                    await saveDetectionToGitHub(d);
+                    await saveMetadataToGitHub(d['Detection Name'], metadata, d.file_name);
+                }
 
-                var message = '';
-                if (added > 0) message += added + ' added';
-                if (updated > 0) message += (message ? ', ' : '') + updated + ' updated';
-                showToast('Import complete: ' + message, 'success');
+                // Update local state
+                if (existingIndex >= 0) {
+                    App.state.detections[existingIndex] = d;
+                    updated++;
+                } else {
+                    App.state.detections.push(d);
+                    added++;
+                }
+
+                // Update metadata cache
+                detectionMetadata[d['Detection Name']] = metadata;
+                processedDetections.push(d);
 
             } catch (err) {
-                showToast('Failed to parse JSON: ' + err.message, 'error');
+                console.error('Failed to import detection:', d['Detection Name'], err);
+                failed++;
             }
-        };
+        }
 
-        reader.readAsText(file);
+        // Update compiled files if we have GitHub and processed any detections
+        if (github && processedDetections.length > 0) {
+            try {
+                await updateCompiledFiles(App.state.detections);
+            } catch (err) {
+                console.error('Failed to update compiled files:', err);
+            }
+        }
+
+        // Save to localStorage
+        saveToLocalStorage();
+
+        // Update UI
+        App.state.filteredDetections = App.state.detections.slice();
+        App.renderLibrary();
+        App.populateFilters();
+
+        // Show result message
+        var messages = [];
+        if (added > 0) messages.push(added + ' added');
+        if (updated > 0) messages.push(updated + ' updated');
+        if (failed > 0) messages.push(failed + ' failed');
+        if (parseErrors.length > 0) messages.push(parseErrors.length + ' file(s) had parse errors');
+
+        var toastType = failed > 0 || parseErrors.length > 0 ? 'warning' : 'success';
+        var syncNote = github ? ' (synced to GitHub)' : ' (local only - GitHub not connected)';
+        showToast('Import complete: ' + messages.join(', ') + syncNote, toastType);
+
         event.target.value = ''; // Reset file input
     };
 
@@ -8404,6 +8894,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initEditor();
         initMacros();
         initRevalidation();
+        initRevalidationTabs();
         initHistory();
         initResources();
         initReports();

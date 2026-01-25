@@ -3133,10 +3133,274 @@ pre code {
 /* ========================================
    Revalidation View
    ======================================== */
+
+/* Revalidation Sub-Tabs */
+.reval-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 16px;
+    background-color: var(--color-bg);
+}
+
+.reval-tab {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.reval-tab:hover {
+    color: var(--color-text);
+    background-color: var(--color-hover);
+}
+
+.reval-tab.active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+}
+
+.reval-tab-content {
+    display: block;
+}
+
+.reval-tab-content.hidden {
+    display: none;
+}
+
+/* Splunk Launcher Tab */
+.splunk-launcher-container {
+    padding: 0;
+}
+
+.splunk-launcher-header {
+    margin-bottom: 24px;
+}
+
+.splunk-launcher-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 8px 0;
+}
+
+.splunk-launcher-subtitle {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.splunk-launcher-filters {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.launcher-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.launcher-filter-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.launcher-filter-group select,
+.launcher-filter-group input {
+    min-width: 180px;
+}
+
+.launcher-count {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.splunk-launcher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.launcher-detection-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.launcher-detection-card:hover {
+    border-color: var(--color-border-hover);
+    background-color: var(--color-hover);
+}
+
+.launcher-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.launcher-card-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.launcher-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.launcher-card-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.launcher-card-status.needs-tune {
+    background-color: var(--color-warning-bg, rgba(234, 179, 8, 0.1));
+    color: var(--color-warning, #eab308);
+}
+
+.launcher-card-status.needs-retrofit {
+    background-color: var(--color-error-bg, rgba(239, 68, 68, 0.1));
+    color: var(--color-error, #ef4444);
+}
+
+.launcher-card-status.incomplete {
+    background-color: var(--color-info-bg, rgba(59, 130, 246, 0.1));
+    color: var(--color-info, #3b82f6);
+}
+
+.launcher-card-status.expired {
+    background-color: var(--color-error-bg, rgba(239, 68, 68, 0.1));
+    color: var(--color-error, #ef4444);
+}
+
+.launcher-card-ttl {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.launcher-card-ttl .ttl-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--color-text-muted);
+}
+
+.launcher-card-ttl.ttl-green .ttl-dot {
+    background-color: var(--color-success, #22c55e);
+}
+
+.launcher-card-ttl.ttl-yellow .ttl-dot {
+    background-color: var(--color-warning, #eab308);
+}
+
+.launcher-card-ttl.ttl-red .ttl-dot {
+    background-color: var(--color-error, #ef4444);
+}
+
+.launcher-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: 20px;
+}
+
+.btn-launch-splunk {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background-color: var(--color-splunk, #65a637);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-launch-splunk:hover {
+    background-color: var(--color-splunk-hover, #558b2f);
+}
+
+.btn-launch-splunk .splunk-icon {
+    font-size: 14px;
+}
+
+.btn-launch-correlation {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-launch-correlation:hover {
+    background-color: var(--color-hover);
+    border-color: var(--color-border-hover);
+    color: var(--color-text);
+}
+
+.splunk-launcher-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-text-secondary);
+}
+
+.splunk-launcher-empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.splunk-launcher-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
 .revalidation-layout {
     display: flex;
     gap: 24px;
-    height: calc(100vh - var(--header-height) - var(--status-height) - 48px);
+    height: calc(100vh - var(--header-height) - var(--status-height) - 48px - 57px); /* 57px for sub-tabs */
 }
 
 .revalidation-sidebar {
@@ -3850,6 +4114,26 @@ pre code {
     color: var(--color-text-muted);
     border-bottom: 1px solid var(--color-border-light);
     background-color: var(--color-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-clear-filters {
+    padding: 4px 10px;
+    font-size: 11px;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-clear-filters:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text);
+    border-color: var(--color-text-secondary);
 }
 
 /* Timeline */
