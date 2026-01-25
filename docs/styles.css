@@ -379,8 +379,12 @@ pre {
     background-color: var(--color-code-bg);
     color: var(--color-code-text);
     padding: 16px;
-    overflow-x: auto;
     border: 1px solid var(--color-border);
+    /* Line wrapping for code blocks */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
 }
 
 code {
@@ -393,6 +397,64 @@ pre code {
     background: none;
     padding: 0;
     border: none;
+}
+
+/* ========================================
+   SPL Syntax Highlighting
+   ======================================== */
+/* SPL Commands - blue */
+.spl-command {
+    color: #61afef;
+    font-weight: 500;
+}
+
+/* SPL Operators - orange */
+.spl-operator {
+    color: #d19a66;
+    font-weight: 500;
+}
+
+/* SPL Strings - green */
+.spl-string {
+    color: #98c379;
+}
+
+/* SPL Fields - cyan */
+.spl-field {
+    color: #56b6c2;
+}
+
+/* SPL Pipes - bold white */
+.spl-pipe {
+    color: #e5c07b;
+    font-weight: 700;
+}
+
+/* SPL Comments - grey italic */
+.spl-comment-inline {
+    color: #5c6370;
+    font-style: italic;
+}
+
+/* SPL Macros - purple */
+.spl-macro {
+    color: #c678dd;
+}
+
+/* SPL Numbers - orange */
+.spl-number {
+    color: #d19a66;
+}
+
+/* SPL Variables - magenta */
+.spl-variable {
+    color: #e06c75;
+}
+
+/* SPL Keywords - yellow */
+.spl-keyword {
+    color: #e5c07b;
+    font-weight: 500;
 }
 
 /* ========================================
@@ -552,6 +614,7 @@ pre code {
     background-color: var(--color-text);
     color: var(--color-bg);
     border: none;
+    border-radius: 4px;
     cursor: pointer;
 }
 
@@ -592,6 +655,7 @@ pre code {
     flex-direction: row-reverse;
     gap: 24px;
     height: calc(100vh - var(--header-height) - var(--status-height) - 48px);
+    overflow: visible; /* Allow toggle buttons to be visible outside containers */
 }
 
 .library-sidebar {
@@ -609,7 +673,7 @@ pre code {
 .library-sidebar-toggle {
     position: absolute;
     top: 12px;
-    right: -36px;
+    right: -40px;
     width: 32px;
     height: 32px;
     background: var(--color-bg-alt);
@@ -619,13 +683,15 @@ pre code {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 200;
     padding: 6px;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .library-sidebar-toggle:hover {
     background: var(--color-hover);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .library-sidebar-toggle:hover .burger-line {
@@ -686,16 +752,18 @@ pre code {
     width: 0;
     min-width: 0;
     border-width: 0;
-    overflow: hidden;
+    overflow: visible; /* Allow toggle button to be visible outside collapsed sidebar */
 }
 
 .library-sidebar.collapsed .sidebar-content {
     display: none;
 }
 
-/* Toggle button position when collapsed */
+/* Toggle button position when collapsed - positioned from right edge */
 .library-sidebar.collapsed .library-sidebar-toggle {
     right: -44px;
+    left: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Burger icon normal state when collapsed (show hamburger) */
@@ -735,7 +803,7 @@ pre code {
 .library-main-toggle {
     position: absolute;
     top: 12px;
-    left: -36px;
+    left: -40px;
     width: 32px;
     height: 32px;
     background: var(--color-bg-alt);
@@ -745,13 +813,15 @@ pre code {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 200;
     padding: 6px;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .library-main-toggle:hover {
     background: var(--color-hover);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .toggle-arrow {
@@ -766,10 +836,12 @@ pre code {
 
 /* Collapsed Library Main State */
 .library-main.collapsed {
-    flex: 0 0 44px;
-    width: 44px;
-    min-width: 44px;
+    flex: 0 0 48px;
+    width: 48px;
+    min-width: 48px;
     overflow: visible;
+    background: transparent;
+    border: none;
 }
 
 .library-main.collapsed .library-detail-content,
@@ -779,8 +851,10 @@ pre code {
 
 /* Toggle button position when detail panel is collapsed */
 .library-main.collapsed .library-main-toggle {
-    left: 6px;
+    left: 8px;
     top: 12px;
+    right: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Arrow flips when collapsed (points right to indicate expand) */
@@ -1033,11 +1107,12 @@ pre code {
 
 .view-toggle-btn:hover {
     color: var(--color-text);
+    background: var(--color-hover);
 }
 
 .view-toggle-btn.active {
-    background: var(--color-accent);
-    color: white;
+    background: var(--color-text);
+    color: var(--color-bg);
 }
 
 /* JSON Display */
@@ -1269,9 +1344,13 @@ pre code {
     background-color: var(--color-code-bg);
     color: var(--color-code-text);
     padding: 12px;
-    overflow-x: auto;
+    /* Line wrapping for code blocks */
     white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     word-break: break-word;
+    overflow-x: auto;
+    line-height: 1.5;
 }
 
 /* Parsed Metadata Tags */
@@ -1455,9 +1534,13 @@ pre code {
     background-color: var(--color-code-bg);
     color: var(--color-code-text);
     padding: 8px;
-    overflow-x: auto;
-    white-space: pre;
     margin: 0;
+    /* Line wrapping for drilldown searches */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+    line-height: 1.5;
 }
 
 .drilldown-search-wrap {
@@ -2051,7 +2134,12 @@ pre code {
 
     .library-sidebar.collapsed {
         max-height: 0;
-        overflow: hidden;
+        overflow: visible; /* Keep toggle button visible on mobile */
+        border: none;
+    }
+
+    .library-sidebar.collapsed .sidebar-content {
+        visibility: hidden;
     }
 
     .library-main {
@@ -3216,6 +3304,7 @@ pre code {
     padding: 10px 12px;
     background-color: var(--color-bg);
     border: 1px solid var(--color-border);
+    border-radius: 4px;
     color: var(--color-text);
     font-size: 13px;
     cursor: pointer;
@@ -4139,6 +4228,7 @@ pre code {
 .btn-icon {
     background: none;
     border: 1px solid var(--color-border);
+    border-radius: 4px;
     padding: 6px 10px;
     font-size: 12px;
     cursor: pointer;
@@ -5341,4 +5431,301 @@ pre code {
         flex: 1;
         text-align: center;
     }
+}
+
+/* =============================================================================
+   METADATA MODAL STYLES
+   ============================================================================= */
+
+/* Metadata Modal Sizing */
+#modal-metadata .modal-content {
+    max-width: 900px;
+    width: 90%;
+    max-height: 85vh;
+}
+
+#modal-metadata .modal-body {
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+}
+
+#modal-metadata .modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Metadata Title */
+.metadata-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+/* Metadata Section */
+#modal-metadata .metadata-section {
+    margin-bottom: 20px;
+}
+
+#modal-metadata .metadata-section h4 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+    margin-bottom: 10px;
+}
+
+/* Metadata Note */
+.metadata-note {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-style: italic;
+    margin-bottom: 12px;
+}
+
+/* Metadata TTL Status */
+.metadata-ttl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+}
+
+.metadata-ttl.ttl-ok { background: rgba(63, 185, 80, 0.1); }
+.metadata-ttl.ttl-warning { background: rgba(210, 153, 34, 0.1); }
+.metadata-ttl.ttl-critical { background: rgba(240, 136, 62, 0.1); }
+.metadata-ttl.ttl-expired { background: rgba(248, 81, 73, 0.1); }
+
+.ttl-days {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.ttl-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* Metadata Parsed Data */
+.metadata-parsed {
+    background: var(--color-bg-alt);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.parsed-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border-light);
+    flex-wrap: wrap;
+}
+
+.parsed-item:last-child {
+    border-bottom: none;
+}
+
+.parsed-label {
+    font-weight: 500;
+    min-width: 140px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+}
+
+.parsed-value {
+    font-size: 13px;
+    color: var(--color-text);
+}
+
+.parsed-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+
+/* Metadata Tags */
+#modal-metadata .tag {
+    background: var(--color-bg-tertiary);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+}
+
+#modal-metadata .tag.datasource {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+#modal-metadata .tag.macro {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+}
+
+#modal-metadata .tag.field {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+#modal-metadata .tag.func {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+}
+
+#modal-metadata .tag.by-field {
+    background: rgba(236, 72, 153, 0.15);
+    color: #f472b6;
+}
+
+#modal-metadata .tag.variable {
+    background: rgba(6, 182, 212, 0.15);
+    color: #22d3ee;
+}
+
+#modal-metadata .tag.custom {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+}
+
+#modal-metadata .tag.comment {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Metadata History Summary */
+.metadata-history-summary {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.history-count {
+    font-size: 13px;
+    padding: 4px 10px;
+    background: var(--color-bg-alt);
+    border-radius: 4px;
+}
+
+.history-count.total { color: var(--color-text); }
+.history-count.tune { color: #f97316; }
+.history-count.retrofit { color: #8b5cf6; }
+.history-count.reval { color: #22c55e; }
+
+/* Metadata History List */
+.metadata-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metadata-history-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--color-bg-alt);
+    border-radius: 8px;
+    border-left: 3px solid var(--color-border);
+}
+
+.metadata-history-item.tune { border-left-color: #f97316; }
+.metadata-history-item.retrofit { border-left-color: #8b5cf6; }
+.metadata-history-item.revalidation { border-left-color: #22c55e; }
+.metadata-history-item.version { border-left-color: #3b82f6; }
+
+.history-icon {
+    font-size: 14px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-tertiary);
+    border-radius: 4px;
+}
+
+.history-details {
+    flex: 1;
+}
+
+.history-desc {
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--color-text);
+}
+
+.history-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.history-meta .jira {
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+/* Metadata View Toggle */
+.metadata-view-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--color-bg-alt);
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.metadata-view-toggle .toggle-btn {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.metadata-view-toggle .toggle-btn:hover {
+    color: var(--color-text);
+}
+
+.metadata-view-toggle .toggle-btn.active {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* Metadata Formatted View */
+.metadata-formatted {
+    line-height: 1.5;
+}
+
+/* Metadata JSON View */
+.metadata-json {
+    background: var(--color-bg-alt);
+    border-radius: 8px;
+    padding: 16px;
+    max-height: 500px;
+    overflow: auto;
+}
+
+#metadata-json-content {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--color-text);
+    margin: 0;
 }

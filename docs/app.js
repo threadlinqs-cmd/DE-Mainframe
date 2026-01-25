@@ -484,17 +484,17 @@ function updateSyncStatus(status, text) {
 async function saveDetectionToGitHub(detection) {
     if (!github) {
         console.warn('GitHub not configured. Detection saved locally only.');
-        return false;
+        throw new Error('GitHub not configured');
     }
 
+    updateSyncStatus('syncing', 'Saving...');
+
+    var detectionsPath = githubConfig.detectionsPath || PATHS.detections;
+    var filename = detection.file_name || generateFileName(detection['Detection Name'], detection['Security Domain']);
+    var path = detectionsPath + '/' + filename;
+    var message = 'Update detection: ' + detection['Detection Name'];
+
     try {
-        updateSyncStatus('syncing', 'Saving...');
-
-        var detectionsPath = githubConfig.detectionsPath || PATHS.detections;
-        var filename = detection.file_name || generateFileName(detection['Detection Name'], detection['Security Domain']);
-        var path = detectionsPath + '/' + filename;
-        var message = 'Update detection: ' + detection['Detection Name'];
-
         // Check if file exists to get SHA
         var sha = await github.getFileSha(path);
 
@@ -509,21 +509,23 @@ async function saveDetectionToGitHub(detection) {
         return true;
     } catch (error) {
         updateSyncStatus('error', 'Save Error');
-        console.error('Failed to save to GitHub:', error);
-        return false;
+        console.error('Failed to save detection to GitHub:', error);
+        throw error; // Re-throw so caller can handle
     }
 }
 
 // Save metadata to GitHub
 async function saveMetadataToGitHub(name, metadata, detectionFileName) {
-    if (!github) return false;
+    if (!github) {
+        throw new Error('GitHub not configured');
+    }
+
+    var metadataPath = githubConfig.metadataPath || PATHS.metadata;
+    var filename = generateMetaFileName(name, detectionFileName);
+    var path = metadataPath + '/' + filename;
+    var message = 'Update metadata: ' + name;
 
     try {
-        var metadataPath = githubConfig.metadataPath || PATHS.metadata;
-        var filename = generateMetaFileName(name, detectionFileName);
-        var path = metadataPath + '/' + filename;
-        var message = 'Update metadata: ' + name;
-
         var existing = detectionMetadata[name];
         var sha = existing ? existing._sha : null;
 
@@ -543,17 +545,19 @@ async function saveMetadataToGitHub(name, metadata, detectionFileName) {
         return true;
     } catch (error) {
         console.error('Failed to save metadata to GitHub:', error);
-        return false;
+        throw error; // Re-throw so caller can handle
     }
 }
 
 // Delete a detection from GitHub
 async function deleteDetectionFromGitHub(detection) {
-    if (!github) return false;
+    if (!github) {
+        throw new Error('GitHub not configured');
+    }
+
+    updateSyncStatus('syncing', 'Deleting...');
 
     try {
-        updateSyncStatus('syncing', 'Deleting...');
-
         // Delete detection file
         if (detection._sha && detection._path) {
             await github.deleteFile(detection._path, 'Delete detection: ' + detection['Detection Name'], detection._sha);
@@ -577,13 +581,15 @@ async function deleteDetectionFromGitHub(detection) {
     } catch (error) {
         updateSyncStatus('error', 'Delete Error');
         console.error('Failed to delete from GitHub:', error);
-        return false;
+        throw error; // Re-throw so caller can handle
     }
 }
 
 // Save a file to GitHub (helper for compiled files)
 async function saveFileToGitHub(path, content, message) {
-    if (!github) return false;
+    if (!github) {
+        throw new Error('GitHub not configured');
+    }
 
     try {
         var sha = await github.getFileSha(path);
@@ -591,7 +597,7 @@ async function saveFileToGitHub(path, content, message) {
         return true;
     } catch (error) {
         console.error('Failed to save file:', path, error);
-        throw error;
+        throw error; // Re-throw so caller can handle
     }
 }
 
@@ -667,19 +673,408 @@ function parseAndSaveMetadata(detection) {
 
 // Initialize GitHub API
 function initGitHub() {
-    if (GITHUB_CONFIG.token && GITHUB_CONFIG.token.length > 10) {
+    // Load saved config from localStorage first
+    var savedConfig = localStorage.getItem('dmf_github_config');
+    if (savedConfig) {
+        try {
+            var parsed = JSON.parse(savedConfig);
+            // Merge saved config into githubConfig (preserving any new fields from GITHUB_CONFIG)
+            if (parsed.baseUrl) githubConfig.baseUrl = parsed.baseUrl;
+            if (parsed.repo) githubConfig.repo = parsed.repo;
+            if (parsed.branch) githubConfig.branch = parsed.branch;
+            if (parsed.token) githubConfig.token = parsed.token;
+            if (parsed.detectionsPath) githubConfig.detectionsPath = parsed.detectionsPath;
+            if (parsed.metadataPath) githubConfig.metadataPath = parsed.metadataPath;
+            console.log('%c GitHub config loaded from localStorage', 'color: #50fa7b');
+            console.log('  Config - repo:', githubConfig.repo, 'branch:', githubConfig.branch, 'token present:', !!githubConfig.token && githubConfig.token.length > 10);
+        } catch (e) {
+            console.warn('Could not parse saved GitHub config:', e);
+        }
+    }
+
+    // Use dynamic config with fallbacks to GITHUB_CONFIG
+    var token = githubConfig.token || GITHUB_CONFIG.token;
+
+    if (token && token !== 'YOUR_GITHUB_PAT' && token.length > 10) {
         github = new GitHubAPI({
-            baseUrl: GITHUB_CONFIG.baseUrl,
-            repo: GITHUB_CONFIG.repo,
-            branch: GITHUB_CONFIG.branch,
-            token: GITHUB_CONFIG.token
+            baseUrl: githubConfig.baseUrl || GITHUB_CONFIG.baseUrl,
+            repo: githubConfig.repo || GITHUB_CONFIG.repo,
+            branch: githubConfig.branch || GITHUB_CONFIG.branch,
+            token: token
         });
         githubConfig.connected = true;
-        console.log('GitHub API initialized');
+        console.log('%c GitHub API initialized', 'color: #50fa7b');
     } else {
-        console.warn('GitHub token not configured. Running in local mode.');
+        console.warn('%c GitHub token not configured. Running in local mode.', 'color: #f1fa8c');
         githubConfig.connected = false;
     }
+}
+
+// =============================================================================
+// LOCAL STORAGE FUNCTIONS - Comprehensive caching
+// =============================================================================
+
+// Save all application state to localStorage for caching/offline support
+function saveToLocalStorage() {
+    try {
+        // Save detections array
+        if (typeof App !== 'undefined' && App.state && App.state.detections) {
+            localStorage.setItem('dmf_detections', JSON.stringify(App.state.detections));
+            console.log('Saved ' + App.state.detections.length + ' detections to localStorage');
+        }
+
+        // Save detection metadata object
+        if (detectionMetadata && Object.keys(detectionMetadata).length > 0) {
+            localStorage.setItem('dmf_metadata', JSON.stringify(detectionMetadata));
+            console.log('Saved metadata for ' + Object.keys(detectionMetadata).length + ' detections to localStorage');
+        }
+
+        // Save macros (both name list and full objects)
+        if (typeof macrosState !== 'undefined' && macrosState.macros) {
+            var macroNames = macrosState.macros.map(function(m) { return m.name; });
+            localStorage.setItem('dmf_macros', JSON.stringify(macroNames));
+            localStorage.setItem('dmf_macros_full', JSON.stringify(macrosState.macros));
+            console.log('Saved ' + macrosState.macros.length + ' macros to localStorage');
+        }
+
+        // Save resources
+        if (typeof resourcesState !== 'undefined' && resourcesState.resources) {
+            localStorage.setItem('dmf_resources', JSON.stringify(resourcesState.resources));
+            console.log('Saved ' + resourcesState.resources.length + ' resources to localStorage');
+        }
+
+        // Save parsing rules
+        if (typeof settingsState !== 'undefined' && settingsState.parsingRules) {
+            localStorage.setItem('dmf_parsing_rules', JSON.stringify(settingsState.parsingRules));
+            console.log('Saved ' + settingsState.parsingRules.length + ' parsing rules to localStorage');
+        }
+
+        // Save GitHub config (including token for persistence between sessions)
+        // Note: Token is stored because this is a client-side app where users manage their own tokens
+        var configToSave = {
+            baseUrl: githubConfig.baseUrl,
+            repo: githubConfig.repo,
+            branch: githubConfig.branch,
+            token: githubConfig.token, // Include token for GitHub API access
+            detectionsPath: githubConfig.detectionsPath,
+            metadataPath: githubConfig.metadataPath,
+            connected: githubConfig.connected
+        };
+        localStorage.setItem('dmf_github_config', JSON.stringify(configToSave));
+
+        console.log('%c[localStorage] All application data saved successfully', 'color: #50fa7b');
+        return true;
+    } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+        return false;
+    }
+}
+
+// Load all cached data from localStorage
+function loadFromLocalStorage() {
+    var loaded = {
+        detections: false,
+        metadata: false,
+        macros: false,
+        resources: false,
+        parsingRules: false,
+        githubConfig: false
+    };
+
+    try {
+        // Load detections
+        var storedDetections = localStorage.getItem('dmf_detections');
+        if (storedDetections) {
+            var parsedDetections = JSON.parse(storedDetections);
+            if (Array.isArray(parsedDetections) && parsedDetections.length > 0) {
+                if (typeof App !== 'undefined' && App.state) {
+                    App.state.detections = parsedDetections;
+                    App.state.filteredDetections = parsedDetections.slice();
+                }
+                loaded.detections = true;
+                console.log('Loaded ' + parsedDetections.length + ' detections from localStorage');
+            }
+        }
+
+        // Load metadata
+        var storedMetadata = localStorage.getItem('dmf_metadata');
+        if (storedMetadata) {
+            var parsedMetadata = JSON.parse(storedMetadata);
+            if (parsedMetadata && typeof parsedMetadata === 'object') {
+                detectionMetadata = parsedMetadata;
+                loaded.metadata = true;
+                console.log('Loaded metadata for ' + Object.keys(parsedMetadata).length + ' detections from localStorage');
+            }
+        }
+
+        // Load macros (full objects preferred, fallback to names)
+        var storedMacrosFull = localStorage.getItem('dmf_macros_full');
+        var storedMacrosNames = localStorage.getItem('dmf_macros');
+        if (storedMacrosFull) {
+            var parsedMacros = JSON.parse(storedMacrosFull);
+            if (Array.isArray(parsedMacros)) {
+                if (typeof macrosState !== 'undefined') {
+                    macrosState.macros = parsedMacros;
+                    macrosState.filteredMacros = parsedMacros.slice();
+                }
+                if (typeof editorState !== 'undefined') {
+                    editorState.loadedMacros = parsedMacros.map(function(m) { return m.name; });
+                }
+                loaded.macros = true;
+                console.log('Loaded ' + parsedMacros.length + ' macros from localStorage (full)');
+            }
+        } else if (storedMacrosNames) {
+            var parsedNames = JSON.parse(storedMacrosNames);
+            if (Array.isArray(parsedNames)) {
+                if (typeof editorState !== 'undefined') {
+                    editorState.loadedMacros = parsedNames;
+                }
+                loaded.macros = true;
+                console.log('Loaded ' + parsedNames.length + ' macro names from localStorage');
+            }
+        }
+
+        // Load resources
+        var storedResources = localStorage.getItem('dmf_resources');
+        if (storedResources) {
+            var parsedResources = JSON.parse(storedResources);
+            if (Array.isArray(parsedResources)) {
+                if (typeof resourcesState !== 'undefined') {
+                    resourcesState.resources = parsedResources;
+                }
+                loaded.resources = true;
+                console.log('Loaded ' + parsedResources.length + ' resources from localStorage');
+            }
+        }
+
+        // Load parsing rules
+        var storedRules = localStorage.getItem('dmf_parsing_rules');
+        if (storedRules) {
+            var parsedRules = JSON.parse(storedRules);
+            if (Array.isArray(parsedRules)) {
+                if (typeof settingsState !== 'undefined') {
+                    settingsState.parsingRules = parsedRules;
+                }
+                loaded.parsingRules = true;
+                console.log('Loaded ' + parsedRules.length + ' parsing rules from localStorage');
+            }
+        }
+
+        // Load GitHub config
+        var storedConfig = localStorage.getItem('dmf_github_config');
+        if (storedConfig) {
+            var parsedConfig = JSON.parse(storedConfig);
+            if (parsedConfig && typeof parsedConfig === 'object') {
+                // Merge with current config (don't override token if already set)
+                if (parsedConfig.baseUrl) githubConfig.baseUrl = parsedConfig.baseUrl;
+                if (parsedConfig.repo) githubConfig.repo = parsedConfig.repo;
+                if (parsedConfig.branch) githubConfig.branch = parsedConfig.branch;
+                if (parsedConfig.detectionsPath) githubConfig.detectionsPath = parsedConfig.detectionsPath;
+                if (parsedConfig.metadataPath) githubConfig.metadataPath = parsedConfig.metadataPath;
+                loaded.githubConfig = true;
+                console.log('Loaded GitHub config from localStorage');
+            }
+        }
+
+        console.log('%c[localStorage] Cache load complete:', 'color: #8be9fd', loaded);
+        return loaded;
+    } catch (e) {
+        console.error('Failed to load from localStorage:', e);
+        return loaded;
+    }
+}
+
+// =============================================================================
+// GITHUB API FILE FETCHING
+// =============================================================================
+
+// Build the GitHub API URL for fetching file contents
+function buildGitHubApiUrl(filePath) {
+    var baseUrl = (githubConfig.baseUrl || GITHUB_CONFIG.baseUrl).replace(/\/+$/, '');
+    var repo = githubConfig.repo || GITHUB_CONFIG.repo;
+    var branch = githubConfig.branch || GITHUB_CONFIG.branch;
+
+    var apiUrl;
+    if (!baseUrl || baseUrl === 'https://github.com' || baseUrl === 'http://github.com') {
+        apiUrl = 'https://api.github.com';
+    } else {
+        // GitHub Enterprise
+        apiUrl = baseUrl + '/api/v3';
+    }
+    return apiUrl + '/repos/' + repo + '/contents/' + filePath + '?ref=' + branch;
+}
+
+// Fetch a JSON file from GitHub using the Contents API
+function fetchGitHubFile(filePath) {
+    var url = buildGitHubApiUrl(filePath);
+    console.log('Fetching:', url);
+
+    var token = githubConfig.token || GITHUB_CONFIG.token;
+
+    // Build headers - only include Authorization if we have a valid token
+    var headers = {
+        'Accept': 'application/vnd.github.v3.raw'  // Get raw content, not base64
+    };
+
+    if (token && token !== 'YOUR_GITHUB_PAT' && token.length > 10) {
+        headers['Authorization'] = 'token ' + token;
+        console.log('  Using token authentication');
+    } else {
+        console.warn('%c No valid token - attempting unauthenticated access (public repos only)', 'color: #f1fa8c');
+    }
+
+    return fetch(url, {
+        method: 'GET',
+        headers: headers,
+        cache: 'no-store'
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ' fetching ' + filePath);
+        }
+        return response.text().then(function(text) {
+            if (!text || text.trim() === '') {
+                console.warn('Empty file received:', filePath);
+                return null;
+            }
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.warn('Invalid JSON in file:', filePath, e.message);
+                return null;
+            }
+        });
+    });
+}
+
+// =============================================================================
+// AUTO-LOAD FROM STATIC FILES (GitHub or local)
+// =============================================================================
+
+// Main data loading function - loads from GitHub with localStorage fallback
+function autoLoadFromStaticFiles() {
+    var distPath = PATHS.dist;
+    var detectionsFile = distPath + '/all-detections.json';
+    var metadataFile = distPath + '/all-metadata.json';
+    var resourcesFile = distPath + '/resources.json';
+    var macrosFile = distPath + '/all-macros.json';
+
+    console.log('Loading from:', detectionsFile, metadataFile, resourcesFile, macrosFile);
+
+    // Check if GitHub is configured with a valid token
+    var token = githubConfig.token || GITHUB_CONFIG.token;
+    var useGitHub = token && token !== 'YOUR_GITHUB_PAT' && token.length > 10;
+
+    if (useGitHub) {
+        console.log('%c Using GitHub API for data loading', 'color: #50fa7b');
+
+        // Fetch all files in parallel using GitHub API
+        Promise.all([
+            fetchGitHubFile(detectionsFile),
+            fetchGitHubFile(metadataFile),
+            fetchGitHubFile(resourcesFile).catch(function() { return []; }), // Resources optional
+            fetchGitHubFile(macrosFile).catch(function() { return []; }) // Macros optional
+        ])
+        .then(function(results) {
+            processLoadedData(results[0], results[1], results[2], results[3]);
+            if (typeof App !== 'undefined') App.updateStatus('connected');
+            saveToLocalStorage();
+            if (typeof showToast === 'function') {
+                showToast('Loaded ' + (results[0] ? results[0].length : 0) + ' detections from GitHub', 'success');
+            }
+        })
+        .catch(function(error) {
+            console.error('Failed to load from GitHub:', error);
+            console.log('%c Falling back to localStorage...', 'color: #f1fa8c');
+            loadFromLocalStorage();
+            if (typeof App !== 'undefined') App.updateStatus('disconnected');
+            finalizeDataLoading();
+            if (typeof showToast === 'function') {
+                showToast('Using cached data (GitHub unavailable)', 'warning');
+            }
+        });
+    } else {
+        console.log('%c No GitHub token - using relative fetch', 'color: #f1fa8c');
+
+        // Fetch from relative paths (for local development)
+        Promise.all([
+            fetch(App.config.distPath + 'all-detections.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch(App.config.distPath + 'all-metadata.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch(App.config.distPath + 'resources.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; }),
+            fetch(App.config.distPath + 'macros.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; })
+        ])
+        .then(function(results) {
+            processLoadedData(results[0], results[1], results[2], results[3]);
+            if (typeof App !== 'undefined') App.updateStatus('connected');
+            saveToLocalStorage();
+        })
+        .catch(function(error) {
+            console.error('Failed to load from files:', error);
+            loadFromLocalStorage();
+            if (typeof App !== 'undefined') App.updateStatus('disconnected');
+            finalizeDataLoading();
+        });
+    }
+}
+
+// Process loaded data from GitHub or local files
+function processLoadedData(detectionsData, metadataData, resourcesData, macrosData) {
+    // Load detections
+    if (Array.isArray(detectionsData) && detectionsData.length > 0) {
+        App.state.detections = detectionsData;
+        App.state.filteredDetections = detectionsData.slice();
+        console.log('%c Loaded ' + detectionsData.length + ' detections', 'color: #50fa7b');
+    } else {
+        console.warn('No valid detections data, using empty array');
+        App.state.detections = [];
+        App.state.filteredDetections = [];
+    }
+
+    // Load metadata
+    if (metadataData && typeof metadataData === 'object' && Object.keys(metadataData).length > 0) {
+        detectionMetadata = metadataData;
+        console.log('%c Loaded metadata for ' + Object.keys(metadataData).length + ' detections', 'color: #50fa7b');
+    } else {
+        console.warn('No valid metadata data');
+        detectionMetadata = {};
+    }
+
+    // Load resources into resourcesState (will be available once IIFE initializes)
+    if (Array.isArray(resourcesData) && resourcesData.length > 0) {
+        // Store in a temporary global for resourcesState to pick up
+        window._loadedResources = resourcesData;
+        console.log('%c Loaded ' + resourcesData.length + ' resources', 'color: #50fa7b');
+    }
+
+    // Load macros - store in temporary global for macrosState to pick up
+    if (Array.isArray(macrosData) && macrosData.length > 0) {
+        window._loadedMacros = macrosData;
+        console.log('%c Loaded ' + macrosData.length + ' macros', 'color: #50fa7b');
+    }
+
+    finalizeDataLoading();
+}
+
+// Finalize data loading - update UI
+function finalizeDataLoading() {
+    if (typeof App === 'undefined') return;
+
+    App.populateFilters();
+    App.renderLibrary();
+
+    // Update other views if initialized
+    if (typeof calculateStatusCounts === 'function') {
+        calculateStatusCounts();
+        if (typeof filterRevalidation === 'function') filterRevalidation();
+    }
+    if (typeof buildHistoryEntries === 'function') {
+        buildHistoryEntries();
+    }
+    if (typeof renderReports === 'function') {
+        renderReports();
+    }
+
+    console.log('%c Data loading complete', 'color: #50fa7b');
 }
 
 // Build Correlation Search Editor URL (full normalized name)
@@ -1123,41 +1518,14 @@ function buildCorrelationSearchUrl(detectionName) {
         // LIBRARY VIEW FUNCTIONS
         // =====================================================================
 
-        // Load detections from dist folder
+        // Load detections from GitHub (with fallback to local files and localStorage)
         loadDetections: function() {
-            var self = this;
-            fetch(this.config.distPath + 'all-detections.json')
-                .then(function(response) {
-                    if (!response.ok) throw new Error('Failed to load detections');
-                    return response.json();
-                })
-                .then(function(data) {
-                    self.state.detections = data || [];
-                    self.state.filteredDetections = self.state.detections.slice();
-                    self.updateStatus('connected');
-                    self.populateFilters();
-                    self.renderLibrary();
-                    // Update revalidation view if initialized
-                    if (typeof calculateStatusCounts === 'function') {
-                        calculateStatusCounts();
-                        filterRevalidation();
-                    }
-                    // Update history view if initialized
-                    if (typeof buildHistoryEntries === 'function') {
-                        buildHistoryEntries();
-                    }
-                    // Update reports view if initialized
-                    if (typeof renderReports === 'function') {
-                        renderReports();
-                    }
-                })
-                .catch(function(err) {
-                    console.error('Failed to load detections:', err);
-                    self.updateStatus('disconnected');
-                    self.state.detections = [];
-                    self.state.filteredDetections = [];
-                    self.renderLibrary();
-                });
+            // Use the global autoLoadFromStaticFiles function which handles:
+            // 1. GitHub API fetch when token is configured
+            // 2. Relative file fetch for local development
+            // 3. localStorage fallback when both fail
+            // 4. Loads all-detections.json, all-metadata.json, resources.json, and macros.json
+            autoLoadFromStaticFiles();
         },
 
         // Populate dynamic filter dropdowns
@@ -1697,7 +2065,7 @@ function buildCorrelationSearchUrl(detectionName) {
             if (d['Search String']) {
                 html += '<div class="doc-section">';
                 html += '<h3 class="doc-section-title">Search Logic</h3>';
-                html += this.createCopyableField('SPL Query', d['Search String'], true);
+                html += this.createCopyableField('SPL Query', d['Search String'], true, true);
 
                 // Parsed metadata
                 var parsed = parseSPL(d['Search String']);
@@ -1850,13 +2218,13 @@ function buildCorrelationSearchUrl(detectionName) {
                         html += '<span class="drilldown-time">' + (dd.earliest || 'earliest') + ' → ' + (dd.latest || 'latest') + '</span>';
                     }
                     html += '</div>';
-                    // Show search with copy button if it has content
+                    // Show search with copy button if it has content (with SPL syntax highlighting)
                     if (dd.search && dd.search.trim()) {
                         var ddCopyId = self.state.copyableContent.length;
                         self.state.copyableContent.push(dd.search);
                         html += '<div class="drilldown-search-wrap">';
                         html += '<button class="copy-btn" onclick="copyById(' + ddCopyId + ', this)" title="Copy">📋</button>';
-                        html += '<pre class="drilldown-search">' + escapeHtml(dd.search) + '</pre>';
+                        html += '<pre class="drilldown-search">' + syntaxHighlightSPL(dd.search) + '</pre>';
                         html += '</div>';
 
                         // Parse drilldown search for SPL metadata
@@ -1997,11 +2365,19 @@ function buildCorrelationSearchUrl(detectionName) {
         },
 
         // Create copyable field
-        createCopyableField: function(label, value, isCode) {
+        // isSPL parameter enables Splunk SPL syntax highlighting
+        createCopyableField: function(label, value, isCode, isSPL) {
             if (!value && value !== 0) return '';
-            var escapedValue = escapeHtml(String(value));
             var copyId = this.state.copyableContent.length;
             this.state.copyableContent.push(String(value));
+
+            // Apply SPL syntax highlighting if isSPL is true, otherwise just escape HTML
+            var displayValue;
+            if (isSPL) {
+                displayValue = syntaxHighlightSPL(String(value));
+            } else {
+                displayValue = escapeHtml(String(value));
+            }
 
             var html = '<div class="doc-field">';
             html += '<div class="doc-field-header">';
@@ -2009,9 +2385,9 @@ function buildCorrelationSearchUrl(detectionName) {
             html += '<button class="copy-btn" onclick="copyById(' + copyId + ', this)" title="Copy">📋</button>';
             html += '</div>';
             if (isCode) {
-                html += '<div class="doc-field-value code-block">' + escapedValue + '</div>';
+                html += '<div class="doc-field-value code-block">' + displayValue + '</div>';
             } else {
-                html += '<div class="doc-field-value">' + escapedValue + '</div>';
+                html += '<div class="doc-field-value">' + displayValue + '</div>';
             }
             html += '</div>';
             return html;
@@ -2106,6 +2482,115 @@ function buildCorrelationSearchUrl(detectionName) {
             }
             return '<span class="' + cls + '">' + match + '</span>';
         });
+    }
+
+    // SPL Syntax Highlighting Function
+    function syntaxHighlightSPL(spl) {
+        if (!spl) return '';
+
+        // Escape HTML first
+        var escaped = spl.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        // SPL commands (common Splunk commands)
+        var commands = [
+            'search', 'stats', 'eval', 'where', 'table', 'fields', 'rename', 'sort',
+            'dedup', 'rex', 'tstats', 'datamodel', 'join', 'append', 'appendcols',
+            'chart', 'timechart', 'top', 'rare', 'head', 'tail', 'reverse',
+            'transaction', 'bucket', 'bin', 'span', 'eventstats', 'streamstats',
+            'lookup', 'inputlookup', 'outputlookup', 'mvexpand', 'mvzip', 'mvcombine',
+            'makemv', 'split', 'fillnull', 'replace', 'regex', 'erex',
+            'strcat', 'convert', 'xpath', 'xmlkv', 'spath', 'format',
+            'collect', 'outputcsv', 'sendemail', 'return', 'makeresults',
+            'map', 'foreach', 'accum', 'autoregress', 'diff', 'delta',
+            'predict', 'anomalydetection', 'cluster', 'kmeans', 'associate',
+            'correlate', 'set', 'abstract', 'reltime', 'localop', 'rest',
+            'metadata', 'history', 'eventcount', 'dbquery', 'typelearner',
+            'filldown', 'addtotals', 'addcoltotals', 'untable', 'xyseries',
+            'geostats', 'geom', 'addinfo', 'analyzefields', 'anomalousvalue'
+        ];
+
+        // SPL functions (used in eval, stats, etc.)
+        var functions = [
+            'count', 'sum', 'avg', 'min', 'max', 'list', 'values', 'dc', 'distinct_count',
+            'first', 'last', 'earliest', 'latest', 'range', 'stdev', 'stdevp', 'var', 'varp',
+            'perc\\d*', 'percentile', 'median', 'mode', 'rate', 'per_second', 'per_minute', 'per_hour', 'per_day',
+            'if', 'case', 'coalesce', 'null', 'nullif', 'validate', 'isnotnull', 'isnull', 'isnum', 'isstr', 'isint',
+            'len', 'lower', 'upper', 'trim', 'ltrim', 'rtrim', 'substr', 'replace', 'split', 'mvjoin',
+            'mvindex', 'mvcount', 'mvfind', 'mvfilter', 'mvappend', 'mvdedup', 'mvsort', 'mvrange', 'mvzip',
+            'tonumber', 'tostring', 'typeof', 'cidrmatch', 'match', 'like', 'searchmatch',
+            'now', 'time', 'relative_time', 'strftime', 'strptime', 'mktime',
+            'round', 'floor', 'ceiling', 'ceil', 'abs', 'exp', 'ln', 'log', 'pow', 'sqrt', 'random', 'pi', 'e',
+            'exact', 'sigfig', 'commands', 'md5', 'sha1', 'sha256', 'sha512',
+            'urldecode', 'urlencode', 'isbool', 'printf', 'json_object', 'json_array', 'json_extract', 'json_set', 'json_valid',
+            'true', 'false', 'memk', 'rmunit', 'rmcomma', 'ctime', 'iplocation'
+        ];
+
+        // Logical and comparison operators
+        var operators = ['AND', 'OR', 'NOT', 'AS', 'BY', 'OVER', 'WHERE', 'IN', 'LIKE', 'OUTPUT', 'OUTPUTNEW'];
+
+        // Process the SPL string with syntax highlighting
+
+        // 1. Handle triple-backtick comments first (protect them)
+        var commentPlaceholders = [];
+        escaped = escaped.replace(/```([^`]*)```/g, function(match, content) {
+            var idx = commentPlaceholders.length;
+            commentPlaceholders.push('<span class="spl-comment-inline">```' + content + '```</span>');
+            return '###COMMENT' + idx + '###';
+        });
+
+        // 2. Handle macros (single backticks, but not triple)
+        escaped = escaped.replace(/(?<![`])`([^`]+)`(?![`])/g, function(match, macro) {
+            return '<span class="spl-macro">`' + macro + '`</span>';
+        });
+
+        // 3. Handle strings (double-quoted)
+        escaped = escaped.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, function(match) {
+            return '<span class="spl-string">' + match + '</span>';
+        });
+
+        // 4. Handle variables ($field$)
+        escaped = escaped.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)\$/g, function(match) {
+            return '<span class="spl-variable">' + match + '</span>';
+        });
+
+        // 5. Handle pipes (make them bold and highlighted)
+        escaped = escaped.replace(/(\s*\|\s*)/g, '<span class="spl-pipe">$1</span>');
+
+        // 6. Handle field=value patterns (field names before operators)
+        escaped = escaped.replace(/\b([a-zA-Z_][a-zA-Z0-9_\.]*)\s*(={1,2}|!=|&lt;=?|&gt;=?)/g, function(match, field, op) {
+            return '<span class="spl-field">' + field + '</span><span class="spl-operator">' + op + '</span>';
+        });
+
+        // 7. Handle SPL commands (after pipes or at start)
+        var commandsPattern = new RegExp('(^|\\||\\s)(' + commands.join('|') + ')\\b', 'gi');
+        escaped = escaped.replace(commandsPattern, function(match, prefix, cmd) {
+            return prefix + '<span class="spl-command">' + cmd + '</span>';
+        });
+
+        // 8. Handle SPL functions
+        var functionsPattern = new RegExp('\\b(' + functions.join('|') + ')\\s*\\(', 'gi');
+        escaped = escaped.replace(functionsPattern, function(match, func) {
+            return '<span class="spl-command">' + func + '</span>(';
+        });
+
+        // 9. Handle operators (case insensitive for AND, OR, NOT, etc.)
+        var operatorsPattern = new RegExp('\\b(' + operators.join('|') + ')\\b', 'gi');
+        escaped = escaped.replace(operatorsPattern, function(match) {
+            return '<span class="spl-keyword">' + match + '</span>';
+        });
+
+        // 10. Handle numbers
+        escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, function(match, num) {
+            // Don't highlight if already inside a span
+            return '<span class="spl-number">' + num + '</span>';
+        });
+
+        // 11. Restore comments
+        commentPlaceholders.forEach(function(comment, idx) {
+            escaped = escaped.replace('###COMMENT' + idx + '###', comment);
+        });
+
+        return escaped;
     }
 
     function calculateTTL(lastModified) {
@@ -2537,34 +3022,201 @@ function buildCorrelationSearchUrl(detectionName) {
         var d = App.state.selectedDetection;
         if (!d) return;
 
+        var name = d['Detection Name'];
+        var meta = detectionMetadata[name] || {};
+
+        // Generate parsed data if not available
+        if (!meta.parsed && d) {
+            meta.parsed = parseSPL(d['Search String'] || '');
+            meta.drilldownVars = parseDrilldownVariables(d);
+        }
+
         var modal = document.getElementById('modal-metadata');
         var titleEl = document.getElementById('metadata-detection-name');
         var formattedEl = document.getElementById('metadata-formatted');
         var jsonEl = document.getElementById('metadata-json-content');
 
-        if (titleEl) titleEl.textContent = d['Detection Name'] || 'Unnamed';
-        if (jsonEl) jsonEl.textContent = JSON.stringify(d, null, 2);
+        if (titleEl) titleEl.textContent = name || 'Unnamed';
 
-        // Build formatted view
+        // Render JSON view with the metadata
+        if (jsonEl) jsonEl.textContent = JSON.stringify(meta, null, 2);
+
+        // Build formatted/structured view
         if (formattedEl) {
-            var html = '';
-            Object.keys(d).forEach(function(key) {
-                var val = d[key];
-                if (val !== null && val !== undefined && val !== '') {
-                    html += '<div style="margin-bottom:8px;"><strong>' + escapeHtml(key) + ':</strong> ';
-                    if (typeof val === 'object') {
-                        html += '<pre style="margin:4px 0;font-size:11px;">' + escapeHtml(JSON.stringify(val, null, 2)) + '</pre>';
-                    } else {
-                        html += escapeHtml(String(val));
-                    }
-                    html += '</div>';
-                }
-            });
-            formattedEl.innerHTML = html;
+            formattedEl.innerHTML = renderFormattedMetadata(name, d, meta);
         }
+
+        // Reset to formatted view (default)
+        var formattedDiv = document.getElementById('metadata-formatted');
+        var jsonDiv = document.getElementById('metadata-json');
+        var toggleBtns = document.querySelectorAll('.metadata-view-toggle .toggle-btn');
+        if (formattedDiv) formattedDiv.classList.remove('hidden');
+        if (jsonDiv) jsonDiv.classList.add('hidden');
+        toggleBtns.forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-view') === 'formatted') {
+                btn.classList.add('active');
+            }
+        });
 
         if (modal) modal.classList.remove('hidden');
     };
+
+    // Helper function to render formatted metadata
+    function renderFormattedMetadata(name, detection, meta) {
+        var html = '';
+
+        // TTL Status
+        var ttl = calculateTTL(detection['Last Modified']);
+        var ttlClass = getTTLClass(ttl.days);
+        html += '<div class="metadata-section">';
+        html += '<h4>TTL Status</h4>';
+        html += '<div class="metadata-ttl ' + ttlClass + '">';
+        html += '<span class="ttl-days">' + ttl.days + ' days</span>';
+        html += '<span class="ttl-label">' + (ttl.days <= 0 ? 'EXPIRED' : ttl.days <= 30 ? 'Critical' : ttl.days <= 90 ? 'Warning' : 'OK') + '</span>';
+        html += '</div></div>';
+
+        // Parsed SPL Data
+        var parsed = meta.parsed || {};
+        var hasParsedData = (parsed.indexes && parsed.indexes.length) ||
+                            (parsed.sourcetypes && parsed.sourcetypes.length) ||
+                            (parsed.eventCodes && parsed.eventCodes.length) ||
+                            (parsed.categories && parsed.categories.length) ||
+                            (parsed.macros && parsed.macros.length) ||
+                            (parsed.lookups && parsed.lookups.length) ||
+                            (parsed.evalFields && parsed.evalFields.length) ||
+                            (parsed.mainSearchFields && parsed.mainSearchFields.length) ||
+                            (parsed.mainSearchFunctions && parsed.mainSearchFunctions.length) ||
+                            (parsed.byFields && parsed.byFields.length);
+
+        if (hasParsedData) {
+            html += '<div class="metadata-section">';
+            html += '<h4>Parsed SPL Data</h4>';
+            html += '<p class="metadata-note">These fields are parsed from the SPL search.</p>';
+            html += '<div class="metadata-parsed">';
+            if (parsed.indexes && parsed.indexes.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Indexes:</span><span class="parsed-tags">' + parsed.indexes.map(function(i) { return '<span class="tag datasource">' + escapeHtml(i) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.sourcetypes && parsed.sourcetypes.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Sourcetypes:</span><span class="parsed-tags">' + parsed.sourcetypes.map(function(s) { return '<span class="tag">' + escapeHtml(s) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.categories && parsed.categories.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Categories:</span><span class="parsed-tags">' + parsed.categories.map(function(c) { return '<span class="tag">' + escapeHtml(c) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.eventCodes && parsed.eventCodes.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Event Codes:</span><span class="parsed-tags">' + parsed.eventCodes.map(function(e) { return '<span class="tag">' + escapeHtml(e) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.macros && parsed.macros.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Macros:</span><span class="parsed-tags">' + parsed.macros.map(function(m) { return '<span class="tag macro">`' + escapeHtml(m) + '`</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.lookups && parsed.lookups.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Lookups:</span><span class="parsed-tags">' + parsed.lookups.map(function(l) { return '<span class="tag">' + escapeHtml(l) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.evalFields && parsed.evalFields.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Eval Fields:</span><span class="parsed-tags">' + parsed.evalFields.map(function(f) { return '<span class="tag">' + escapeHtml(f) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.mainSearchFields && parsed.mainSearchFields.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Main Search Fields:</span><span class="parsed-tags">' + parsed.mainSearchFields.map(function(f) { return '<span class="tag field">' + escapeHtml(f) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.mainSearchFunctions && parsed.mainSearchFunctions.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Search Functions:</span><span class="parsed-tags">' + parsed.mainSearchFunctions.map(function(f) { return '<span class="tag func">' + escapeHtml(f) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.byFields && parsed.byFields.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Stats By Fields:</span><span class="parsed-tags">' + parsed.byFields.map(function(f) { return '<span class="tag by-field">' + escapeHtml(f) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.customTags && parsed.customTags.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Custom Tags:</span><span class="parsed-tags">' + parsed.customTags.map(function(t) { return '<span class="tag custom">' + escapeHtml(t.category + ': ' + t.tag) + '</span>'; }).join('') + '</span></div>';
+            }
+            if (parsed.comments && parsed.comments.length) {
+                html += '<div class="parsed-item"><span class="parsed-label">Comments:</span><span class="parsed-tags">' + parsed.comments.map(function(c) { return '<span class="tag comment">' + escapeHtml(c) + '</span>'; }).join('') + '</span></div>';
+            }
+            html += '</div></div>';
+        }
+
+        // Drilldown Variables
+        var drilldownVars = meta.drilldownVars || {};
+        // Handle nested structure
+        if (drilldownVars.drilldownVars) {
+            drilldownVars = drilldownVars.drilldownVars;
+        }
+        var hasVars = false;
+        var varHtml = '<div class="metadata-section">';
+        varHtml += '<h4>Drilldown Variables</h4>';
+        varHtml += '<div class="metadata-parsed">';
+        Object.keys(drilldownVars).forEach(function(key) {
+            var vars = drilldownVars[key];
+            if (vars && vars.length > 0) {
+                hasVars = true;
+                varHtml += '<div class="parsed-item"><span class="parsed-label">' + escapeHtml(key) + ':</span><span class="parsed-tags">' + vars.map(function(v) { return '<span class="tag variable">$' + escapeHtml(v) + '$</span>'; }).join('') + '</span></div>';
+            }
+        });
+        varHtml += '</div></div>';
+        if (hasVars) html += varHtml;
+
+        // Metadata Status fields
+        var metadataFields = ['needsTune', 'needsRetrofit', 'lastTuned', 'lastRetrofitted', 'lastParsed'];
+        var hasMetaFields = false;
+        var metaFieldsHtml = '<div class="metadata-section"><h4>Metadata Status</h4><div class="metadata-parsed">';
+        metadataFields.forEach(function(f) {
+            if (meta[f] !== undefined && meta[f] !== null) {
+                hasMetaFields = true;
+                var val = meta[f];
+                if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
+                if (f.indexOf('last') === 0 && val) val = new Date(val).toLocaleString();
+                metaFieldsHtml += '<div class="parsed-item"><span class="parsed-label">' + f + ':</span><span class="parsed-value">' + escapeHtml(String(val)) + '</span></div>';
+            }
+        });
+        metaFieldsHtml += '</div></div>';
+        if (hasMetaFields) html += metaFieldsHtml;
+
+        // TTL info if available
+        if (meta.ttl) {
+            html += '<div class="metadata-section">';
+            html += '<h4>TTL Info</h4>';
+            html += '<div class="metadata-parsed">';
+            html += '<div class="parsed-item"><span class="parsed-label">Days Remaining:</span><span class="parsed-value">' + (meta.ttl.days || 'N/A') + '</span></div>';
+            html += '<div class="parsed-item"><span class="parsed-label">Expired:</span><span class="parsed-value">' + (meta.ttl.expired ? 'Yes' : 'No') + '</span></div>';
+            html += '</div></div>';
+        }
+
+        // History Summary if available
+        if (meta.history && meta.history.length > 0) {
+            var counts = {
+                total: meta.history.length,
+                tunes: meta.history.filter(function(h) { return h.type === 'tune'; }).length,
+                retrofits: meta.history.filter(function(h) { return h.type === 'retrofit'; }).length,
+                revalidations: meta.history.filter(function(h) { return h.type === 'revalidation' || h.subtype === 'revalidation'; }).length
+            };
+            html += '<div class="metadata-section">';
+            html += '<h4>History Summary</h4>';
+            html += '<div class="metadata-history-summary">';
+            html += '<span class="history-count total">' + counts.total + ' Total</span>';
+            html += '<span class="history-count tune">' + counts.tunes + ' Tunes</span>';
+            html += '<span class="history-count retrofit">' + counts.retrofits + ' Retrofits</span>';
+            html += '<span class="history-count reval">' + counts.revalidations + ' Revalidations</span>';
+            html += '</div></div>';
+
+            // Recent History
+            html += '<div class="metadata-section">';
+            html += '<h4>Recent History (Last 5)</h4>';
+            html += '<div class="metadata-history-list">';
+            meta.history.slice(0, 5).forEach(function(h) {
+                var icon = h.type === 'tune' ? 'T' : h.type === 'retrofit' ? 'R' : 'V';
+                html += '<div class="metadata-history-item ' + (h.type || 'version') + '">';
+                html += '<span class="history-icon">' + icon + '</span>';
+                html += '<div class="history-details">';
+                html += '<div class="history-desc">' + escapeHtml(h.description || 'No description') + '</div>';
+                html += '<div class="history-meta">';
+                if (h.jira) html += '<span class="jira">' + h.jira + '</span>';
+                if (h.analyst) html += '<span>by ' + escapeHtml(h.analyst) + '</span>';
+                html += '<span>' + new Date(h.timestamp).toLocaleDateString() + '</span>';
+                html += '</div></div></div>';
+            });
+            html += '</div></div>';
+        }
+
+        return html;
+    }
 
     window.closeMetadataModal = function() {
         var modal = document.getElementById('modal-metadata');
@@ -2598,8 +3250,15 @@ function buildCorrelationSearchUrl(detectionName) {
             showToast('No detection selected', 'warning');
             return;
         }
-        navigator.clipboard.writeText(JSON.stringify(d, null, 2)).then(function() {
-            showToast('JSON copied to clipboard', 'success');
+        var name = d['Detection Name'];
+        var meta = detectionMetadata[name] || {};
+        // Generate parsed data if not available
+        if (!meta.parsed && d) {
+            meta.parsed = parseSPL(d['Search String'] || '');
+            meta.drilldownVars = parseDrilldownVariables(d);
+        }
+        navigator.clipboard.writeText(JSON.stringify(meta, null, 2)).then(function() {
+            showToast('Metadata JSON copied to clipboard', 'success');
         }).catch(function(err) {
             console.error('Failed to copy:', err);
             showToast('Failed to copy JSON to clipboard', 'error');
@@ -2622,13 +3281,17 @@ function buildCorrelationSearchUrl(detectionName) {
         closeConfirmModal();
         updateSyncStatus('syncing', 'Deleting...');
 
+        var githubDeleteSuccess = false;
+
         // Delete from GitHub if connected
         if (github) {
             try {
                 await deleteDetectionFromGitHub(d);
+                githubDeleteSuccess = true;
             } catch (error) {
                 console.error('GitHub delete error:', error);
-                showToast('Failed to delete from GitHub: ' + error.message, 'warning');
+                showToast('GitHub delete failed: ' + error.message + '. Removed locally only.', 'error');
+                updateSyncStatus('error', 'Delete Failed');
             }
         }
 
@@ -2645,11 +3308,12 @@ function buildCorrelationSearchUrl(detectionName) {
         delete detectionMetadata[d['Detection Name']];
 
         // Update compiled files
-        if (github) {
+        if (github && githubDeleteSuccess) {
             try {
                 await updateCompiledFiles(App.state.detections);
             } catch (error) {
                 console.error('Failed to update compiled files:', error);
+                showToast('Failed to update compiled files: ' + error.message, 'warning');
             }
         }
 
@@ -2662,8 +3326,13 @@ function buildCorrelationSearchUrl(detectionName) {
         document.getElementById('detail-placeholder').classList.remove('hidden');
         document.getElementById('library-detail-content').classList.add('hidden');
 
-        updateSyncStatus('connected', 'Connected');
-        showToast('Detection deleted successfully', 'success');
+        if (github && githubDeleteSuccess) {
+            updateSyncStatus('connected', 'Synced');
+            showToast('Detection deleted from GitHub successfully', 'success');
+        } else if (!github) {
+            updateSyncStatus('disconnected', 'Not Connected');
+            showToast('Detection deleted locally. Configure GitHub to sync.', 'info');
+        }
     };
 
     // =========================================================================
@@ -4080,36 +4749,41 @@ function buildCorrelationSearchUrl(detectionName) {
         var metadata = parseAndSaveMetadata(d);
 
         // Save to GitHub if connected
+        var githubSaveSuccess = false;
         if (github) {
             try {
-                // Save detection
-                var detectionSaved = await saveDetectionToGitHub(d);
+                // Save detection file
+                await saveDetectionToGitHub(d);
 
-                // Save metadata
-                if (detectionSaved) {
-                    await saveMetadataToGitHub(d['Detection Name'], metadata, d.file_name);
-                }
+                // Save metadata file
+                await saveMetadataToGitHub(d['Detection Name'], metadata, d.file_name);
 
                 // Update compiled files
                 await updateCompiledFiles(App.state.detections);
 
+                githubSaveSuccess = true;
                 showToast('Detection saved to GitHub successfully!', 'success');
+                updateSyncStatus('connected', 'Synced');
                 // Record pending tune/retrofit to history
                 clearPendingTuneRetrofit();
             } catch (error) {
                 console.error('GitHub save error:', error);
-                showToast('Detection saved locally. GitHub sync failed: ' + error.message, 'warning');
+                showToast('GitHub save failed: ' + error.message + '. Changes saved locally only.', 'error');
+                updateSyncStatus('error', 'Sync Failed');
             }
         } else {
             showToast('Detection saved locally. Configure GitHub in Settings to sync.', 'info');
+            updateSyncStatus('disconnected', 'Not Connected');
             // Record pending tune/retrofit to history
             clearPendingTuneRetrofit();
         }
 
+        // Save to localStorage for caching (always, regardless of GitHub success)
+        saveToLocalStorage();
+
         // Update UI
         App.state.filteredDetections = App.state.detections.slice();
         App.renderLibrary();
-        updateSyncStatus('connected', 'Connected');
     };
 
     // Download current detection as JSON file
@@ -4542,18 +5216,30 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Save to GitHub
         updateMacrosFile()
-            .then(function() {
+            .then(function(result) {
                 macrosState.selectedMacro = macro;
                 macrosState.isNewMacro = false;
                 macrosState.isEditing = false;
                 filterMacros();
                 renderMacroDetail(macro);
-                App.updateStatus('connected');
-                showToast('Macro saved successfully', 'success');
+                if (result && result.localOnly) {
+                    App.updateStatus('disconnected');
+                    showToast('Macro saved locally. Configure GitHub to sync.', 'info');
+                } else {
+                    App.updateStatus('connected');
+                    showToast('Macro saved to GitHub successfully', 'success');
+                }
             })
             .catch(function(error) {
-                console.error('Failed to save macro:', error);
-                showToast('Failed to save macro: ' + error.message, 'error');
+                console.error('Failed to save macro to GitHub:', error);
+                // Still update UI since localStorage save succeeded
+                macrosState.selectedMacro = macro;
+                macrosState.isNewMacro = false;
+                macrosState.isEditing = false;
+                filterMacros();
+                renderMacroDetail(macro);
+                App.updateStatus('error');
+                showToast('GitHub save failed: ' + error.message + '. Saved locally.', 'error');
             });
     };
 
@@ -4594,43 +5280,73 @@ function buildCorrelationSearchUrl(detectionName) {
 
         // Save to GitHub
         updateMacrosFile()
-            .then(function() {
+            .then(function(result) {
                 macrosState.selectedMacro = null;
                 macrosState.isNewMacro = false;
                 document.getElementById('macro-placeholder').classList.remove('hidden');
                 document.getElementById('macro-detail-content').classList.add('hidden');
                 filterMacros();
-                App.updateStatus('connected');
-                showToast('Macro deleted', 'success');
+                if (result && result.localOnly) {
+                    App.updateStatus('disconnected');
+                    showToast('Macro deleted locally. Configure GitHub to sync.', 'info');
+                } else {
+                    App.updateStatus('connected');
+                    showToast('Macro deleted from GitHub successfully', 'success');
+                }
             })
             .catch(function(error) {
-                console.error('Failed to delete macro:', error);
-                showToast('Failed to delete macro: ' + error.message, 'error');
+                console.error('Failed to delete macro from GitHub:', error);
+                // Still update UI since localStorage delete succeeded
+                macrosState.selectedMacro = null;
+                macrosState.isNewMacro = false;
+                document.getElementById('macro-placeholder').classList.remove('hidden');
+                document.getElementById('macro-detail-content').classList.add('hidden');
+                filterMacros();
+                App.updateStatus('error');
+                showToast('GitHub delete failed: ' + error.message + '. Deleted locally.', 'error');
             });
     }
 
     // Update macros file (GitHub sync)
     function updateMacrosFile() {
-        // For now, we'll store locally since GitHub integration would require auth
-        // In production, this would use the GitHub API
+        // Always backup to localStorage first
+        try {
+            var macroNames = macrosState.macros.map(function(m) { return m.name; });
+            localStorage.setItem('dmf_macros', JSON.stringify(macroNames));
+            localStorage.setItem('dmf_macros_full', JSON.stringify(macrosState.macros));
+        } catch (e) {
+            console.warn('Failed to save macros to localStorage:', e);
+        }
 
-        return new Promise(function(resolve, reject) {
-            try {
-                // Store in localStorage as backup
-                var macroNames = macrosState.macros.map(function(m) { return m.name; });
-                localStorage.setItem('dmf_macros', JSON.stringify(macroNames));
+        // If no GitHub connection, just resolve with localStorage save
+        if (!github) {
+            console.log('No GitHub connection - macros saved to localStorage only');
+            return Promise.resolve({ localOnly: true });
+        }
 
-                // Store full macro data
-                localStorage.setItem('dmf_macros_full', JSON.stringify(macrosState.macros));
+        // Save to GitHub
+        var macrosPath = PATHS.dist + '/macros.json';
+        var content = JSON.stringify(macrosState.macros, null, 2);
 
-                // Simulate async operation
-                setTimeout(function() {
-                    resolve();
-                }, 100);
-            } catch (e) {
-                reject(e);
-            }
-        });
+        return github.getFileSha(macrosPath)
+            .catch(function() {
+                // File doesn't exist, will create new
+                return null;
+            })
+            .then(function(sha) {
+                return github.createOrUpdateFile(macrosPath, content, 'Update macros.json', sha);
+            })
+            .then(function(result) {
+                console.log('Macros saved to GitHub successfully');
+                // Also save comprehensive localStorage cache
+                saveToLocalStorage();
+                return result;
+            })
+            .catch(function(error) {
+                console.error('Failed to save macros to GitHub:', error);
+                // Throw to let caller know GitHub save failed
+                throw new Error('GitHub sync failed: ' + error.message);
+            });
     }
 
     // =========================================================================
@@ -5650,6 +6366,9 @@ function buildCorrelationSearchUrl(detectionName) {
 
             // Store pending changes indicator
             sessionStorage.setItem('dmf_resources_pending_sync', 'true');
+
+            // Also save comprehensive localStorage cache
+            saveToLocalStorage();
         } catch (e) {
             console.error('Failed to save resources:', e);
         }
@@ -6068,8 +6787,6 @@ function buildCorrelationSearchUrl(detectionName) {
 
     // Render Metadata Report Tab
     function renderMetadataReportTab(detections) {
-        var metadata = App.state.metadata || {};
-
         var indexes = {};
         var sourcetypes = {};
         var mainSearchFields = {};
@@ -6078,38 +6795,41 @@ function buildCorrelationSearchUrl(detectionName) {
         var lookups = {};
         var detectionsWithMeta = 0;
 
-        Object.keys(metadata).forEach(function(name) {
-            var meta = metadata[name];
-            if (meta && meta.parsed) {
+        // Parse SPL from each detection to extract metadata
+        detections.forEach(function(d) {
+            var spl = d['Search String'];
+            if (spl) {
+                // Use the global parseSPL function to extract metadata
+                var parsed = parseSPL(spl);
                 detectionsWithMeta++;
 
-                if (meta.parsed.indexes) {
-                    meta.parsed.indexes.forEach(function(i) {
+                if (parsed.indexes) {
+                    parsed.indexes.forEach(function(i) {
                         indexes[i] = (indexes[i] || 0) + 1;
                     });
                 }
-                if (meta.parsed.sourcetypes) {
-                    meta.parsed.sourcetypes.forEach(function(s) {
+                if (parsed.sourcetypes) {
+                    parsed.sourcetypes.forEach(function(s) {
                         sourcetypes[s] = (sourcetypes[s] || 0) + 1;
                     });
                 }
-                if (meta.parsed.mainSearchFields) {
-                    meta.parsed.mainSearchFields.forEach(function(f) {
+                if (parsed.mainSearchFields) {
+                    parsed.mainSearchFields.forEach(function(f) {
                         mainSearchFields[f] = (mainSearchFields[f] || 0) + 1;
                     });
                 }
-                if (meta.parsed.mainSearchFunctions) {
-                    meta.parsed.mainSearchFunctions.forEach(function(f) {
+                if (parsed.mainSearchFunctions) {
+                    parsed.mainSearchFunctions.forEach(function(f) {
                         mainSearchFunctions[f] = (mainSearchFunctions[f] || 0) + 1;
                     });
                 }
-                if (meta.parsed.macros) {
-                    meta.parsed.macros.forEach(function(m) {
+                if (parsed.macros) {
+                    parsed.macros.forEach(function(m) {
                         macros[m] = (macros[m] || 0) + 1;
                     });
                 }
-                if (meta.parsed.lookups) {
-                    meta.parsed.lookups.forEach(function(l) {
+                if (parsed.lookups) {
+                    parsed.lookups.forEach(function(l) {
                         lookups[l] = (lookups[l] || 0) + 1;
                     });
                 }
