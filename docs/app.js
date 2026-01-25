@@ -2585,11 +2585,20 @@ function buildCorrelationSearchUrl(detectionName) {
     }
 
     // SPL Syntax Highlighting Function
+    // Uses placeholder markers to prevent regex patterns from matching HTML we add
     function syntaxHighlightSPL(spl) {
         if (!spl) return '';
 
         // Escape HTML first
         var escaped = spl.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        // Placeholder storage - all spans are stored here and replaced at the end
+        var placeholders = [];
+        function addPlaceholder(html) {
+            var idx = placeholders.length;
+            placeholders.push(html);
+            return '\x00PH' + idx + '\x00';
+        }
 
         // SPL commands (common Splunk commands)
         var commands = [
@@ -2629,65 +2638,65 @@ function buildCorrelationSearchUrl(detectionName) {
         var operators = ['AND', 'OR', 'NOT', 'AS', 'BY', 'OVER', 'WHERE', 'IN', 'LIKE', 'OUTPUT', 'OUTPUTNEW'];
 
         // Process the SPL string with syntax highlighting
+        // All spans are replaced with placeholders to prevent subsequent patterns from matching HTML
 
-        // 1. Handle triple-backtick comments first (protect them)
-        var commentPlaceholders = [];
+        // 1. Handle triple-backtick comments first
         escaped = escaped.replace(/```([^`]*)```/g, function(match, content) {
-            var idx = commentPlaceholders.length;
-            commentPlaceholders.push('<span class="spl-comment-inline">```' + content + '```</span>');
-            return '###COMMENT' + idx + '###';
+            return addPlaceholder('<span class="spl-comment-inline">```' + content + '```</span>');
         });
 
         // 2. Handle macros (single backticks, but not triple)
         escaped = escaped.replace(/(?<![`])`([^`]+)`(?![`])/g, function(match, macro) {
-            return '<span class="spl-macro">`' + macro + '`</span>';
+            return addPlaceholder('<span class="spl-macro">`' + macro + '`</span>');
         });
 
         // 3. Handle strings (double-quoted)
         escaped = escaped.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, function(match) {
-            return '<span class="spl-string">' + match + '</span>';
+            return addPlaceholder('<span class="spl-string">' + match + '</span>');
         });
 
         // 4. Handle variables ($field$)
         escaped = escaped.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)\$/g, function(match) {
-            return '<span class="spl-variable">' + match + '</span>';
+            return addPlaceholder('<span class="spl-variable">' + match + '</span>');
         });
 
         // 5. Handle pipes (make them bold and highlighted)
-        escaped = escaped.replace(/(\s*\|\s*)/g, '<span class="spl-pipe">$1</span>');
+        escaped = escaped.replace(/(\s*\|\s*)/g, function(match) {
+            return addPlaceholder('<span class="spl-pipe">' + match + '</span>');
+        });
 
         // 6. Handle field=value patterns (field names before operators)
         escaped = escaped.replace(/\b([a-zA-Z_][a-zA-Z0-9_\.]*)\s*(={1,2}|!=|&lt;=?|&gt;=?)/g, function(match, field, op) {
-            return '<span class="spl-field">' + field + '</span><span class="spl-operator">' + op + '</span>';
+            return addPlaceholder('<span class="spl-field">' + field + '</span>') +
+                   addPlaceholder('<span class="spl-operator">' + op + '</span>');
         });
 
         // 7. Handle SPL commands (after pipes or at start)
-        var commandsPattern = new RegExp('(^|\\||\\s)(' + commands.join('|') + ')\\b', 'gi');
+        var commandsPattern = new RegExp('(^|\\s)(' + commands.join('|') + ')\\b', 'gi');
         escaped = escaped.replace(commandsPattern, function(match, prefix, cmd) {
-            return prefix + '<span class="spl-command">' + cmd + '</span>';
+            return prefix + addPlaceholder('<span class="spl-command">' + cmd + '</span>');
         });
 
         // 8. Handle SPL functions
         var functionsPattern = new RegExp('\\b(' + functions.join('|') + ')\\s*\\(', 'gi');
         escaped = escaped.replace(functionsPattern, function(match, func) {
-            return '<span class="spl-command">' + func + '</span>(';
+            return addPlaceholder('<span class="spl-command">' + func + '</span>') + '(';
         });
 
         // 9. Handle operators (case insensitive for AND, OR, NOT, etc.)
         var operatorsPattern = new RegExp('\\b(' + operators.join('|') + ')\\b', 'gi');
         escaped = escaped.replace(operatorsPattern, function(match) {
-            return '<span class="spl-keyword">' + match + '</span>';
+            return addPlaceholder('<span class="spl-keyword">' + match + '</span>');
         });
 
-        // 10. Handle numbers
+        // 10. Handle numbers (but not those that are part of placeholders)
         escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, function(match, num) {
-            // Don't highlight if already inside a span
-            return '<span class="spl-number">' + num + '</span>';
+            return addPlaceholder('<span class="spl-number">' + num + '</span>');
         });
 
-        // 11. Restore comments
-        commentPlaceholders.forEach(function(comment, idx) {
-            escaped = escaped.replace('###COMMENT' + idx + '###', comment);
+        // 11. Restore all placeholders with actual HTML
+        placeholders.forEach(function(html, idx) {
+            escaped = escaped.replace('\x00PH' + idx + '\x00', html);
         });
 
         return escaped;
@@ -3170,8 +3179,8 @@ function buildCorrelationSearchUrl(detectionName) {
 
         if (titleEl) titleEl.textContent = name || 'Unnamed';
 
-        // Render JSON view with the metadata
-        if (jsonEl) jsonEl.textContent = JSON.stringify(meta, null, 2);
+        // Render JSON view with the metadata and syntax highlighting
+        if (jsonEl) jsonEl.innerHTML = syntaxHighlightJSON(JSON.stringify(meta, null, 2));
 
         // Build formatted/structured view
         if (formattedEl) {

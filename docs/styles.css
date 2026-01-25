@@ -6134,7 +6134,7 @@ pre code {
 
 /* Metadata JSON View */
 .metadata-json {
-    background: var(--color-bg-alt);
+    background: var(--color-code-bg);
     border-radius: 8px;
     padding: 16px;
     max-height: 500px;
@@ -6147,6 +6147,6 @@ pre code {
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
-    color: var(--color-text);
+    color: var(--color-code-text);
     margin: 0;
 }
