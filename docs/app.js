@@ -718,9 +718,10 @@ function initGitHub() {
 function saveToLocalStorage() {
     try {
         // Save detections array
-        if (typeof App !== 'undefined' && App.state && App.state.detections) {
-            localStorage.setItem('dmf_detections', JSON.stringify(App.state.detections));
-            console.log('Saved ' + App.state.detections.length + ' detections to localStorage');
+        var AppRef = window.App || window.NewUIApp;
+        if (AppRef && AppRef.state && AppRef.state.detections) {
+            localStorage.setItem('dmf_detections', JSON.stringify(AppRef.state.detections));
+            console.log('Saved ' + AppRef.state.detections.length + ' detections to localStorage');
         }
 
         // Save detection metadata object
@@ -787,9 +788,10 @@ function loadFromLocalStorage() {
         if (storedDetections) {
             var parsedDetections = JSON.parse(storedDetections);
             if (Array.isArray(parsedDetections) && parsedDetections.length > 0) {
-                if (typeof App !== 'undefined' && App.state) {
-                    App.state.detections = parsedDetections;
-                    App.state.filteredDetections = parsedDetections.slice();
+                var AppRef = window.App || window.NewUIApp;
+                if (AppRef && AppRef.state) {
+                    AppRef.state.detections = parsedDetections;
+                    AppRef.state.filteredDetections = parsedDetections.slice();
                 }
                 loaded.detections = true;
                 console.log('Loaded ' + parsedDetections.length + ' detections from localStorage');
@@ -977,7 +979,8 @@ function autoLoadFromStaticFiles() {
         ])
         .then(function(results) {
             processLoadedData(results[0], results[1], results[2], results[3]);
-            if (typeof App !== 'undefined') App.updateStatus('connected');
+            var AppRef = window.App || window.NewUIApp;
+            if (AppRef) AppRef.updateStatus('connected');
             saveToLocalStorage();
             if (typeof showToast === 'function') {
                 showToast('Loaded ' + (results[0] ? results[0].length : 0) + ' detections from GitHub', 'success');
@@ -987,7 +990,8 @@ function autoLoadFromStaticFiles() {
             console.error('Failed to load from GitHub:', error);
             console.log('%c Falling back to localStorage...', 'color: #f1fa8c');
             loadFromLocalStorage();
-            if (typeof App !== 'undefined') App.updateStatus('disconnected');
+            var AppRef = window.App || window.NewUIApp;
+            if (AppRef) AppRef.updateStatus('disconnected');
             finalizeDataLoading();
             if (typeof showToast === 'function') {
                 showToast('Using cached data (GitHub unavailable)', 'warning');
@@ -997,21 +1001,25 @@ function autoLoadFromStaticFiles() {
         console.log('%c No GitHub token - using relative fetch', 'color: #f1fa8c');
 
         // Fetch from relative paths (for local development)
+        var AppRef = window.App || window.NewUIApp;
+        var distPath = (AppRef && AppRef.config) ? AppRef.config.distPath : 'dist/';
         Promise.all([
-            fetch(App.config.distPath + 'all-detections.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
-            fetch(App.config.distPath + 'all-metadata.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
-            fetch(App.config.distPath + 'resources.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; }),
-            fetch(App.config.distPath + 'macros.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; })
+            fetch(distPath + 'all-detections.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch(distPath + 'all-metadata.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }),
+            fetch(distPath + 'resources.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; }),
+            fetch(distPath + 'macros.json').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return []; })
         ])
         .then(function(results) {
             processLoadedData(results[0], results[1], results[2], results[3]);
-            if (typeof App !== 'undefined') App.updateStatus('connected');
+            var AppRef2 = window.App || window.NewUIApp;
+            if (AppRef2) AppRef2.updateStatus('connected');
             saveToLocalStorage();
         })
         .catch(function(error) {
             console.error('Failed to load from files:', error);
             loadFromLocalStorage();
-            if (typeof App !== 'undefined') App.updateStatus('disconnected');
+            var AppRef2 = window.App || window.NewUIApp;
+            if (AppRef2) AppRef2.updateStatus('disconnected');
             finalizeDataLoading();
         });
     }
@@ -1019,15 +1027,26 @@ function autoLoadFromStaticFiles() {
 
 // Process loaded data from GitHub or local files
 function processLoadedData(detectionsData, metadataData, resourcesData, macrosData) {
+    // Get App reference (may be exposed as App or NewUIApp depending on timing)
+    var AppRef = window.App || window.NewUIApp;
+    if (!AppRef || !AppRef.state) {
+        console.error('App not initialized yet, storing data for later');
+        window._pendingDetections = detectionsData;
+        window._pendingMetadata = metadataData;
+        window._pendingResources = resourcesData;
+        window._pendingMacros = macrosData;
+        return;
+    }
+
     // Load detections
     if (Array.isArray(detectionsData) && detectionsData.length > 0) {
-        App.state.detections = detectionsData;
-        App.state.filteredDetections = detectionsData.slice();
+        AppRef.state.detections = detectionsData;
+        AppRef.state.filteredDetections = detectionsData.slice();
         console.log('%c Loaded ' + detectionsData.length + ' detections', 'color: #50fa7b');
     } else {
         console.warn('No valid detections data, using empty array');
-        App.state.detections = [];
-        App.state.filteredDetections = [];
+        AppRef.state.detections = [];
+        AppRef.state.filteredDetections = [];
     }
 
     // Load metadata
@@ -1057,10 +1076,11 @@ function processLoadedData(detectionsData, metadataData, resourcesData, macrosDa
 
 // Finalize data loading - update UI
 function finalizeDataLoading() {
-    if (typeof App === 'undefined') return;
+    var AppRef = window.App || window.NewUIApp;
+    if (!AppRef) return;
 
-    App.populateFilters();
-    App.renderLibrary();
+    AppRef.populateFilters();
+    AppRef.renderLibrary();
 
     // Update other views if initialized
     if (typeof calculateStatusCounts === 'function') {
