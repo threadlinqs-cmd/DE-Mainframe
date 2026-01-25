@@ -8976,6 +8976,7 @@ function buildCorrelationSearchUrl(detectionName) {
         initSettings();
     };
 
-    // Expose App to global scope for debugging
+    // Expose App to global scope for debugging and external access
     window.NewUIApp = App;
+    window.App = App;  // Also expose as App for functions outside IIFE
 })();
