@@ -1,0 +1,33 @@
+{
+  "detectionName": "Test Detection - Claude Automated Test",
+  "history": [],
+  "parsed": {
+    "indexes": [
+      "main"
+    ],
+    "sourcetypes": [
+      "test_events"
+    ],
+    "eventCodes": [],
+    "categories": [],
+    "macros": [],
+    "lookups": [],
+    "evalFields": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "stats",
+      "where"
+    ],
+    "byFields": [
+      "user",
+      "src_ip"
+    ],
+    "functions": [
+      "stats",
+      "where"
+    ],
+    "comments": [],
+    "customTags": []
+  },
+  "lastParsed": "2026-01-25T21:23:41.950Z"
+}
