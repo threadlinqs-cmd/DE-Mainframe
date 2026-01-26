@@ -11,33 +11,25 @@
     ],
     "parsed": {
       "indexes": [],
-      "sources": [],
-      "sourcetypes": [],
+      "sourcetypes": [
+        "azure:monitor:aad"
+      ],
       "eventCodes": [],
-      "actionTypes": [],
-      "macros": [
-        "azure_monitor_aad",
-        "security_content_ctime(firstTime)",
-        "security_content_ctime(lastTime)",
-        "azure_active_directory_high_risk_sign_in_filter"
-      ],
-      "lookups": [],
-      "fields": [
-        "dest",
-        "user",
-        "src",
-        "vendor_account",
-        "vendor_product",
-        "category"
-      ],
-      "customTags": [],
-      "comments": [],
-      "evalFields": [],
       "categories": [
         "UserRiskEvents"
       ],
+      "macros": [
+        "azure_monitor_aad",
+        "security_content_ctime",
+        "azure_active_directory_high_risk_sign_in_filter"
+      ],
+      "lookups": [],
+      "evalFields": [],
       "mainSearchFields": [],
-      "mainSearchFunctions": [],
+      "mainSearchFunctions": [
+        "fillnull",
+        "stats"
+      ],
       "byFields": [
         "dest",
         "user",
@@ -45,7 +37,18 @@
         "vendor_account",
         "vendor_product",
         "category"
-      ]
+      ],
+      "functions": [
+        "fillnull",
+        "stats"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [
+        "azure:monitor:aad"
+      ],
+      "macroExpandedCategories": []
     },
     "drilldownVars": {
       "mainSearchFields": [],
@@ -65,7 +68,7 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-22T19:46:22.324Z",
+    "lastParsed": "2026-01-26T16:38:22.162Z",
     "needsTune": false,
     "needsRetrofit": false
   },
