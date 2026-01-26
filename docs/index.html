@@ -84,7 +84,10 @@
                             </button>
                             <div class="sidebar-content">
                                 <div class="library-search">
-                                    <input type="text" id="library-search-input" class="search-input" placeholder="Search detections...">
+                                    <div class="search-row">
+                                        <input type="text" id="library-search-input" class="search-input" placeholder="Search detections...">
+                                        <button class="btn-advanced-search" onclick="openAdvancedSearchModal()" title="Advanced Search">Advanced</button>
+                                    </div>
                                 </div>
                             <div class="library-filters">
                                 <div class="filter-row">
@@ -162,9 +165,6 @@
                         </aside>
                         <!-- Main content area - Detection Document -->
                         <div class="library-main" id="library-main">
-                            <button class="library-main-toggle" id="library-main-toggle" title="Toggle detail panel">
-                                <span class="toggle-arrow">&#x25C0;</span>
-                            </button>
                             <div id="detail-placeholder" class="detail-placeholder">
                                 <span class="placeholder-icon">📋</span>
                                 <p>Select a detection from the sidebar to view documentation</p>
@@ -1814,6 +1814,40 @@
                     <div class="modal-footer">
                         <button class="btn-action" onclick="closeDeleteResourceModal()">Cancel</button>
                         <button id="btn-confirm-delete-resource" class="btn-action btn-danger" onclick="confirmDeleteResource()">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Result Modal -->
+            <div id="modal-import-result" class="modal hidden">
+                <div class="modal-overlay" onclick="closeImportResultModal()"></div>
+                <div class="modal-content modal-medium">
+                    <div class="modal-header">
+                        <h3>Import Results</h3>
+                        <button class="modal-close" onclick="closeImportResultModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="import-result-summary" class="import-summary"></div>
+                        <div id="import-result-list" class="import-result-list"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-action btn-primary" onclick="closeImportResultModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Search Modal -->
+            <div id="modal-advanced-search" class="modal hidden">
+                <div class="modal-overlay" onclick="closeAdvancedSearchModal()"></div>
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h3>Advanced Search</h3>
+                        <button class="modal-close" onclick="closeAdvancedSearchModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="advanced-search-input" class="form-input" placeholder="Search across all fields..." oninput="performAdvancedSearch()">
+                        <div class="search-info">Searches: All detection fields, metadata, drilldowns</div>
+                        <div id="advanced-search-results" class="advanced-search-results"></div>
                     </div>
                 </div>
             </div>

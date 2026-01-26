@@ -451,6 +451,89 @@ function parseSPL(spl) {
     return result;
 }
 
+// Expand a macro definition and parse its SPL
+function expandMacroDefinition(macroName) {
+    // Get macros from macrosState if available
+    var macros = (typeof macrosState !== 'undefined' && macrosState.macros) ? macrosState.macros : [];
+    if (macros.length === 0 && window._loadedMacros) {
+        macros = window._loadedMacros;
+    }
+
+    var macro = macros.find(function(m) {
+        return m.name === macroName;
+    });
+
+    if (!macro || !macro.definition) return null;
+
+    // Parse the macro definition
+    return parseSPL(macro.definition);
+}
+
+// Get merged metadata with macro expansions
+function getMergedMetadataWithMacros(detection) {
+    var baseParsed = parseSPL(detection['Search String'] || '');
+
+    // Track which fields came from macros
+    baseParsed.macroExpandedIndexes = [];
+    baseParsed.macroExpandedSourcetypes = [];
+    baseParsed.macroExpandedCategories = [];
+
+    // Expand each macro and merge its fields
+    if (baseParsed.macros && baseParsed.macros.length > 0) {
+        baseParsed.macros.forEach(function(macroName) {
+            var expanded = expandMacroDefinition(macroName);
+            if (!expanded) return;
+
+            // Merge indexes
+            if (expanded.indexes) {
+                expanded.indexes.forEach(function(idx) {
+                    if (baseParsed.indexes.indexOf(idx) === -1) {
+                        baseParsed.indexes.push(idx);
+                    }
+                    if (baseParsed.macroExpandedIndexes.indexOf(idx) === -1) {
+                        baseParsed.macroExpandedIndexes.push(idx);
+                    }
+                });
+            }
+
+            // Merge sourcetypes
+            if (expanded.sourcetypes) {
+                expanded.sourcetypes.forEach(function(st) {
+                    if (baseParsed.sourcetypes.indexOf(st) === -1) {
+                        baseParsed.sourcetypes.push(st);
+                    }
+                    if (baseParsed.macroExpandedSourcetypes.indexOf(st) === -1) {
+                        baseParsed.macroExpandedSourcetypes.push(st);
+                    }
+                });
+            }
+
+            // Merge categories
+            if (expanded.categories) {
+                expanded.categories.forEach(function(cat) {
+                    if (baseParsed.categories.indexOf(cat) === -1) {
+                        baseParsed.categories.push(cat);
+                    }
+                    if (baseParsed.macroExpandedCategories.indexOf(cat) === -1) {
+                        baseParsed.macroExpandedCategories.push(cat);
+                    }
+                });
+            }
+
+            // Merge lookups
+            if (expanded.lookups) {
+                expanded.lookups.forEach(function(lkp) {
+                    if (baseParsed.lookups.indexOf(lkp) === -1) {
+                        baseParsed.lookups.push(lkp);
+                    }
+                });
+            }
+        });
+    }
+
+    return baseParsed;
+}
+
 // =============================================================================
 // GITHUB OPERATION FUNCTIONS
 // =============================================================================
@@ -661,11 +744,12 @@ async function updateCompiledFiles(detections) {
     }
 }
 
-// Parse SPL and save metadata for a detection
+// Parse SPL and save metadata for a detection (with macro expansion)
 function parseAndSaveMetadata(detection) {
     var name = detection['Detection Name'];
     if (!detectionMetadata[name]) detectionMetadata[name] = { history: [], parsed: {} };
-    detectionMetadata[name].parsed = parseSPL(detection['Search String']);
+    // Use getMergedMetadataWithMacros to include fields from macro definitions
+    detectionMetadata[name].parsed = getMergedMetadataWithMacros(detection);
     detectionMetadata[name].lastParsed = new Date().toISOString();
     detectionMetadata[name].detectionName = name;
     return detectionMetadata[name];
@@ -1082,6 +1166,16 @@ function finalizeDataLoading() {
     AppRef.populateFilters();
     AppRef.renderLibrary();
 
+    // Check for pending detection selection from URL
+    if (AppRef.state.pendingDetectionSelect) {
+        var detectionName = AppRef.state.pendingDetectionSelect;
+        delete AppRef.state.pendingDetectionSelect;
+        // Select the detection without updating URL (it's already correct from initial load)
+        setTimeout(function() {
+            AppRef.selectDetection(detectionName, true);
+        }, 100);
+    }
+
     // Update other views if initialized
     if (typeof calculateStatusCounts === 'function') {
         calculateStatusCounts();
@@ -1325,6 +1419,11 @@ function buildCorrelationSearchUrl(detectionName) {
                 App.handleHashChange();
             });
 
+            // Handle browser back/forward navigation
+            window.addEventListener('popstate', function(event) {
+                App.handlePopState(event);
+            });
+
             // Library sidebar collapse toggle (burger menu)
             var librarySidebarToggle = document.getElementById('library-sidebar-toggle');
             if (librarySidebarToggle) {
@@ -1362,31 +1461,6 @@ function buildCorrelationSearchUrl(detectionName) {
                         localStorage.setItem('dmf_library_sidebar_collapsed', isCollapsed ? 'true' : 'false');
                     }
                 });
-            }
-
-            // Library main (detail panel) collapse toggle
-            var libraryMainToggle = document.getElementById('library-main-toggle');
-            if (libraryMainToggle) {
-                libraryMainToggle.addEventListener('click', function() {
-                    var libraryMain = document.getElementById('library-main');
-                    if (libraryMain) {
-                        libraryMain.classList.toggle('collapsed');
-                        // Store preference
-                        var isCollapsed = libraryMain.classList.contains('collapsed');
-                        localStorage.setItem('dmf_library_main_collapsed', isCollapsed ? 'true' : 'false');
-                        // Update button title
-                        libraryMainToggle.title = isCollapsed ? 'Show detail panel' : 'Hide detail panel';
-                    }
-                });
-                // Restore collapsed state from preference
-                var libraryMainCollapsed = localStorage.getItem('dmf_library_main_collapsed');
-                if (libraryMainCollapsed === 'true') {
-                    var libraryMain = document.getElementById('library-main');
-                    if (libraryMain) {
-                        libraryMain.classList.add('collapsed');
-                        libraryMainToggle.title = 'Show detail panel';
-                    }
-                }
             }
 
             // Library search - real-time filtering
@@ -1516,7 +1590,8 @@ function buildCorrelationSearchUrl(detectionName) {
             // Update URL hash for bookmarking
             var href = item.getAttribute('href');
             if (href && href.startsWith('#')) {
-                history.pushState(null, '', href);
+                var viewName = href.substring(1);
+                history.pushState({ view: viewName }, '', href);
             }
 
             // Close sidebar on mobile
@@ -1528,11 +1603,44 @@ function buildCorrelationSearchUrl(detectionName) {
         // Handle URL hash changes
         handleHashChange: function() {
             var hash = window.location.hash;
-            if (hash) {
-                var navItem = document.querySelector('.nav-item[href="' + hash + '"]');
-                if (navItem && !navItem.classList.contains('active')) {
+            if (!hash) return;
+
+            // Parse hash - format: #view or #view/detectionName
+            var parts = hash.substring(1).split('/');
+            var viewName = parts[0];
+            var detectionName = parts[1] ? decodeURIComponent(parts[1]) : null;
+
+            // Find matching nav item
+            var navItem = document.querySelector('.nav-item[href="#' + viewName + '"]');
+            if (navItem && !navItem.classList.contains('active')) {
+                this.setActiveNav(navItem);
+            }
+
+            // If we have a detection name and it's the library view, select it
+            if (viewName === 'library' && detectionName) {
+                var self = this;
+                setTimeout(function() {
+                    self.selectDetection(detectionName, true);
+                }, 50);
+            }
+        },
+
+        // Handle browser back/forward navigation
+        handlePopState: function(event) {
+            if (event.state && event.state.view) {
+                var navItem = document.querySelector('.nav-item[href="#' + event.state.view + '"]');
+                if (navItem) {
                     this.setActiveNav(navItem);
                 }
+                if (event.state.detection) {
+                    var self = this;
+                    setTimeout(function() {
+                        self.selectDetection(event.state.detection, true);
+                    }, 50);
+                }
+            } else {
+                // Fallback to parsing from hash
+                this.handleHashChange();
             }
         },
 
@@ -1557,11 +1665,30 @@ function buildCorrelationSearchUrl(detectionName) {
         // Load navigation state from URL hash
         loadFromHash: function() {
             var hash = window.location.hash;
-            if (hash) {
-                var navItem = document.querySelector('.nav-item[href="' + hash + '"]');
-                if (navItem) {
-                    this.setActiveNav(navItem);
-                }
+            if (!hash) return;
+
+            // Parse hash - format: #view or #view/detectionName
+            var parts = hash.substring(1).split('/');
+            var viewName = parts[0];
+            var detectionName = parts[1] ? decodeURIComponent(parts[1]) : null;
+
+            // Find matching nav item
+            var navItem = document.querySelector('.nav-item[href="#' + viewName + '"]');
+            if (navItem) {
+                this.setActiveNav(navItem);
+            }
+
+            // If we have a detection name and it's the library view, select it after detections load
+            if (viewName === 'library' && detectionName) {
+                this.state.pendingDetectionSelect = detectionName;
+            }
+        },
+
+        // Switch to a specific view programmatically
+        switchView: function(viewName) {
+            var navItem = document.querySelector('.nav-item[href="#' + viewName + '"]');
+            if (navItem) {
+                this.handleNavigation(navItem);
             }
         },
 
@@ -2057,7 +2184,7 @@ function buildCorrelationSearchUrl(detectionName) {
         },
 
         // Select a detection
-        selectDetection: function(name) {
+        selectDetection: function(name, skipUrlUpdate) {
             var detection = this.state.detections.find(function(d) {
                 return d['Detection Name'] === name;
             });
@@ -2068,6 +2195,12 @@ function buildCorrelationSearchUrl(detectionName) {
             this.state.selectedFilteredOut = false;
             this.renderLibrary();
             this.renderDetailPanel(detection);
+
+            // Update URL with detection name (unless skipped, e.g., during initial load)
+            if (!skipUrlUpdate) {
+                var newUrl = '#library/' + encodeURIComponent(name);
+                history.pushState({ view: 'library', detection: name }, '', newUrl);
+            }
 
             // Scroll content panel to top - both outer container and inner detail body
             // The detail-body has its own overflow-y: auto so we must scroll it too
@@ -2167,8 +2300,8 @@ function buildCorrelationSearchUrl(detectionName) {
                 html += '<h3 class="doc-section-title">Search Logic</h3>';
                 html += this.createCopyableField('SPL Query', d['Search String'], true, true);
 
-                // Parsed metadata
-                var parsed = parseSPL(d['Search String']);
+                // Parsed metadata (with macro expansion)
+                var parsed = getMergedMetadataWithMacros(d);
                 var drilldownVars = parseDrilldownVariables(d);
                 var hasParsedData = parsed.indexes.length || parsed.sourcetypes.length || parsed.eventCodes.length ||
                                     parsed.categories.length || parsed.macros.length || parsed.lookups.length ||
@@ -3177,9 +3310,9 @@ function buildCorrelationSearchUrl(detectionName) {
         var name = d['Detection Name'];
         var meta = detectionMetadata[name] || {};
 
-        // Generate parsed data if not available
+        // Generate parsed data if not available (with macro expansion)
         if (!meta.parsed && d) {
-            meta.parsed = parseSPL(d['Search String'] || '');
+            meta.parsed = getMergedMetadataWithMacros(d);
             meta.drilldownVars = parseDrilldownVariables(d);
         }
 
@@ -3404,9 +3537,9 @@ function buildCorrelationSearchUrl(detectionName) {
         }
         var name = d['Detection Name'];
         var meta = detectionMetadata[name] || {};
-        // Generate parsed data if not available
+        // Generate parsed data if not available (with macro expansion)
         if (!meta.parsed && d) {
-            meta.parsed = parseSPL(d['Search String'] || '');
+            meta.parsed = getMergedMetadataWithMacros(d);
             meta.drilldownVars = parseDrilldownVariables(d);
         }
         navigator.clipboard.writeText(JSON.stringify(meta, null, 2)).then(function() {
@@ -3880,12 +4013,14 @@ function buildCorrelationSearchUrl(detectionName) {
         }
     };
 
-    // Load sidebar collapse state from localStorage
+    // Load sidebar collapse state from localStorage (default to collapsed)
     function loadSidebarCollapseState() {
         var sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
-        var isCollapsed = localStorage.getItem('de-mainframe-sidebar-collapsed') === 'true';
+        // Default to collapsed when no localStorage value
+        var storedValue = localStorage.getItem('de-mainframe-sidebar-collapsed');
+        var isCollapsed = storedValue === null ? true : storedValue === 'true';
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
             var btn = sidebar.querySelector('.sidebar-collapse-toggle');
@@ -8952,6 +9087,8 @@ function buildCorrelationSearchUrl(detectionName) {
         var updated = 0;
         var failed = 0;
         var processedDetections = [];
+        var addedDetections = [];
+        var updatedDetections = [];
 
         // Process each detection
         for (var j = 0; j < allImportedDetections.length; j++) {
@@ -8975,15 +9112,15 @@ function buildCorrelationSearchUrl(detectionName) {
                 }
                 d['Last Modified'] = now;
 
-                // Parse SPL and generate metadata
-                var parsed = parseSPL(d['Search String'] || '');
+                // Parse SPL and generate metadata (with macro expansion)
+                var parsed = getMergedMetadataWithMacros(d);
                 var metadata = {
                     parsed: parsed,
                     lastParsed: now,
                     detectionName: d['Detection Name']
                 };
 
-                // Auto-populate Required_Data_Sources if empty
+                // Auto-populate Required_Data_Sources if empty (includes macro-expanded sources)
                 if (!d['Required_Data_Sources'] || d['Required_Data_Sources'] === '') {
                     var sources = [];
                     if (parsed.indexes) sources = sources.concat(parsed.indexes);
@@ -9009,9 +9146,11 @@ function buildCorrelationSearchUrl(detectionName) {
                 if (existingIndex >= 0) {
                     App.state.detections[existingIndex] = d;
                     updated++;
+                    updatedDetections.push(d);
                 } else {
                     App.state.detections.push(d);
                     added++;
+                    addedDetections.push(d);
                 }
 
                 // Update metadata cache
@@ -9045,33 +9184,24 @@ function buildCorrelationSearchUrl(detectionName) {
         App.renderLibrary();
         App.populateFilters();
 
-        // Show result message
-        var messages = [];
-        if (added > 0) messages.push(added + ' added');
-        if (updated > 0) messages.push(updated + ' updated');
-        if (failed > 0) messages.push(failed + ' failed');
-        if (parseErrors.length > 0) messages.push(parseErrors.length + ' file(s) had parse errors');
-
-        // Determine sync status and toast type
-        var toastType = 'success';
+        // Determine sync status
         var syncNote = '';
-
         if (!github) {
-            syncNote = ' (local only - GitHub not connected)';
+            syncNote = 'local only - GitHub not connected';
         } else if (compiledFilesError) {
-            syncNote = ' (partial sync - compiled files failed: ' + compiledFilesError + ')';
-            toastType = 'error';
+            syncNote = 'partial sync - compiled files failed';
         } else if (compiledFilesUpdated) {
-            syncNote = ' (synced to GitHub)';
-        } else {
-            syncNote = ' (individual files synced, dist files not updated)';
+            syncNote = 'synced to GitHub';
         }
 
-        if (failed > 0 || parseErrors.length > 0) {
-            toastType = compiledFilesError ? 'error' : 'warning';
-        }
-
-        showToast('Import complete: ' + messages.join(', ') + syncNote, toastType);
+        // Show import result modal
+        showImportResultModal({
+            added: addedDetections,
+            updated: updatedDetections,
+            failed: failed,
+            parseErrors: parseErrors,
+            syncNote: syncNote
+        });
 
         event.target.value = ''; // Reset file input
     };
@@ -9097,6 +9227,237 @@ function buildCorrelationSearchUrl(detectionName) {
         URL.revokeObjectURL(url);
 
         showToast('Exported ' + detections.length + ' detections', 'success');
+    };
+
+    // =========================================================================
+    // IMPORT RESULT MODAL
+    // =========================================================================
+
+    // Show import result modal
+    window.showImportResultModal = function(results) {
+        var modal = document.getElementById('modal-import-result');
+        var summaryEl = document.getElementById('import-result-summary');
+        var listEl = document.getElementById('import-result-list');
+
+        if (!modal || !summaryEl || !listEl) return;
+
+        // Build summary
+        var summaryHtml = '<div class="import-summary-row">';
+        summaryHtml += '<div class="import-summary-item"><span class="count" style="color: #3fb950;">' + results.added.length + '</span> Added</div>';
+        summaryHtml += '<div class="import-summary-item"><span class="count" style="color: #3b82f6;">' + results.updated.length + '</span> Updated</div>';
+        if (results.failed > 0) {
+            summaryHtml += '<div class="import-summary-item"><span class="count" style="color: #f85149;">' + results.failed + '</span> Failed</div>';
+        }
+        if (results.parseErrors && results.parseErrors.length > 0) {
+            summaryHtml += '<div class="import-summary-item"><span class="count" style="color: #f0883e;">' + results.parseErrors.length + '</span> Parse Errors</div>';
+        }
+        summaryHtml += '</div>';
+        if (results.syncNote) {
+            summaryHtml += '<div style="font-size: 11px; color: var(--color-text-muted); margin-top: 8px;">' + escapeHtml(results.syncNote) + '</div>';
+        }
+        summaryEl.innerHTML = summaryHtml;
+
+        // Build list
+        var listHtml = '';
+        results.added.forEach(function(d) {
+            listHtml += '<div class="import-result-item" onclick="navigateToImportedDetection(\'' + escapeAttr(d['Detection Name']) + '\')">';
+            listHtml += '<span class="import-result-name">' + escapeHtml(d['Detection Name']) + '</span>';
+            listHtml += '<span class="import-status-badge added">Added</span>';
+            listHtml += '</div>';
+        });
+        results.updated.forEach(function(d) {
+            listHtml += '<div class="import-result-item" onclick="navigateToImportedDetection(\'' + escapeAttr(d['Detection Name']) + '\')">';
+            listHtml += '<span class="import-result-name">' + escapeHtml(d['Detection Name']) + '</span>';
+            listHtml += '<span class="import-status-badge updated">Updated</span>';
+            listHtml += '</div>';
+        });
+
+        if (listHtml === '') {
+            listHtml = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">No detections imported</div>';
+        }
+        listEl.innerHTML = listHtml;
+
+        modal.classList.remove('hidden');
+    };
+
+    // Close import result modal
+    window.closeImportResultModal = function() {
+        var modal = document.getElementById('modal-import-result');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Navigate to an imported detection
+    window.navigateToImportedDetection = function(name) {
+        closeImportResultModal();
+        // Navigate to library and select the detection
+        App.switchView('library');
+        setTimeout(function() {
+            App.selectDetection(name);
+        }, 100);
+    };
+
+    // =========================================================================
+    // ADVANCED SEARCH MODAL
+    // =========================================================================
+
+    var advancedSearchDebounce = null;
+
+    // Open advanced search modal
+    window.openAdvancedSearchModal = function() {
+        var modal = document.getElementById('modal-advanced-search');
+        var input = document.getElementById('advanced-search-input');
+        var results = document.getElementById('advanced-search-results');
+
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        if (results) results.innerHTML = '<div class="advanced-search-empty">Enter a search term to search across all fields</div>';
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    };
+
+    // Close advanced search modal
+    window.closeAdvancedSearchModal = function() {
+        var modal = document.getElementById('modal-advanced-search');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Perform advanced search with debounce
+    window.performAdvancedSearch = function() {
+        if (advancedSearchDebounce) clearTimeout(advancedSearchDebounce);
+        advancedSearchDebounce = setTimeout(executeAdvancedSearch, 300);
+    };
+
+    // Execute advanced search
+    function executeAdvancedSearch() {
+        var input = document.getElementById('advanced-search-input');
+        var resultsEl = document.getElementById('advanced-search-results');
+
+        if (!input || !resultsEl) return;
+
+        var query = input.value.trim().toLowerCase();
+        if (query.length < 2) {
+            resultsEl.innerHTML = '<div class="advanced-search-empty">Enter at least 2 characters to search</div>';
+            return;
+        }
+
+        var detections = App.state.detections || [];
+        var results = [];
+
+        // Fields to search
+        var textFields = [
+            'Detection Name', 'Description', 'Objective', 'Search String',
+            'Analyst Next Steps', 'Notable Title', 'Notable Description',
+            'Required_Data_Sources', 'Assumptions', 'Blind_Spots_False_Positives',
+            'Proposed Test Plan'
+        ];
+
+        detections.forEach(function(d) {
+            var matches = [];
+
+            // Search text fields
+            textFields.forEach(function(field) {
+                var val = d[field];
+                if (val && typeof val === 'string' && val.toLowerCase().indexOf(query) !== -1) {
+                    matches.push({ field: field, value: val });
+                }
+            });
+
+            // Search MITRE IDs
+            if (d['Mitre ID'] && Array.isArray(d['Mitre ID'])) {
+                d['Mitre ID'].forEach(function(id) {
+                    if (id && id.toLowerCase().indexOf(query) !== -1) {
+                        matches.push({ field: 'Mitre ID', value: id });
+                    }
+                });
+            }
+
+            // Search Drilldowns
+            for (var i = 1; i <= 15; i++) {
+                var drillName = d['Drilldown Name ' + i];
+                var drillSearch = d['Drilldown Search ' + i];
+                if (drillName && drillName.toLowerCase().indexOf(query) !== -1) {
+                    matches.push({ field: 'Drilldown ' + i, value: drillName });
+                }
+                if (drillSearch && drillSearch.toLowerCase().indexOf(query) !== -1) {
+                    matches.push({ field: 'Drilldown ' + i + ' Search', value: drillSearch });
+                }
+            }
+
+            // Search metadata if available
+            var meta = detectionMetadata[d['Detection Name']];
+            if (meta && meta.parsed) {
+                ['indexes', 'sourcetypes', 'categories', 'macros', 'lookups'].forEach(function(key) {
+                    if (meta.parsed[key] && Array.isArray(meta.parsed[key])) {
+                        meta.parsed[key].forEach(function(item) {
+                            if (item && item.toLowerCase().indexOf(query) !== -1) {
+                                matches.push({ field: key, value: item });
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (matches.length > 0) {
+                results.push({
+                    detection: d,
+                    matches: matches
+                });
+            }
+        });
+
+        // Render results
+        if (results.length === 0) {
+            resultsEl.innerHTML = '<div class="advanced-search-empty">No results found for "' + escapeHtml(query) + '"</div>';
+            return;
+        }
+
+        var html = '';
+        results.slice(0, 50).forEach(function(result) {
+            var d = result.detection;
+            var firstMatch = result.matches[0];
+
+            html += '<div class="advanced-search-result" onclick="selectFromAdvancedSearch(\'' + escapeAttr(d['Detection Name']) + '\')">';
+            html += '<div class="advanced-search-result-name">' + escapeHtml(d['Detection Name']) + '</div>';
+            html += '<div class="advanced-search-result-meta">' + escapeHtml(d['Severity/Priority'] || 'Unknown') + ' | ' + escapeHtml(d['Security Domain'] || 'Unknown') + ' | ' + result.matches.length + ' match(es)</div>';
+            html += '<div class="search-snippet">' + getSnippet(firstMatch.value, query, firstMatch.field) + '</div>';
+            html += '</div>';
+        });
+
+        if (results.length > 50) {
+            html += '<div class="advanced-search-empty">Showing 50 of ' + results.length + ' results. Refine your search for more specific results.</div>';
+        }
+
+        resultsEl.innerHTML = html;
+    }
+
+    // Get snippet with highlighted query
+    function getSnippet(text, query, fieldName) {
+        if (!text) return '';
+
+        var lower = text.toLowerCase();
+        var idx = lower.indexOf(query);
+        if (idx === -1) return '<strong>' + escapeHtml(fieldName) + ':</strong> ' + escapeHtml(text.substring(0, 100)) + (text.length > 100 ? '...' : '');
+
+        var start = Math.max(0, idx - 30);
+        var end = Math.min(text.length, idx + query.length + 50);
+
+        var snippet = (start > 0 ? '...' : '') + text.substring(start, idx);
+        snippet += '<mark>' + escapeHtml(text.substring(idx, idx + query.length)) + '</mark>';
+        snippet += text.substring(idx + query.length, end) + (end < text.length ? '...' : '');
+
+        return '<strong>' + escapeHtml(fieldName) + ':</strong> ' + escapeHtml(snippet.replace(/<mark>/g, '§MARK§').replace(/<\/mark>/g, '§/MARK§')).replace(/§MARK§/g, '<mark>').replace(/§\/MARK§/g, '</mark>');
+    }
+
+    // Select detection from advanced search
+    window.selectFromAdvancedSearch = function(name) {
+        closeAdvancedSearchModal();
+        App.switchView('library');
+        setTimeout(function() {
+            App.selectDetection(name);
+        }, 100);
     };
 
     // Add Parsing Rule
