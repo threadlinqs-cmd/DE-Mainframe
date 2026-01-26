@@ -1,5 +1,5 @@
 {
-  "lastCompiled": "2026-01-26T17:01:48.964Z",
+  "lastCompiled": "2026-01-26T17:10:10.237Z",
   "version": "1.2",
   "counts": {
     "detections": 53,
@@ -57,7 +57,7 @@
       "web_jenkins_arbitrary_file_read_cve_2024_23897.json",
       "web_jsp_request_via_url.json",
       "web_log4shell_jndi_payload_injection_attempt.json",
-      "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Searc.json",
+      "access_Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspiciou.json",
       "access_T1621_pingid_new_mfa_method_after_credential_reset_rule.json",
       "access_T1621_pingid_new_mfa_method_registered_for_user_rule.json"
     ],
