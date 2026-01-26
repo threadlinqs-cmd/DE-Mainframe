@@ -981,10 +981,16 @@ function buildGitHubApiUrl(filePath) {
     var branch = githubConfig.branch || GITHUB_CONFIG.branch;
 
     var apiUrl;
-    if (!baseUrl || baseUrl === 'https://github.com' || baseUrl === 'http://github.com') {
+    // For github.com, use the public API directly
+    // For GitHub Enterprise, append /api/v3 to the base URL
+    if (!baseUrl ||
+        baseUrl === 'https://github.com' ||
+        baseUrl === 'http://github.com' ||
+        baseUrl === 'https://api.github.com' ||
+        baseUrl.indexOf('api.github.com') !== -1) {
         apiUrl = 'https://api.github.com';
     } else {
-        // GitHub Enterprise
+        // GitHub Enterprise - append /api/v3
         apiUrl = baseUrl + '/api/v3';
     }
     return apiUrl + '/repos/' + repo + '/contents/' + filePath + '?ref=' + branch;
@@ -5213,51 +5219,78 @@ function buildCorrelationSearchUrl(detectionName) {
         };
     }
 
-    // Load macros from dist folder
+    // Process raw macro data into macrosState format
+    function processMacroData(data) {
+        if (Array.isArray(data)) {
+            macrosState.macros = data.map(function(item) {
+                var name, definition, description, args, deprecated;
+                if (typeof item === 'string') {
+                    name = item;
+                    definition = '';
+                    description = '';
+                    args = '';
+                    deprecated = false;
+                } else {
+                    name = item.name || '';
+                    definition = item.definition || '';
+                    description = item.description || '';
+                    args = item.arguments || '';
+                    deprecated = item.deprecated || false;
+                }
+
+                var parsedDef = parseMacroDefinition(definition);
+
+                return {
+                    name: name,
+                    definition: definition,
+                    description: description,
+                    arguments: args,
+                    deprecated: deprecated,
+                    usageCount: countMacroUsage(name),
+                    parsed: parsedDef
+                };
+            });
+        } else {
+            macrosState.macros = [];
+        }
+        macrosState.filteredMacros = macrosState.macros.slice();
+        editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
+        populateMacroFilters();
+        filterMacros();
+    }
+
+    // Load macros - check window._loadedMacros first (from GitHub API), then localStorage, then fetch
     function loadMacros() {
+        // First check if macros were already loaded from GitHub API
+        if (window._loadedMacros && Array.isArray(window._loadedMacros) && window._loadedMacros.length > 0) {
+            console.log('Using macros from GitHub API:', window._loadedMacros.length);
+            processMacroData(window._loadedMacros);
+            return;
+        }
+
+        // Check localStorage cache
+        try {
+            var cached = localStorage.getItem('dmf_macros_full');
+            if (cached) {
+                var parsedCache = JSON.parse(cached);
+                if (Array.isArray(parsedCache) && parsedCache.length > 0) {
+                    console.log('Using macros from localStorage cache:', parsedCache.length);
+                    processMacroData(parsedCache);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load macros from localStorage:', e);
+        }
+
+        // Fall back to fetching from dist folder (for local development)
         fetch(App.config.distPath + 'macros.json')
             .then(function(response) {
                 if (!response.ok) throw new Error('Failed to load macros');
                 return response.json();
             })
             .then(function(data) {
-                // Convert simple array to macro objects with usage counting and parsed metadata
-                if (Array.isArray(data)) {
-                    macrosState.macros = data.map(function(item) {
-                        var name, definition, description, args, deprecated;
-                        if (typeof item === 'string') {
-                            name = item;
-                            definition = '';
-                            description = '';
-                            args = '';
-                            deprecated = false;
-                        } else {
-                            name = item.name || '';
-                            definition = item.definition || '';
-                            description = item.description || '';
-                            args = item.arguments || '';
-                            deprecated = item.deprecated || false;
-                        }
-
-                        var parsedDef = parseMacroDefinition(definition);
-
-                        return {
-                            name: name,
-                            definition: definition,
-                            description: description,
-                            arguments: args,
-                            deprecated: deprecated,
-                            usageCount: countMacroUsage(name),
-                            parsed: parsedDef
-                        };
-                    });
-                } else {
-                    macrosState.macros = [];
-                }
-                macrosState.filteredMacros = macrosState.macros.slice();
-                editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
-                populateMacroFilters();
-                filterMacros();
+                processMacroData(data);
             })
             .catch(function(err) {
                 console.error('Failed to load macros:', err);
@@ -7083,30 +7116,54 @@ function buildCorrelationSearchUrl(detectionName) {
         loadResources();
     }
 
-    // Load resources from dist/resources.json (primary) or localStorage (fallback)
+    // Load resources from GitHub API (primary), static file (secondary), or localStorage (fallback)
     function loadResources() {
-        // Try to fetch from resources.json first
-        fetch(RESOURCES_JSON_PATH)
-            .then(function(response) {
-                if (!response.ok) throw new Error('Failed to load resources.json');
-                return response.json();
-            })
-            .then(function(data) {
-                if (Array.isArray(data) && data.length > 0) {
-                    resourcesState.resources = data;
-                } else {
-                    // resources.json is empty, try localStorage or use defaults
+        // Check if GitHub is configured with a valid token
+        var token = githubConfig.token || GITHUB_CONFIG.token;
+        var useGitHub = token && token !== 'YOUR_GITHUB_PAT' && token.length > 10;
+
+        if (useGitHub) {
+            // Use GitHub API to fetch resources.json
+            var resourcesPath = PATHS.dist + '/resources.json';
+            fetchGitHubFile(resourcesPath)
+                .then(function(data) {
+                    if (data && Array.isArray(data) && data.length > 0) {
+                        resourcesState.resources = data;
+                    } else {
+                        loadResourcesFromLocalStorage();
+                    }
+                    resourcesState.loaded = true;
+                    renderResources();
+                })
+                .catch(function(err) {
+                    console.warn('Failed to load resources.json from GitHub, using localStorage:', err);
                     loadResourcesFromLocalStorage();
-                }
-                resourcesState.loaded = true;
-                renderResources();
-            })
-            .catch(function(err) {
-                console.warn('Failed to load resources.json, using localStorage:', err);
-                loadResourcesFromLocalStorage();
-                resourcesState.loaded = true;
-                renderResources();
-            });
+                    resourcesState.loaded = true;
+                    renderResources();
+                });
+        } else {
+            // Try to fetch from static file path (for local development)
+            fetch(RESOURCES_JSON_PATH)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Failed to load resources.json');
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (Array.isArray(data) && data.length > 0) {
+                        resourcesState.resources = data;
+                    } else {
+                        loadResourcesFromLocalStorage();
+                    }
+                    resourcesState.loaded = true;
+                    renderResources();
+                })
+                .catch(function(err) {
+                    console.warn('Failed to load resources.json, using localStorage:', err);
+                    loadResourcesFromLocalStorage();
+                    resourcesState.loaded = true;
+                    renderResources();
+                });
+        }
     }
 
     // Load resources from localStorage (fallback)
