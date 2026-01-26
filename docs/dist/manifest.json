@@ -1,9 +1,9 @@
 {
-  "lastCompiled": "2026-01-26T16:42:54.919Z",
+  "lastCompiled": "2026-01-26T17:01:48.964Z",
   "version": "1.2",
   "counts": {
-    "detections": 51,
-    "metadata": 51
+    "detections": 53,
+    "metadata": 53
   },
   "files": {
     "detections": [
@@ -57,7 +57,9 @@
       "web_jenkins_arbitrary_file_read_cve_2024_23897.json",
       "web_jsp_request_via_url.json",
       "web_log4shell_jndi_payload_injection_attempt.json",
-      "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Searc.json"
+      "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Searc.json",
+      "access_T1621_pingid_new_mfa_method_after_credential_reset_rule.json",
+      "access_T1621_pingid_new_mfa_method_registered_for_user_rule.json"
     ],
     "metadata": [
       "Azure_Active_Directory_High_Risk_Sign-in.meta.json",
@@ -110,7 +112,9 @@
       "Jenkins_Arbitrary_File_Read_CVE-2024-23897.meta.json",
       "Web_JSP_Request_via_URL.meta.json",
       "Log4Shell_JNDI_Payload_Injection_Attempt.meta.json",
-      "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Search_or_Automated_Access.meta.json"
+      "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Search_or_Automated_Access.meta.json",
+      "PingID_New_MFA_Method_After_Credential_Reset.meta.json",
+      "PingID_New_MFA_Method_Registered_For_User.meta.json"
     ]
   }
 }
