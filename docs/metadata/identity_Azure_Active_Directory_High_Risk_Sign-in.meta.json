@@ -1,0 +1,73 @@
+{
+  "detectionName": "Azure Active Directory High Risk Sign-in",
+  "history": [
+    {
+      "id": 1769108487578,
+      "type": "version",
+      "description": "Initial import",
+      "timestamp": "2026-01-22T19:01:27.578Z"
+    }
+  ],
+  "parsed": {
+    "indexes": [],
+    "sourcetypes": [
+      "azure:monitor:aad"
+    ],
+    "eventCodes": [],
+    "categories": [
+      "UserRiskEvents"
+    ],
+    "macros": [
+      "azure_monitor_aad",
+      "security_content_ctime",
+      "azure_active_directory_high_risk_sign_in_filter"
+    ],
+    "lookups": [],
+    "evalFields": [],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "fillnull",
+      "stats"
+    ],
+    "byFields": [
+      "dest",
+      "user",
+      "src",
+      "vendor_account",
+      "vendor_product",
+      "category"
+    ],
+    "functions": [
+      "fillnull",
+      "stats"
+    ],
+    "comments": [],
+    "customTags": [],
+    "macroExpandedIndexes": [],
+    "macroExpandedSourcetypes": [
+      "azure:monitor:aad"
+    ],
+    "macroExpandedCategories": []
+  },
+  "drilldownVars": {
+    "mainSearchFields": [],
+    "mainSearchFunctions": [],
+    "drilldownVars": {
+      "legacy": [
+        "user"
+      ],
+      "drilldown_1": [
+        "user"
+      ],
+      "drilldown_2": [
+        "user"
+      ]
+    },
+    "allDrilldownVars": [
+      "user"
+    ]
+  },
+  "lastParsed": "2026-01-26T16:38:22.162Z",
+  "needsTune": false,
+  "needsRetrofit": false
+}
