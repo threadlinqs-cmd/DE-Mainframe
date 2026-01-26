@@ -481,6 +481,103 @@ pre code {
     .content-area {
         padding: 24px;
     }
+
+    /* Sidebar collapse toggle - visible on desktop only */
+    .sidebar-collapse-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sidebar-collapse-toggle:hover {
+        background-color: var(--color-hover);
+        color: var(--color-text);
+    }
+
+    .collapse-icon {
+        font-size: 14px;
+        transition: transform 0.3s ease;
+    }
+
+    /* Collapsed sidebar state */
+    .sidebar.collapsed {
+        width: 60px;
+    }
+
+    .sidebar.collapsed .sidebar-header {
+        justify-content: center;
+        padding: 12px 8px;
+    }
+
+    .sidebar.collapsed .sidebar-title {
+        display: none;
+    }
+
+    .sidebar.collapsed .collapse-icon {
+        transform: rotate(180deg);
+    }
+
+    .sidebar.collapsed .nav-item {
+        padding: 10px 0;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .sidebar.collapsed .nav-item.active {
+        padding-left: 0;
+        border-left: none;
+        border-bottom: 3px solid var(--color-text);
+    }
+
+    .sidebar.collapsed .nav-text {
+        display: none;
+    }
+
+    .sidebar.collapsed .nav-icon {
+        display: block;
+        font-size: 18px;
+    }
+
+    /* Default - show text, hide icon */
+    .nav-icon {
+        display: none;
+        margin: 0;
+    }
+
+    .nav-text {
+        display: inline;
+    }
+
+    /* Nav item layout for collapsed state */
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Sidebar transition */
+    .sidebar {
+        transition: width 0.3s ease;
+    }
+}
+
+/* Hide collapse toggle on mobile */
+@media (max-width: 767px) {
+    .sidebar-collapse-toggle {
+        display: none;
+    }
+
+    .nav-icon {
+        display: none;
+    }
 }
 
 /* ========================================
@@ -3131,6 +3228,59 @@ pre code {
     background-color: rgba(240, 136, 62, 0.15);
     border: 1px solid rgba(240, 136, 62, 0.3);
     color: #f0883e;
+}
+
+/* Macro Parsed Field Tags */
+.macro-parsed-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.macro-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.macro-tag.index-tag {
+    background-color: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+}
+
+.macro-tag.sourcetype-tag {
+    background-color: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+}
+
+.macro-tag.function-tag {
+    background-color: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    color: #a855f7;
+}
+
+.macro-tag.more-tag {
+    background-color: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+}
+
+/* Macros filter row improvements */
+.macros-checkbox-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.macros-checkbox-row .toggle-label {
+    flex: none;
 }
 
 /* Macro Detail Panel */

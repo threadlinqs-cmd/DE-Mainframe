@@ -36,17 +36,20 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <span class="sidebar-title">Navigation</span>
+                <button class="sidebar-collapse-toggle" onclick="toggleSidebarCollapse()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                    <span class="collapse-icon">&#x00AB;</span>
+                </button>
                 <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close sidebar">×</button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#library" class="nav-item active" data-key="1">Library</a>
-                <a href="#editor" class="nav-item" data-key="2">Editor</a>
-                <a href="#macros" class="nav-item" data-key="3">Macros</a>
-                <a href="#revalidation" class="nav-item" data-key="4">Revalidation</a>
-                <a href="#history" class="nav-item" data-key="5">History</a>
-                <a href="#resources" class="nav-item" data-key="6">Resources</a>
-                <a href="#reports" class="nav-item" data-key="7">Reports</a>
-                <a href="#settings" class="nav-item" data-key="8">Settings</a>
+                <a href="#library" class="nav-item active" data-key="1" data-icon="&#x1F4DA;" title="Library"><span class="nav-icon">&#x1F4DA;</span><span class="nav-text">Library</span></a>
+                <a href="#editor" class="nav-item" data-key="2" data-icon="&#x270F;" title="Editor"><span class="nav-icon">&#x270F;</span><span class="nav-text">Editor</span></a>
+                <a href="#macros" class="nav-item" data-key="3" data-icon="&#x2699;" title="Macros"><span class="nav-icon">&#x2699;</span><span class="nav-text">Macros</span></a>
+                <a href="#revalidation" class="nav-item" data-key="4" data-icon="&#x2714;" title="Revalidation"><span class="nav-icon">&#x2714;</span><span class="nav-text">Revalidation</span></a>
+                <a href="#history" class="nav-item" data-key="5" data-icon="&#x1F4C5;" title="History"><span class="nav-icon">&#x1F4C5;</span><span class="nav-text">History</span></a>
+                <a href="#resources" class="nav-item" data-key="6" data-icon="&#x1F517;" title="Resources"><span class="nav-icon">&#x1F517;</span><span class="nav-text">Resources</span></a>
+                <a href="#reports" class="nav-item" data-key="7" data-icon="&#x1F4CA;" title="Reports"><span class="nav-icon">&#x1F4CA;</span><span class="nav-text">Reports</span></a>
+                <a href="#settings" class="nav-item" data-key="8" data-icon="&#x2699;" title="Settings"><span class="nav-icon">&#x2699;</span><span class="nav-text">Settings</span></a>
             </nav>
         </aside>
 
@@ -204,6 +207,8 @@
                                 <div class="editor-toolbar-left">
                                     <button id="btn-editor-new" class="btn-action" onclick="createNewDetection()">New</button>
                                     <button id="btn-editor-load" class="btn-action" onclick="openLoadModal()">Load</button>
+                                    <button id="btn-editor-import" class="btn-action" onclick="document.getElementById('editor-import-file').click()">Import</button>
+                                    <input type="file" id="editor-import-file" accept=".json" multiple style="display:none" onchange="handleImportFile(event)">
                                     <button id="btn-editor-clear" class="btn-action" onclick="clearForm()">Clear</button>
                                 </div>
                                 <div class="editor-toolbar-tabs">
@@ -564,6 +569,25 @@
                                     <option value="most-used">Most Used</option>
                                     <option value="least-used">Least Used</option>
                                 </select>
+                            </div>
+                            <div class="macros-filter-row">
+                                <select id="macros-filter-index" class="filter-select" onchange="filterMacros()">
+                                    <option value="">All Indexes</option>
+                                </select>
+                                <select id="macros-filter-sourcetype" class="filter-select" onchange="filterMacros()">
+                                    <option value="">All Sourcetypes</option>
+                                </select>
+                            </div>
+                            <div class="macros-filter-row">
+                                <select id="macros-filter-function" class="filter-select" onchange="filterMacros()">
+                                    <option value="">All Functions</option>
+                                </select>
+                            </div>
+                            <div class="macros-filter-row macros-checkbox-row">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="macros-show-unused" onchange="filterMacros()">
+                                    <span>Show unused</span>
+                                </label>
                                 <label class="toggle-label">
                                     <input type="checkbox" id="macros-show-deprecated" onchange="filterMacros()">
                                     <span>Show deprecated</span>

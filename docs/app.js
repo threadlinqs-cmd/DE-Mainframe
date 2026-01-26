@@ -2527,6 +2527,17 @@ function buildCorrelationSearchUrl(detectionName) {
             if (window.innerWidth < 768 && this.state.sidebarOpen) {
                 this.toggleSidebar();
             }
+
+            // Refresh tab-specific data when navigating
+            if (viewName === 'revalidation' && this.state.detections && this.state.detections.length > 0) {
+                // Ensure counts are calculated when entering revalidation tab
+                if (typeof calculateStatusCounts === 'function') {
+                    calculateStatusCounts();
+                }
+                if (typeof filterRevalidation === 'function') {
+                    filterRevalidation();
+                }
+            }
         }
     };
 
@@ -2660,9 +2671,9 @@ function buildCorrelationSearchUrl(detectionName) {
             return addPlaceholder('<span class="spl-variable">' + match + '</span>');
         });
 
-        // 5. Handle pipes (make them bold and highlighted)
+        // 5. Handle pipes (make them bold and highlighted, with newline before each pipe)
         escaped = escaped.replace(/(\s*\|\s*)/g, function(match) {
-            return addPlaceholder('<span class="spl-pipe">' + match + '</span>');
+            return addPlaceholder('<br><span class="spl-pipe">| </span>');
         });
 
         // 6. Handle field=value patterns (field names before operators)
@@ -3853,6 +3864,45 @@ function buildCorrelationSearchUrl(detectionName) {
         App.validatePassword();
     };
 
+    // Toggle sidebar collapse state (desktop only)
+    window.toggleSidebarCollapse = function() {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        var isCollapsed = sidebar.classList.toggle('collapsed');
+        localStorage.setItem('de-mainframe-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+
+        // Update the collapse button tooltip
+        var btn = sidebar.querySelector('.sidebar-collapse-toggle');
+        if (btn) {
+            btn.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+            btn.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        }
+    };
+
+    // Load sidebar collapse state from localStorage
+    function loadSidebarCollapseState() {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        var isCollapsed = localStorage.getItem('de-mainframe-sidebar-collapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            var btn = sidebar.querySelector('.sidebar-collapse-toggle');
+            if (btn) {
+                btn.setAttribute('title', 'Expand sidebar');
+                btn.setAttribute('aria-label', 'Expand sidebar');
+            }
+        }
+    }
+
+    // Load collapse state on DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadSidebarCollapseState);
+    } else {
+        loadSidebarCollapseState();
+    }
+
     // =========================================================================
     // EDITOR VIEW FUNCTIONS
     // =========================================================================
@@ -5007,6 +5057,27 @@ function buildCorrelationSearchUrl(detectionName) {
         loadMacros();
     }
 
+    // Parse macro definition to extract metadata
+    function parseMacroDefinition(definition) {
+        if (!definition) {
+            return {
+                indexes: [],
+                sourcetypes: [],
+                functions: [],
+                evalFields: [],
+                byFields: []
+            };
+        }
+        var parsed = parseSPL(definition);
+        return {
+            indexes: parsed.indexes || [],
+            sourcetypes: parsed.sourcetypes || [],
+            functions: parsed.mainSearchFunctions || [],
+            evalFields: parsed.evalFields || [],
+            byFields: parsed.byFields || []
+        };
+    }
+
     // Load macros from dist folder
     function loadMacros() {
         fetch(App.config.distPath + 'macros.json')
@@ -5015,34 +5086,42 @@ function buildCorrelationSearchUrl(detectionName) {
                 return response.json();
             })
             .then(function(data) {
-                // Convert simple array to macro objects with usage counting
+                // Convert simple array to macro objects with usage counting and parsed metadata
                 if (Array.isArray(data)) {
-                    macrosState.macros = data.map(function(name) {
-                        if (typeof name === 'string') {
-                            return {
-                                name: name,
-                                definition: '',
-                                description: '',
-                                arguments: '',
-                                deprecated: false,
-                                usageCount: countMacroUsage(name)
-                            };
+                    macrosState.macros = data.map(function(item) {
+                        var name, definition, description, args, deprecated;
+                        if (typeof item === 'string') {
+                            name = item;
+                            definition = '';
+                            description = '';
+                            args = '';
+                            deprecated = false;
+                        } else {
+                            name = item.name || '';
+                            definition = item.definition || '';
+                            description = item.description || '';
+                            args = item.arguments || '';
+                            deprecated = item.deprecated || false;
                         }
-                        // Already an object
-                        return Object.assign({
-                            definition: '',
-                            description: '',
-                            arguments: '',
-                            deprecated: false
-                        }, name, {
-                            usageCount: countMacroUsage(name.name || name)
-                        });
+
+                        var parsedDef = parseMacroDefinition(definition);
+
+                        return {
+                            name: name,
+                            definition: definition,
+                            description: description,
+                            arguments: args,
+                            deprecated: deprecated,
+                            usageCount: countMacroUsage(name),
+                            parsed: parsedDef
+                        };
                     });
                 } else {
                     macrosState.macros = [];
                 }
                 macrosState.filteredMacros = macrosState.macros.slice();
                 editorState.loadedMacros = macrosState.macros.map(function(m) { return m.name; });
+                populateMacroFilters();
                 filterMacros();
             })
             .catch(function(err) {
@@ -5051,6 +5130,51 @@ function buildCorrelationSearchUrl(detectionName) {
                 macrosState.filteredMacros = [];
                 renderMacrosList();
             });
+    }
+
+    // Populate macro filter dropdowns
+    function populateMacroFilters() {
+        var indexSet = new Set();
+        var sourcetypeSet = new Set();
+        var functionSet = new Set();
+
+        macrosState.macros.forEach(function(m) {
+            if (m.parsed) {
+                (m.parsed.indexes || []).forEach(function(i) { indexSet.add(i); });
+                (m.parsed.sourcetypes || []).forEach(function(s) { sourcetypeSet.add(s); });
+                (m.parsed.functions || []).forEach(function(f) { functionSet.add(f); });
+            }
+        });
+
+        // Populate Index filter
+        var indexFilter = document.getElementById('macros-filter-index');
+        if (indexFilter) {
+            var indexOpts = '<option value="">All Indexes</option>';
+            Array.from(indexSet).sort().forEach(function(idx) {
+                indexOpts += '<option value="' + escapeAttr(idx) + '">' + escapeHtml(idx) + '</option>';
+            });
+            indexFilter.innerHTML = indexOpts;
+        }
+
+        // Populate Sourcetype filter
+        var stFilter = document.getElementById('macros-filter-sourcetype');
+        if (stFilter) {
+            var stOpts = '<option value="">All Sourcetypes</option>';
+            Array.from(sourcetypeSet).sort().forEach(function(st) {
+                stOpts += '<option value="' + escapeAttr(st) + '">' + escapeHtml(st) + '</option>';
+            });
+            stFilter.innerHTML = stOpts;
+        }
+
+        // Populate Function filter
+        var funcFilter = document.getElementById('macros-filter-function');
+        if (funcFilter) {
+            var funcOpts = '<option value="">All Functions</option>';
+            Array.from(functionSet).sort().forEach(function(fn) {
+                funcOpts += '<option value="' + escapeAttr(fn) + '">' + escapeHtml(fn) + '</option>';
+            });
+            funcFilter.innerHTML = funcOpts;
+        }
     }
 
     // Count how many detections use a macro
@@ -5119,15 +5243,23 @@ function buildCorrelationSearchUrl(detectionName) {
         return detections;
     }
 
-    // Filter macros based on search, sort, and deprecated toggle
+    // Filter macros based on search, sort, deprecated, unused toggles, and field filters
     window.filterMacros = function() {
         var searchInput = document.getElementById('macros-search-input');
         var sortSelect = document.getElementById('macros-sort');
         var showDeprecated = document.getElementById('macros-show-deprecated');
+        var showUnused = document.getElementById('macros-show-unused');
+        var indexFilter = document.getElementById('macros-filter-index');
+        var stFilter = document.getElementById('macros-filter-sourcetype');
+        var funcFilter = document.getElementById('macros-filter-function');
 
         var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
         var sortOption = sortSelect ? sortSelect.value : 'name-asc';
         var includeDeprecated = showDeprecated ? showDeprecated.checked : false;
+        var includeUnused = showUnused ? showUnused.checked : false;
+        var filterIndex = indexFilter ? indexFilter.value : '';
+        var filterSourcetype = stFilter ? stFilter.value : '';
+        var filterFunction = funcFilter ? funcFilter.value : '';
 
         // Filter
         macrosState.filteredMacros = macrosState.macros.filter(function(m) {
@@ -5138,6 +5270,28 @@ function buildCorrelationSearchUrl(detectionName) {
             // Deprecated filter
             if (!includeDeprecated && m.deprecated) {
                 return false;
+            }
+            // Unused filter - by default only show macros with usageCount > 0
+            if (!includeUnused && (m.usageCount || 0) === 0) {
+                return false;
+            }
+            // Index filter
+            if (filterIndex && m.parsed) {
+                if (!m.parsed.indexes || m.parsed.indexes.indexOf(filterIndex) === -1) {
+                    return false;
+                }
+            }
+            // Sourcetype filter
+            if (filterSourcetype && m.parsed) {
+                if (!m.parsed.sourcetypes || m.parsed.sourcetypes.indexOf(filterSourcetype) === -1) {
+                    return false;
+                }
+            }
+            // Function filter
+            if (filterFunction && m.parsed) {
+                if (!m.parsed.functions || m.parsed.functions.indexOf(filterFunction) === -1) {
+                    return false;
+                }
             }
             return true;
         });
@@ -5195,6 +5349,26 @@ function buildCorrelationSearchUrl(detectionName) {
             html += '(' + (m.usageCount || 0) + ')';
             html += '</span>';
             html += '</div>';
+
+            // Display parsed field tags if available
+            if (m.parsed && (m.parsed.indexes.length > 0 || m.parsed.sourcetypes.length > 0 || m.parsed.functions.length > 0)) {
+                html += '<div class="macro-parsed-tags">';
+                m.parsed.indexes.slice(0, 2).forEach(function(idx) {
+                    html += '<span class="macro-tag index-tag" title="Index: ' + escapeAttr(idx) + '">' + escapeHtml(idx) + '</span>';
+                });
+                m.parsed.sourcetypes.slice(0, 2).forEach(function(st) {
+                    html += '<span class="macro-tag sourcetype-tag" title="Sourcetype: ' + escapeAttr(st) + '">' + escapeHtml(st) + '</span>';
+                });
+                m.parsed.functions.slice(0, 2).forEach(function(fn) {
+                    html += '<span class="macro-tag function-tag" title="Function: ' + escapeAttr(fn) + '">' + escapeHtml(fn) + '</span>';
+                });
+                var totalTags = m.parsed.indexes.length + m.parsed.sourcetypes.length + m.parsed.functions.length;
+                if (totalTags > 6) {
+                    html += '<span class="macro-tag more-tag">+' + (totalTags - 6) + '</span>';
+                }
+                html += '</div>';
+            }
+
             html += '</div>';
         });
         container.innerHTML = html;
@@ -7384,18 +7558,93 @@ function buildCorrelationSearchUrl(detectionName) {
         return counts;
     }
 
-    // Helper: Get datasource counts
+    // Cache for macro datasources to avoid repeated parsing
+    var macroDatasourceCache = {};
+
+    // Helper: Get datasources from a macro definition
+    function getMacroDatasources(macroName, depth) {
+        if (depth === undefined) depth = 0;
+        if (depth > 5) return { indexes: [], sourcetypes: [], categories: [] }; // Prevent infinite recursion
+
+        // Check cache first
+        if (macroDatasourceCache[macroName]) {
+            return macroDatasourceCache[macroName];
+        }
+
+        var result = { indexes: [], sourcetypes: [], categories: [] };
+
+        // Find macro in macrosState
+        if (typeof macrosState === 'undefined' || !macrosState.macros) {
+            return result;
+        }
+
+        var macro = macrosState.macros.find(function(m) {
+            return m.name === macroName;
+        });
+
+        if (!macro || !macro.definition) {
+            macroDatasourceCache[macroName] = result;
+            return result;
+        }
+
+        // Parse macro definition
+        var parsed = parseSPL(macro.definition);
+        result.indexes = parsed.indexes || [];
+        result.sourcetypes = parsed.sourcetypes || [];
+        result.categories = parsed.categories || [];
+
+        // Check for nested macros in the definition
+        if (parsed.macros && parsed.macros.length > 0) {
+            parsed.macros.forEach(function(nestedMacro) {
+                var nestedDs = getMacroDatasources(nestedMacro, depth + 1);
+                result.indexes = result.indexes.concat(nestedDs.indexes);
+                result.sourcetypes = result.sourcetypes.concat(nestedDs.sourcetypes);
+                result.categories = result.categories.concat(nestedDs.categories);
+            });
+        }
+
+        // Deduplicate
+        result.indexes = [...new Set(result.indexes)];
+        result.sourcetypes = [...new Set(result.sourcetypes)];
+        result.categories = [...new Set(result.categories)];
+
+        macroDatasourceCache[macroName] = result;
+        return result;
+    }
+
+    // Helper: Get datasource counts (including macro-expanded sources)
     function getDatasourceCounts(detections) {
         var counts = {};
         detections.forEach(function(d) {
             var spl = d['Search String'] || '';
             var parsed = parseSPL(spl);
+
+            // Direct datasources from the SPL
             parsed.indexes.forEach(function(idx) {
                 counts[idx] = (counts[idx] || 0) + 1;
             });
             parsed.sourcetypes.forEach(function(st) {
                 counts[st] = (counts[st] || 0) + 1;
             });
+            parsed.categories.forEach(function(cat) {
+                counts[cat] = (counts[cat] || 0) + 1;
+            });
+
+            // Expand macros to get their datasources
+            if (parsed.macros && parsed.macros.length > 0) {
+                parsed.macros.forEach(function(macroName) {
+                    var macroDs = getMacroDatasources(macroName);
+                    macroDs.indexes.forEach(function(idx) {
+                        counts['[macro] ' + idx] = (counts['[macro] ' + idx] || 0) + 1;
+                    });
+                    macroDs.sourcetypes.forEach(function(st) {
+                        counts['[macro] ' + st] = (counts['[macro] ' + st] || 0) + 1;
+                    });
+                    macroDs.categories.forEach(function(cat) {
+                        counts['[macro] ' + cat] = (counts['[macro] ' + cat] || 0) + 1;
+                    });
+                });
+            }
         });
         return counts;
     }
@@ -8776,11 +9025,15 @@ function buildCorrelationSearchUrl(detectionName) {
         }
 
         // Update compiled files if we have GitHub and processed any detections
+        var compiledFilesUpdated = false;
+        var compiledFilesError = null;
         if (github && processedDetections.length > 0) {
             try {
                 await updateCompiledFiles(App.state.detections);
+                compiledFilesUpdated = true;
             } catch (err) {
                 console.error('Failed to update compiled files:', err);
+                compiledFilesError = err.message || 'Unknown error';
             }
         }
 
@@ -8799,8 +9052,25 @@ function buildCorrelationSearchUrl(detectionName) {
         if (failed > 0) messages.push(failed + ' failed');
         if (parseErrors.length > 0) messages.push(parseErrors.length + ' file(s) had parse errors');
 
-        var toastType = failed > 0 || parseErrors.length > 0 ? 'warning' : 'success';
-        var syncNote = github ? ' (synced to GitHub)' : ' (local only - GitHub not connected)';
+        // Determine sync status and toast type
+        var toastType = 'success';
+        var syncNote = '';
+
+        if (!github) {
+            syncNote = ' (local only - GitHub not connected)';
+        } else if (compiledFilesError) {
+            syncNote = ' (partial sync - compiled files failed: ' + compiledFilesError + ')';
+            toastType = 'error';
+        } else if (compiledFilesUpdated) {
+            syncNote = ' (synced to GitHub)';
+        } else {
+            syncNote = ' (individual files synced, dist files not updated)';
+        }
+
+        if (failed > 0 || parseErrors.length > 0) {
+            toastType = compiledFilesError ? 'error' : 'warning';
+        }
+
         showToast('Import complete: ' + messages.join(', ') + syncNote, toastType);
 
         event.target.value = ''; // Reset file input
