@@ -1,0 +1,47 @@
+{
+  "detectionName": "Access - T1213 - Collection - Data from Information Repositories - Nexus Repository Suspicious Search or Automated Access",
+  "parsed": {
+    "indexes": [
+      "nexus"
+    ],
+    "sourcetypes": [
+      "nexus:request_log"
+    ],
+    "eventCodes": [],
+    "categories": [],
+    "macros": [],
+    "lookups": [],
+    "evalFields": [
+      "behavior",
+      "bytes_mb",
+      "dest"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "bin",
+      "stats",
+      "where",
+      "eval",
+      "table"
+    ],
+    "byFields": [
+      "_time",
+      "user",
+      "src_ip",
+      "host"
+    ],
+    "functions": [
+      "bin",
+      "stats",
+      "where",
+      "eval",
+      "table"
+    ],
+    "comments": [],
+    "customTags": [],
+    "macroExpandedIndexes": [],
+    "macroExpandedSourcetypes": [],
+    "macroExpandedCategories": []
+  },
+  "lastParsed": "2026-01-26T16:42:53.642Z"
+}
