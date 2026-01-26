@@ -8636,6 +8636,27 @@ function buildCorrelationSearchUrl(detectionName) {
             if (stored) {
                 var parsed = JSON.parse(stored);
                 settingsState.settings = Object.assign({}, settingsState.settings, parsed);
+
+                // CRITICAL: Sync GitHub settings to githubConfig and dmf_github_config
+                var gh = settingsState.settings.github;
+                if (gh && gh.token && gh.token.length > 10) {
+                    githubConfig.baseUrl = gh.baseUrl || githubConfig.baseUrl;
+                    githubConfig.repo = gh.repo || githubConfig.repo;
+                    githubConfig.branch = gh.branch || githubConfig.branch;
+                    githubConfig.token = gh.token;
+
+                    // Also save to dmf_github_config so initGitHub picks it up
+                    var configToSave = {
+                        baseUrl: githubConfig.baseUrl,
+                        repo: githubConfig.repo,
+                        branch: githubConfig.branch,
+                        token: githubConfig.token,
+                        detectionsPath: githubConfig.detectionsPath,
+                        metadataPath: githubConfig.metadataPath
+                    };
+                    localStorage.setItem('dmf_github_config', JSON.stringify(configToSave));
+                    console.log('%c Synced GitHub settings from dmf_settings to dmf_github_config', 'color: #50fa7b');
+                }
             }
         } catch (e) {
             console.error('Failed to load settings:', e);
@@ -8851,6 +8872,48 @@ function buildCorrelationSearchUrl(detectionName) {
         }
         if (settingsState.settings.splunk.correlationPath) {
             SPLUNK_CONFIG.correlationSearchPath = settingsState.settings.splunk.correlationPath;
+        }
+
+        // CRITICAL: Sync GitHub settings to githubConfig and reinitialize GitHub API
+        var gh = settingsState.settings.github;
+        if (gh) {
+            githubConfig.baseUrl = gh.baseUrl || 'https://api.github.com';
+            githubConfig.repo = gh.repo || '';
+            githubConfig.branch = gh.branch || 'main';
+            githubConfig.token = gh.token || '';
+
+            // Save to dmf_github_config (what initGitHub reads)
+            var configToSave = {
+                baseUrl: githubConfig.baseUrl,
+                repo: githubConfig.repo,
+                branch: githubConfig.branch,
+                token: githubConfig.token,
+                detectionsPath: githubConfig.detectionsPath || PATHS.detections,
+                metadataPath: githubConfig.metadataPath || PATHS.metadata
+            };
+            localStorage.setItem('dmf_github_config', JSON.stringify(configToSave));
+            console.log('%c GitHub config saved to localStorage', 'color: #50fa7b');
+
+            // Reinitialize GitHub API with new settings
+            if (gh.token && gh.token.length > 10 && gh.repo) {
+                github = new GitHubAPI({
+                    baseUrl: githubConfig.baseUrl,
+                    repo: githubConfig.repo,
+                    branch: githubConfig.branch,
+                    token: githubConfig.token
+                });
+                githubConfig.connected = true;
+                console.log('%c GitHub API reinitialized with new token', 'color: #50fa7b');
+
+                // Update status indicator
+                var AppRef = window.App || window.NewUIApp;
+                if (AppRef) AppRef.updateStatus('connected');
+            } else {
+                github = null;
+                githubConfig.connected = false;
+                var AppRef = window.App || window.NewUIApp;
+                if (AppRef) AppRef.updateStatus('disconnected');
+            }
         }
 
         // Re-render to sync both view and modal
@@ -9622,7 +9685,10 @@ function buildCorrelationSearchUrl(detectionName) {
     // Add editor init to App init
     var originalInit = App.init;
     App.init = function() {
-        // Initialize GitHub API first (global function)
+        // CRITICAL: Initialize Settings FIRST to load GitHub token before initGitHub
+        initSettings();
+
+        // Initialize GitHub API (uses token from settings)
         initGitHub();
 
         originalInit.call(this);
@@ -9633,7 +9699,6 @@ function buildCorrelationSearchUrl(detectionName) {
         initHistory();
         initResources();
         initReports();
-        initSettings();
     };
 
     // Expose App to global scope for debugging and external access
