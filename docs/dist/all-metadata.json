@@ -3031,7 +3031,7 @@
       "macroExpandedSourcetypes": [],
       "macroExpandedCategories": []
     },
-    "lastParsed": "2026-01-26T16:42:53.642Z",
+    "lastParsed": "2026-01-26T17:10:08.616Z",
     "detectionName": "Access - T1213 - Collection - Data from Information Repositories - Nexus Repository Suspicious Search or Automated Access"
   },
   "PingID New MFA Method After Credential Reset": {
