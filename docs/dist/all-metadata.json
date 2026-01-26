@@ -3033,5 +3033,104 @@
     },
     "lastParsed": "2026-01-26T16:42:53.642Z",
     "detectionName": "Access - T1213 - Collection - Data from Information Repositories - Nexus Repository Suspicious Search or Automated Access"
+  },
+  "PingID New MFA Method After Credential Reset": {
+    "parsed": {
+      "indexes": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [
+        "pingid",
+        "wineventlog_security",
+        "security_content_ctime",
+        "pingid_new_mfa_method_after_credential_reset_filter"
+      ],
+      "lookups": [],
+      "evalFields": [
+        "src",
+        "object",
+        "action",
+        "PW_Change_Time",
+        "timeDiffRaw",
+        "timeDiff"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "rex",
+        "eval",
+        "stats",
+        "join",
+        "search",
+        "fields",
+        "where"
+      ],
+      "byFields": [
+        "src",
+        "user",
+        "action",
+        "object"
+      ],
+      "functions": [
+        "rex",
+        "eval",
+        "stats",
+        "join",
+        "search",
+        "fields",
+        "where"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-26T17:01:46.464Z",
+    "detectionName": "PingID New MFA Method After Credential Reset"
+  },
+  "PingID New MFA Method Registered For User": {
+    "parsed": {
+      "indexes": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [
+        "pingid",
+        "security_content_ctime",
+        "pingid_new_mfa_method_registered_for_user_filter"
+      ],
+      "lookups": [],
+      "evalFields": [
+        "src",
+        "object",
+        "action"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "rex",
+        "eval",
+        "stats"
+      ],
+      "byFields": [
+        "src",
+        "user",
+        "object",
+        "action",
+        "reason"
+      ],
+      "functions": [
+        "rex",
+        "eval",
+        "stats"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-26T17:01:47.771Z",
+    "detectionName": "PingID New MFA Method Registered For User"
   }
 }
