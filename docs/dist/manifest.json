@@ -1,5 +1,5 @@
 {
-  "lastCompiled": "2026-01-25T21:46:04.756Z",
+  "lastCompiled": "2026-01-26T16:38:23.561Z",
   "version": "1.2",
   "counts": {
     "detections": 50,
@@ -7,7 +7,7 @@
   },
   "files": {
     "detections": [
-      "T1110_003_azure_active_directory_high_risk_sign_in.json",
+      "identity_Azure_Active_Directory_High_Risk_Sign-in.json",
       "application_m365_copilot_agentic_jailbreak_attack.json",
       "application_m365_copilot_application_usage_pattern_anomalies.json",
       "application_m365_copilot_failed_authentication_patterns.json",
