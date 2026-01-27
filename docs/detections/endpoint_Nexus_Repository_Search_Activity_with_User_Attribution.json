@@ -28,7 +28,7 @@
   "Blind_Spots_False_Positives": "BLIND SPOTS: API-based searches bypassing the web UI search endpoint pattern; Direct artifact downloads without prior search activity; Users accessing Nexus from IPs not captured by Cisco ASA (e.g., direct internal network access); Searches during expired VPN/ASA sessions preventing user attribution; Alternative URL patterns for searches not matching the current regex. FALSE POSITIVES: Developers legitimately searching for packages during normal development workflows; Build systems or CI/CD pipelines querying Nexus for dependency resolution; Operations teams performing routine repository maintenance or audits; Security teams conducting authorized vulnerability scans; New employees exploring available internal packages as part of onboarding.",
   "Required_Data_Sources": "Nexus Repository Manager request logs (index=nexus, sourcetype=nexus:request_log), Cisco ASA firewall authentication logs (index=cisco, sourcetype=cisco:asa), Asset inventory lookup (asset_lookup_by_str)",
   "First Created": "2026-01-27T19:52:46.000Z",
-  "Last Modified": "2026-01-27T19:54:08.524Z",
+  "Last Modified": "2026-01-27T20:43:57.573Z",
   "Search String": "index=\"nexus\" sourcetype=\"nexus:request_log\" ha=\"*%23browse%2Fsearch%2Fgeneric%3D*\"\n| eval ha_fixed = replace(ha,\"&amp;\",\"&\")\n| eval ha_decoded = urldecode(ha_fixed)\n| rex field=ha_decoded \"(?i)#browse/search/generic=(?<search_q>[^&]+)\"\n| eval search_q = lower(urldecode(search_q))\n| bin _time span=1m\n| stats count as searches dc(search_q) as uniq_terms values(search_q) as searched_terms values(status) as statuses values(user_agent) as user_agents values(ha_decoded) as decoded_search by _time host src_ip\n| eval window_start=_time-1800, window_end=_time+1800\n| join type=left src_ip [search index=cisco sourcetype=cisco:asa | where isnotnull(src_ip) AND isnotnull(Cisco_ASA_user) | eval cisco_time = _time | rex field=Cisco_ASA_user \"(?<hostname>[A-Za-z0-9\\\\-]*)\\\\$@bocad.bank-banque-canada.ca\" | eval hostname = lower(hostname) + \".bocad.bank-banque-canada.ca\" | lookup asset_lookup_by_str dns as hostname OUTPUTNEW owner | stats values(hostname) as hostname values(owner) as owner latest(Cisco_ASA_user) as asa_user latest(cisco_time) as cisco_match_time by src_ip]\n| where isnull(cisco_time) OR (cisco_time>=window_start AND cisco_time<=window_end)\n| stats values(hostname) as hostname values(owner) as owner sum(searches) as searches max(uniq_terms) as uniq_terms values(searched_terms) as searched_terms values(statuses) as statuses values(user_agents) as user_agents values(decoded_search) as decoded_search earliest(window_start) as window_start latest(window_end) as window_end earliest(cisco_time) as first_cisco_time latest(cisco_time) as last_cisco_time by _time host src_ip\n| eval window_start=strftime(window_start,\"%Y-%m-%d %H:%M:%S\"), window_end=strftime(window_end,\"%Y-%m-%d %H:%M:%S\"), first_cisco_time=strftime(first_cisco_time,\"%Y-%m-%d %H:%M:%S\"), last_cisco_time=strftime(last_cisco_time,\"%Y-%m-%d %H:%M:%S\")\n| sort - _time",
   "Splunk_App_Context": "",
   "Search_Duration": "",
@@ -126,5 +126,7 @@
   "Drilldown Name 15": "",
   "Drilldown Search 15": "",
   "Drilldown Earliest 15": null,
-  "Drilldown Latest 15": null
+  "Drilldown Latest 15": null,
+  "_sha": "b4f54e0503092ed40394749560ca93e29415dee5",
+  "_path": "docs/detections/endpoint_Nexus_Repository_Search_Activity_with_User_Attribution.json"
 }
