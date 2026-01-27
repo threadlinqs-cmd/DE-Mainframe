@@ -1,0 +1,59 @@
+{
+  "detectionName": "Nexus Repository Search Activity with User Attribution",
+  "history": [],
+  "parsed": {
+    "indexes": [
+      "nexus",
+      "cisco"
+    ],
+    "sourcetypes": [
+      "nexus:request_log",
+      "cisco:asa"
+    ],
+    "eventCodes": [],
+    "categories": [],
+    "macros": [],
+    "lookups": [
+      "asset_lookup_by_str"
+    ],
+    "evalFields": [
+      "ha_fixed",
+      "ha_decoded",
+      "search_q",
+      "window_start",
+      "cisco_time",
+      "hostname"
+    ],
+    "mainSearchFields": [],
+    "mainSearchFunctions": [
+      "eval",
+      "rex",
+      "bin",
+      "stats",
+      "join",
+      "where",
+      "lookup",
+      "sort"
+    ],
+    "byFields": [
+      "_time",
+      "host",
+      "src_ip"
+    ],
+    "functions": [
+      "eval",
+      "rex",
+      "bin",
+      "stats",
+      "join",
+      "where",
+      "sort"
+    ],
+    "comments": [],
+    "customTags": [],
+    "macroExpandedIndexes": [],
+    "macroExpandedSourcetypes": [],
+    "macroExpandedCategories": []
+  },
+  "lastParsed": "2026-01-27T19:54:08.526Z"
+}
