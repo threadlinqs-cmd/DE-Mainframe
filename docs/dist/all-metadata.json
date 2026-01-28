@@ -3191,5 +3191,63 @@
     },
     "lastParsed": "2026-01-28T16:40:40.012Z",
     "detectionName": "Nexus Repository Search Activity with User Attribution"
+  },
+  "Endpoint - WMI Remote Process Creation with Credential Exposure and Attack Chain Correlation": {
+    "history": [],
+    "parsed": {
+      "indexes": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "categories": [
+        "WMI_Remote_Execution",
+        "SMB_Connection",
+        "PsExec_Activity",
+        "Temp_Exe_Execution",
+        "LSASS_Access",
+        "case"
+      ],
+      "macros": [
+        "azure_defender_index"
+      ],
+      "lookups": [],
+      "evalFields": [
+        "event_category",
+        "event_time",
+        "has_embedded_creds",
+        "attack_chain_indicators"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "eval",
+        "inboundconnection",
+        "where",
+        "msiexec",
+        "svchost",
+        "eventstats",
+        "table",
+        "sort"
+      ],
+      "byFields": [
+        "device",
+        "user"
+      ],
+      "functions": [
+        "eval",
+        "inboundconnection",
+        "where",
+        "msiexec",
+        "svchost",
+        "eventstats",
+        "table",
+        "sort"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-28T18:17:52.077Z",
+    "detectionName": "Endpoint - WMI Remote Process Creation with Credential Exposure and Attack Chain Correlation"
   }
 }
