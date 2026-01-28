@@ -1,9 +1,9 @@
 {
-  "lastCompiled": "2026-01-28T16:40:41.346Z",
+  "lastCompiled": "2026-01-28T18:17:53.578Z",
   "version": "1.2",
   "counts": {
-    "detections": 54,
-    "metadata": 54
+    "detections": 55,
+    "metadata": 55
   },
   "files": {
     "detections": [
@@ -60,7 +60,8 @@
       "access_Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspiciou.json",
       "access_T1621_pingid_new_mfa_method_after_credential_reset_rule.json",
       "access_T1621_pingid_new_mfa_method_registered_for_user_rule.json",
-      "endpoint_Nexus_Repository_Search_Activity_with_User_Attribution.json"
+      "endpoint_Nexus_Repository_Search_Activity_with_User_Attribution.json",
+      "endpoint_Endpoint_-_WMI_Remote_Process_Creation_with_Credential_Exposure_and_Attack_Chain_Correlatio.json"
     ],
     "metadata": [
       "Azure_Active_Directory_High_Risk_Sign-in.meta.json",
@@ -116,7 +117,8 @@
       "Access_-_T1213_-_Collection_-_Data_from_Information_Repositories_-_Nexus_Repository_Suspicious_Search_or_Automated_Access.meta.json",
       "PingID_New_MFA_Method_After_Credential_Reset.meta.json",
       "PingID_New_MFA_Method_Registered_For_User.meta.json",
-      "Nexus_Repository_Search_Activity_with_User_Attribution.meta.json"
+      "Nexus_Repository_Search_Activity_with_User_Attribution.meta.json",
+      "Endpoint_-_WMI_Remote_Process_Creation_with_Credential_Exposure_and_Attack_Chain_Correlation.meta.json"
     ]
   }
 }
