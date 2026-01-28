@@ -68,7 +68,7 @@
         "user"
       ]
     },
-    "lastParsed": "2026-01-26T16:38:22.162Z",
+    "lastParsed": "2026-01-26T17:18:50.078Z",
     "needsTune": false,
     "needsRetrofit": false
   },
@@ -2987,6 +2987,152 @@
     "lastParsed": "2026-01-22T19:47:05.890Z",
     "detectionName": "Log4Shell JNDI Payload Injection Attempt"
   },
+  "Access - T1213 - Collection - Data from Information Repositories - Nexus Repository Suspicious Search or Automated Access": {
+    "parsed": {
+      "indexes": [
+        "nexus"
+      ],
+      "sourcetypes": [
+        "nexus:request_log"
+      ],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [],
+      "lookups": [],
+      "evalFields": [
+        "behavior",
+        "bytes_mb",
+        "dest"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "bin",
+        "stats",
+        "where",
+        "eval",
+        "table"
+      ],
+      "byFields": [
+        "_time",
+        "user",
+        "src_ip",
+        "host"
+      ],
+      "functions": [
+        "bin",
+        "stats",
+        "where",
+        "eval",
+        "table"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-26T17:10:08.616Z",
+    "detectionName": "Access - T1213 - Collection - Data from Information Repositories - Nexus Repository Suspicious Search or Automated Access"
+  },
+  "PingID New MFA Method After Credential Reset": {
+    "parsed": {
+      "indexes": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [
+        "pingid",
+        "wineventlog_security",
+        "security_content_ctime",
+        "pingid_new_mfa_method_after_credential_reset_filter"
+      ],
+      "lookups": [],
+      "evalFields": [
+        "src",
+        "object",
+        "action",
+        "PW_Change_Time",
+        "timeDiffRaw",
+        "timeDiff"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "rex",
+        "eval",
+        "stats",
+        "join",
+        "search",
+        "fields",
+        "where"
+      ],
+      "byFields": [
+        "src",
+        "user",
+        "action",
+        "object"
+      ],
+      "functions": [
+        "rex",
+        "eval",
+        "stats",
+        "join",
+        "search",
+        "fields",
+        "where"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-26T17:01:46.464Z",
+    "detectionName": "PingID New MFA Method After Credential Reset"
+  },
+  "PingID New MFA Method Registered For User": {
+    "parsed": {
+      "indexes": [],
+      "sourcetypes": [],
+      "eventCodes": [],
+      "categories": [],
+      "macros": [
+        "pingid",
+        "security_content_ctime",
+        "pingid_new_mfa_method_registered_for_user_filter"
+      ],
+      "lookups": [],
+      "evalFields": [
+        "src",
+        "object",
+        "action"
+      ],
+      "mainSearchFields": [],
+      "mainSearchFunctions": [
+        "rex",
+        "eval",
+        "stats"
+      ],
+      "byFields": [
+        "src",
+        "user",
+        "object",
+        "action",
+        "reason"
+      ],
+      "functions": [
+        "rex",
+        "eval",
+        "stats"
+      ],
+      "comments": [],
+      "customTags": [],
+      "macroExpandedIndexes": [],
+      "macroExpandedSourcetypes": [],
+      "macroExpandedCategories": []
+    },
+    "lastParsed": "2026-01-26T17:01:47.771Z",
+    "detectionName": "PingID New MFA Method Registered For User"
+  },
   "Nexus Repository Search Activity with User Attribution": {
     "history": [],
     "parsed": {
@@ -3043,7 +3189,7 @@
       "macroExpandedSourcetypes": [],
       "macroExpandedCategories": []
     },
-    "lastParsed": "2026-01-27T20:43:57.574Z",
+    "lastParsed": "2026-01-28T16:40:40.012Z",
     "detectionName": "Nexus Repository Search Activity with User Attribution"
   }
 }
