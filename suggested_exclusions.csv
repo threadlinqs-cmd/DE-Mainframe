@@ -1,0 +1,4 @@
+suggestion_id,detection_id,field_name,field_value,match_type,fp_count,total_occurrences,fp_percentage,unique_entities,confidence,sample_notables,generated_time
+SUG-001,DET-12345678,user,svc_automation,exact,234,240,97.5,1,high,"notable1,notable2,notable3",1706300000
+SUG-002,DET-12345678,parent_process,*\\sccm\\*,wildcard,156,165,94.5,3,high,"notable4,notable5",1706300000
+SUG-003,DET-87654321,dest,10.20.30.0/24,cidr,89,102,87.3,12,medium,"notable6,notable7,notable8",1706300000

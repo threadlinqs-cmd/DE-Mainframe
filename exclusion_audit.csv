@@ -1,0 +1,5 @@
+audit_id,exclusion_id,detection_id,action,actor,timestamp,field_name,field_value,reason
+AUD-001,EXCL-sample001,DET-12345678,submitted,analyst1,1705900000,user,svc_automation,Initial submission
+AUD-002,EXCL-sample001,DET-12345678,approved,engineer1,1706000000,user,svc_automation,Approved after review
+AUD-003,EXCL-sample002,GLOBAL,submitted,analyst2,1706050000,src_ip,10.0.0.0/8,Global exclusion for internal traffic
+AUD-004,EXCL-sample002,GLOBAL,approved,engineer1,1706100000,src_ip,10.0.0.0/8,Approved - standard internal exclusion
